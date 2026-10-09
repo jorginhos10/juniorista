@@ -1,6 +1,11 @@
 Options All -Indexes
 
 RewriteEngine on
+
+# La raíz web es la carpeta del repositorio: no exponer el historial de Git, el volcado SQL ni archivos de configuración.
+RewriteRule (^|/)\.git(/|$) - [F,L]
+RewriteRule (^|/)\.(user\.ini|gitattributes|gitignore|cpanel\.yml)$ - [F,L]
+RewriteRule \.sql$ - [F,L]
 #RewriteCond %{REQUEST_FILENAME} !-d
 #RewriteCond %{REQUEST_FILENAME} !-f
 #RewriteRule ^(.*)$ index.php?url=$1 [QSA,L]
