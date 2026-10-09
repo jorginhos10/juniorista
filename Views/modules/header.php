@@ -44,8 +44,8 @@ date_default_timezone_set(ZONA_HORARIA);
                             </a>
                         </li>
                         <li>
-                            <a href="#" class="nav-link nav-link-lg fullscreen-btn">
-                                <i data-feather="maximize"></i>
+                            <a href="#" class="nav-link nav-link-lg" data-toggle="modal" data-target="#modalStockVeterinarias" title="Buscar stock en veterinarias">
+                                <i data-feather="search"></i>
                             </a>
                     </ul>
                 </div>
