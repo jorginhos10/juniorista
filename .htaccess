@@ -5,3 +5,16 @@ RewriteEngine on
 #RewriteCond %{REQUEST_FILENAME} !-f
 #RewriteRule ^(.*)$ index.php?url=$1 [QSA,L]
 RewriteRule ^([-a-zA-Z0-9]+)$ index.php?url=$1
+
+# Evitar que el navegador o un proxy muestren versiones viejas después de cada deploy.
+# Las páginas PHP no se guardan en caché; CSS/JS/imágenes se revalidan siempre (si no cambiaron, el servidor responde 304 y no se descargan de nuevo).
+<IfModule mod_headers.c>
+    <FilesMatch "\.(php|html)$">
+        Header set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
+        Header set Pragma "no-cache"
+        Header set Expires "0"
+    </FilesMatch>
+    <FilesMatch "\.(css|js|png|jpg|jpeg|gif|ico|svg|webp)$">
+        Header set Cache-Control "no-cache, must-revalidate"
+    </FilesMatch>
+</IfModule>
