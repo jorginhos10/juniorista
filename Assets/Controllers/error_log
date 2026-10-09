@@ -1,0 +1,493 @@
+[26-Mar-2026 16:01:54 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Buy.php on line 10
+[26-Mar-2026 16:05:50 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Buy.php on line 10
+[26-Mar-2026 16:05:50 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Buy.php on line 10
+[30-Mar-2026 20:14:03 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Buy.php on line 10
+[08-Apr-2026 11:42:01 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[08-Apr-2026 11:42:01 America/Bogota] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'idusuario' cannot be null in /home4/jorginho/public_html/juniorista/Models/Connect.php:30
+Stack trace:
+#0 /home4/jorginho/public_html/juniorista/Models/Connect.php(30): PDOStatement->execute(Array)
+#1 /home4/jorginho/public_html/juniorista/Models/Sell.php(59): Conexion->getReturnId('INSERT INTO ven...', Array)
+#2 /home4/jorginho/public_html/juniorista/Controllers/Sell.php(27): Sell->insertar('8', NULL, 'FACTURA-COMPRA', '2026-04-08', '0', '56000.00', 'Efectivo', '', Array, Array, Array, Array, Array)
+#3 {main}
+  thrown in /home4/jorginho/public_html/juniorista/Models/Connect.php on line 30
+[08-Apr-2026 11:42:01 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[11-Apr-2026 22:15:22 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[11-Apr-2026 22:15:22 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[11-Apr-2026 22:15:22 America/Bogota] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'idusuario' cannot be null in /home4/jorginho/public_html/juniorista/Models/Connect.php:30
+Stack trace:
+#0 /home4/jorginho/public_html/juniorista/Models/Connect.php(30): PDOStatement->execute(Array)
+#1 /home4/jorginho/public_html/juniorista/Models/Sell.php(59): Conexion->getReturnId('INSERT INTO ven...', Array)
+#2 /home4/jorginho/public_html/juniorista/Controllers/Sell.php(27): Sell->insertar('8', NULL, 'FACTURA-COMPRA', '2026-04-11', '0', '232500.00', 'Efectivo', '', Array, Array, Array, Array, Array)
+#3 {main}
+  thrown in /home4/jorginho/public_html/juniorista/Models/Connect.php on line 30
+[26-Apr-2026 16:23:17 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[26-Apr-2026 16:23:19 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[26-Apr-2026 16:23:19 America/Bogota] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'idusuario' cannot be null in /home4/jorginho/public_html/juniorista/Models/Connect.php:30
+Stack trace:
+#0 /home4/jorginho/public_html/juniorista/Models/Connect.php(30): PDOStatement->execute(Array)
+#1 /home4/jorginho/public_html/juniorista/Models/Sell.php(59): Conexion->getReturnId('INSERT INTO ven...', Array)
+#2 /home4/jorginho/public_html/juniorista/Controllers/Sell.php(27): Sell->insertar('8', NULL, 'FACTURA-COMPRA', '2026-04-26', '0', '50700.00', 'Efectivo', '', Array, Array, Array, Array, Array)
+#3 {main}
+  thrown in /home4/jorginho/public_html/juniorista/Models/Connect.php on line 30
+[26-Apr-2026 16:23:31 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[26-Apr-2026 16:23:31 America/Bogota] PHP Warning:  Undefined array key "idarticulo" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 27
+[26-Apr-2026 16:23:31 America/Bogota] PHP Warning:  Undefined array key "cantidad" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 27
+[26-Apr-2026 16:23:31 America/Bogota] PHP Warning:  Undefined array key "precio_compra" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 27
+[26-Apr-2026 16:23:31 America/Bogota] PHP Warning:  Undefined array key "precio_venta" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 27
+[26-Apr-2026 16:23:31 America/Bogota] PHP Warning:  Undefined array key "descuento" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 27
+[26-Apr-2026 16:23:31 America/Bogota] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'idusuario' cannot be null in /home4/jorginho/public_html/juniorista/Models/Connect.php:30
+Stack trace:
+#0 /home4/jorginho/public_html/juniorista/Models/Connect.php(30): PDOStatement->execute(Array)
+#1 /home4/jorginho/public_html/juniorista/Models/Sell.php(59): Conexion->getReturnId('INSERT INTO ven...', Array)
+#2 /home4/jorginho/public_html/juniorista/Controllers/Sell.php(27): Sell->insertar('8', NULL, 'FACTURA-COMPRA', '2026-04-26', '', '', 'Efectivo', '', NULL, NULL, NULL, NULL, NULL)
+#3 {main}
+  thrown in /home4/jorginho/public_html/juniorista/Models/Connect.php on line 30
+[26-Apr-2026 16:23:31 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[03-May-2026 12:10:48 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[03-May-2026 12:10:48 America/Bogota] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'idusuario' cannot be null in /home4/jorginho/public_html/juniorista/Models/Connect.php:30
+Stack trace:
+#0 /home4/jorginho/public_html/juniorista/Models/Connect.php(30): PDOStatement->execute(Array)
+#1 /home4/jorginho/public_html/juniorista/Models/Sell.php(59): Conexion->getReturnId('INSERT INTO ven...', Array)
+#2 /home4/jorginho/public_html/juniorista/Controllers/Sell.php(27): Sell->insertar('8', NULL, 'FACTURA-COMPRA', '2026-05-03', '0', '33100.00', 'Efectivo', '', Array, Array, Array, Array, Array)
+#3 {main}
+  thrown in /home4/jorginho/public_html/juniorista/Models/Connect.php on line 30
+[03-May-2026 12:10:48 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[12-May-2026 17:07:29 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[12-May-2026 17:07:29 America/Bogota] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'idusuario' cannot be null in /home4/jorginho/public_html/juniorista/Models/Connect.php:30
+Stack trace:
+#0 /home4/jorginho/public_html/juniorista/Models/Connect.php(30): PDOStatement->execute(Array)
+#1 /home4/jorginho/public_html/juniorista/Models/Sell.php(59): Conexion->getReturnId('INSERT INTO ven...', Array)
+#2 /home4/jorginho/public_html/juniorista/Controllers/Sell.php(27): Sell->insertar('8', NULL, 'FACTURA-COMPRA', '2026-05-12', '0', '14000.00', 'Efectivo', '', Array, Array, Array, Array, Array)
+#3 {main}
+  thrown in /home4/jorginho/public_html/juniorista/Models/Connect.php on line 30
+[12-May-2026 17:07:29 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[12-May-2026 18:18:50 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[12-May-2026 18:18:50 America/Bogota] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'idusuario' cannot be null in /home4/jorginho/public_html/juniorista/Models/Connect.php:30
+Stack trace:
+#0 /home4/jorginho/public_html/juniorista/Models/Connect.php(30): PDOStatement->execute(Array)
+#1 /home4/jorginho/public_html/juniorista/Models/Sell.php(59): Conexion->getReturnId('INSERT INTO ven...', Array)
+#2 /home4/jorginho/public_html/juniorista/Controllers/Sell.php(27): Sell->insertar('8', NULL, 'FACTURA-COMPRA', '2026-05-12', '0', '30000.00', 'Efectivo', '', Array, Array, Array, Array, Array)
+#3 {main}
+  thrown in /home4/jorginho/public_html/juniorista/Models/Connect.php on line 30
+[12-May-2026 18:18:50 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[12-May-2026 19:20:01 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[12-May-2026 19:20:01 America/Bogota] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'idusuario' cannot be null in /home4/jorginho/public_html/juniorista/Models/Connect.php:30
+Stack trace:
+#0 /home4/jorginho/public_html/juniorista/Models/Connect.php(30): PDOStatement->execute(Array)
+#1 /home4/jorginho/public_html/juniorista/Models/Sell.php(59): Conexion->getReturnId('INSERT INTO ven...', Array)
+#2 /home4/jorginho/public_html/juniorista/Controllers/Sell.php(27): Sell->insertar('8', NULL, 'FACTURA-COMPRA', '2026-05-12', '', '8500.00', 'Efectivo', '', Array, Array, Array, Array, Array)
+#3 {main}
+  thrown in /home4/jorginho/public_html/juniorista/Models/Connect.php on line 30
+[12-May-2026 19:20:01 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[12-May-2026 19:20:15 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[12-May-2026 19:20:15 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[12-May-2026 19:20:15 America/Bogota] PHP Warning:  Undefined array key "idarticulo" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 27
+[12-May-2026 19:20:15 America/Bogota] PHP Warning:  Undefined array key "cantidad" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 27
+[12-May-2026 19:20:15 America/Bogota] PHP Warning:  Undefined array key "precio_compra" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 27
+[12-May-2026 19:20:15 America/Bogota] PHP Warning:  Undefined array key "precio_venta" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 27
+[12-May-2026 19:20:15 America/Bogota] PHP Warning:  Undefined array key "descuento" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 27
+[12-May-2026 19:20:15 America/Bogota] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'idusuario' cannot be null in /home4/jorginho/public_html/juniorista/Models/Connect.php:30
+Stack trace:
+#0 /home4/jorginho/public_html/juniorista/Models/Connect.php(30): PDOStatement->execute(Array)
+#1 /home4/jorginho/public_html/juniorista/Models/Sell.php(59): Conexion->getReturnId('INSERT INTO ven...', Array)
+#2 /home4/jorginho/public_html/juniorista/Controllers/Sell.php(27): Sell->insertar('8', NULL, 'FACTURA-COMPRA', '2026-05-12', '', '', 'Efectivo', '', NULL, NULL, NULL, NULL, NULL)
+#3 {main}
+  thrown in /home4/jorginho/public_html/juniorista/Models/Connect.php on line 30
+[21-May-2026 20:56:49 America/Bogota] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry 'PECHERA BICOLOR PINCHER PEQUEÑA' for key 'nombre_UNIQUE' in /home4/jorginho/public_html/juniorista/Models/Connect.php:24
+Stack trace:
+#0 /home4/jorginho/public_html/juniorista/Models/Connect.php(24): PDOStatement->execute(Array)
+#1 /home4/jorginho/public_html/juniorista/Models/Product.php(21): Conexion->setData('INSERT INTO art...', Array)
+#2 /home4/jorginho/public_html/juniorista/Controllers/Product.php(30): Product->insertar('3', 'METYWI55067W', 'PECHERA BICOLOR...', 'PECHERA', 'default.png')
+#3 {main}
+  thrown in /home4/jorginho/public_html/juniorista/Models/Connect.php on line 24
+[21-May-2026 22:57:26 America/Bogota] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1452 Cannot add or update a child row: a foreign key constraint fails (`jorginho_juniorista`.`ingreso`, CONSTRAINT `fk_ingreso_persona` FOREIGN KEY (`idproveedor`) REFERENCES `persona` (`idpersona`) ON DELETE NO ACTION ON UPDATE NO ACTION) in /home4/jorginho/public_html/juniorista/Models/Connect.php:30
+Stack trace:
+#0 /home4/jorginho/public_html/juniorista/Models/Connect.php(30): PDOStatement->execute(Array)
+#1 /home4/jorginho/public_html/juniorista/Models/Buy.php(22): Conexion->getReturnId('INSERT INTO ing...', Array)
+#2 /home4/jorginho/public_html/juniorista/Controllers/Buy.php(22): Buy->insertar('0', 5, 'Boleta', '', '-JN-24-', '2026-05-21', '', '16.00', Array, Array, Array, Array)
+#3 {main}
+  thrown in /home4/jorginho/public_html/juniorista/Models/Connect.php on line 30
+[25-May-2026 10:45:14 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[25-May-2026 10:45:14 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[25-May-2026 10:45:14 America/Bogota] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'idusuario' cannot be null in /home4/jorginho/public_html/juniorista/Models/Connect.php:30
+Stack trace:
+#0 /home4/jorginho/public_html/juniorista/Models/Connect.php(30): PDOStatement->execute(Array)
+#1 /home4/jorginho/public_html/juniorista/Models/Sell.php(59): Conexion->getReturnId('INSERT INTO ven...', Array)
+#2 /home4/jorginho/public_html/juniorista/Controllers/Sell.php(27): Sell->insertar('8', NULL, 'FACTURA-COMPRA', '2026-05-25', '', '35000.00', 'Efectivo', '', Array, Array, Array, Array, Array)
+#3 {main}
+  thrown in /home4/jorginho/public_html/juniorista/Models/Connect.php on line 30
+[08-Jun-2026 19:38:16 America/Bogota] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry 'FREEMIAU AREA PARA GATOS 7 KG' for key 'nombre_UNIQUE' in /home4/jorginho/public_html/juniorista/Models/Connect.php:24
+Stack trace:
+#0 /home4/jorginho/public_html/juniorista/Models/Connect.php(24): PDOStatement->execute(Array)
+#1 /home4/jorginho/public_html/juniorista/Models/Product.php(21): Conexion->setData('INSERT INTO art...', Array)
+#2 /home4/jorginho/public_html/juniorista/Controllers/Product.php(30): Product->insertar('3', 'NBFT47893KUT', 'FREEMIAU AREA P...', 'ASEO', 'default.png')
+#3 {main}
+  thrown in /home4/jorginho/public_html/juniorista/Models/Connect.php on line 24
+[08-Jun-2026 19:38:42 America/Bogota] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry 'FREEMIAU AREA PARA GATOS 7 KG' for key 'nombre_UNIQUE' in /home4/jorginho/public_html/juniorista/Models/Connect.php:24
+Stack trace:
+#0 /home4/jorginho/public_html/juniorista/Models/Connect.php(24): PDOStatement->execute(Array)
+#1 /home4/jorginho/public_html/juniorista/Models/Product.php(21): Conexion->setData('INSERT INTO art...', Array)
+#2 /home4/jorginho/public_html/juniorista/Controllers/Product.php(30): Product->insertar('3', 'NBFTGR47863HED', 'FREEMIAU AREA P...', 'ASEO', 'default.png')
+#3 {main}
+  thrown in /home4/jorginho/public_html/juniorista/Models/Connect.php on line 24
+[08-Jun-2026 19:39:00 America/Bogota] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry 'FREEMIAU AREA PARA GATOS 7 KG' for key 'nombre_UNIQUE' in /home4/jorginho/public_html/juniorista/Models/Connect.php:24
+Stack trace:
+#0 /home4/jorginho/public_html/juniorista/Models/Connect.php(24): PDOStatement->execute(Array)
+#1 /home4/jorginho/public_html/juniorista/Models/Product.php(21): Conexion->setData('INSERT INTO art...', Array)
+#2 /home4/jorginho/public_html/juniorista/Controllers/Product.php(30): Product->insertar('3', 'MGHTTY74168HBS', 'FREEMIAU AREA P...', 'ASEO', 'default.png')
+#3 {main}
+  thrown in /home4/jorginho/public_html/juniorista/Models/Connect.php on line 24
+[08-Jun-2026 19:39:39 America/Bogota] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry 'FREEMIAU AREA PARA GATOS 7 KG' for key 'nombre_UNIQUE' in /home4/jorginho/public_html/juniorista/Models/Connect.php:24
+Stack trace:
+#0 /home4/jorginho/public_html/juniorista/Models/Connect.php(24): PDOStatement->execute(Array)
+#1 /home4/jorginho/public_html/juniorista/Models/Product.php(21): Conexion->setData('INSERT INTO art...', Array)
+#2 /home4/jorginho/public_html/juniorista/Controllers/Product.php(30): Product->insertar('3', 'NFGR4785AQOP', 'FREEMIAU AREA P...', 'ASEO', 'default.png')
+#3 {main}
+  thrown in /home4/jorginho/public_html/juniorista/Models/Connect.php on line 24
+[08-Jun-2026 20:20:19 America/Bogota] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1452 Cannot add or update a child row: a foreign key constraint fails (`jorginho_juniorista`.`ingreso`, CONSTRAINT `fk_ingreso_persona` FOREIGN KEY (`idproveedor`) REFERENCES `persona` (`idpersona`) ON DELETE NO ACTION ON UPDATE NO ACTION) in /home4/jorginho/public_html/juniorista/Models/Connect.php:24
+Stack trace:
+#0 /home4/jorginho/public_html/juniorista/Models/Connect.php(24): PDOStatement->execute(Array)
+#1 /home4/jorginho/public_html/juniorista/Models/Buy.php(57): Conexion->setData('UPDATE ingreso ...', Array)
+#2 /home4/jorginho/public_html/juniorista/Controllers/Buy.php(25): Buy->editar('116', '0', 'Boleta', '', '--JN-27-', '2026-06-06', '0.00', '745.00', Array, Array, Array, Array, Array)
+#3 {main}
+  thrown in /home4/jorginho/public_html/juniorista/Models/Connect.php on line 24
+[08-Jun-2026 20:29:16 America/Bogota] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1452 Cannot add or update a child row: a foreign key constraint fails (`jorginho_juniorista`.`ingreso`, CONSTRAINT `fk_ingreso_persona` FOREIGN KEY (`idproveedor`) REFERENCES `persona` (`idpersona`) ON DELETE NO ACTION ON UPDATE NO ACTION) in /home4/jorginho/public_html/juniorista/Models/Connect.php:24
+Stack trace:
+#0 /home4/jorginho/public_html/juniorista/Models/Connect.php(24): PDOStatement->execute(Array)
+#1 /home4/jorginho/public_html/juniorista/Models/Buy.php(57): Conexion->setData('UPDATE ingreso ...', Array)
+#2 /home4/jorginho/public_html/juniorista/Controllers/Buy.php(25): Buy->editar('116', '0', 'Boleta', '', '--JN-27-', '2026-06-06', '0.00', '958.00', Array, Array, Array, Array, Array)
+#3 {main}
+  thrown in /home4/jorginho/public_html/juniorista/Models/Connect.php on line 24
+[08-Jun-2026 22:06:18 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Buy.php on line 10
+[25-Jun-2026 11:02:16 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[25-Jun-2026 11:02:16 America/Bogota] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'idusuario' cannot be null in /home4/jorginho/public_html/juniorista/Models/Connect.php:30
+Stack trace:
+#0 /home4/jorginho/public_html/juniorista/Models/Connect.php(30): PDOStatement->execute(Array)
+#1 /home4/jorginho/public_html/juniorista/Models/Sell.php(59): Conexion->getReturnId('INSERT INTO ven...', Array)
+#2 /home4/jorginho/public_html/juniorista/Controllers/Sell.php(27): Sell->insertar('8', NULL, 'FACTURA-COMPRA', '2026-06-25', '', '18000.00', 'Efectivo', '', Array, Array, Array, Array, Array)
+#3 {main}
+  thrown in /home4/jorginho/public_html/juniorista/Models/Connect.php on line 30
+[25-Jun-2026 11:02:16 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[27-Jun-2026 15:13:29 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[27-Jun-2026 15:13:29 America/Bogota] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'idusuario' cannot be null in /home4/jorginho/public_html/juniorista/Models/Connect.php:30
+Stack trace:
+#0 /home4/jorginho/public_html/juniorista/Models/Connect.php(30): PDOStatement->execute(Array)
+#1 /home4/jorginho/public_html/juniorista/Models/Sell.php(59): Conexion->getReturnId('INSERT INTO ven...', Array)
+#2 /home4/jorginho/public_html/juniorista/Controllers/Sell.php(27): Sell->insertar('8', NULL, 'FACTURA-COMPRA', '2026-06-27', '0', '15000.00', 'Efectivo', '', Array, Array, Array, Array, Array)
+#3 {main}
+  thrown in /home4/jorginho/public_html/juniorista/Models/Connect.php on line 30
+[27-Jun-2026 15:13:29 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[29-Jun-2026 20:18:10 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[29-Jun-2026 20:18:10 America/Bogota] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'idusuario' cannot be null in /home4/jorginho/public_html/juniorista/Models/Connect.php:30
+Stack trace:
+#0 /home4/jorginho/public_html/juniorista/Models/Connect.php(30): PDOStatement->execute(Array)
+#1 /home4/jorginho/public_html/juniorista/Models/Sell.php(59): Conexion->getReturnId('INSERT INTO ven...', Array)
+#2 /home4/jorginho/public_html/juniorista/Controllers/Sell.php(27): Sell->insertar('8', NULL, 'FACTURA-COMPRA', '2026-06-29', '', '66000.00', 'Efectivo', '', Array, Array, Array, Array, Array)
+#3 {main}
+  thrown in /home4/jorginho/public_html/juniorista/Models/Connect.php on line 30
+[29-Jun-2026 20:18:10 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[01-Jul-2026 15:21:50 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[01-Jul-2026 15:21:50 America/Bogota] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'idusuario' cannot be null in /home4/jorginho/public_html/juniorista/Models/Connect.php:30
+Stack trace:
+#0 /home4/jorginho/public_html/juniorista/Models/Connect.php(30): PDOStatement->execute(Array)
+#1 /home4/jorginho/public_html/juniorista/Models/Sell.php(59): Conexion->getReturnId('INSERT INTO ven...', Array)
+#2 /home4/jorginho/public_html/juniorista/Controllers/Sell.php(27): Sell->insertar('8', NULL, 'FACTURA-COMPRA', '2026-07-01', '', '7000.00', 'Efectivo', '', Array, Array, Array, Array, Array)
+#3 {main}
+  thrown in /home4/jorginho/public_html/juniorista/Models/Connect.php on line 30
+[01-Jul-2026 15:21:50 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[15-Jul-2026 18:34:42 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[15-Jul-2026 18:34:42 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[15-Jul-2026 18:34:42 America/Bogota] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'idusuario' cannot be null in /home4/jorginho/public_html/juniorista/Models/Connect.php:30
+Stack trace:
+#0 /home4/jorginho/public_html/juniorista/Models/Connect.php(30): PDOStatement->execute(Array)
+#1 /home4/jorginho/public_html/juniorista/Models/Sell.php(59): Conexion->getReturnId('INSERT INTO ven...', Array)
+#2 /home4/jorginho/public_html/juniorista/Controllers/Sell.php(27): Sell->insertar('8', NULL, 'FACTURA-COMPRA', '2026-07-15', '0', '164500.00', 'Efectivo', '', Array, Array, Array, Array, Array)
+#3 {main}
+  thrown in /home4/jorginho/public_html/juniorista/Models/Connect.php on line 30
+[16-Jul-2026 16:02:18 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[16-Jul-2026 16:02:18 America/Bogota] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'idusuario' cannot be null in /home4/jorginho/public_html/juniorista/Models/Connect.php:30
+Stack trace:
+#0 /home4/jorginho/public_html/juniorista/Models/Connect.php(30): PDOStatement->execute(Array)
+#1 /home4/jorginho/public_html/juniorista/Models/Sell.php(59): Conexion->getReturnId('INSERT INTO ven...', Array)
+#2 /home4/jorginho/public_html/juniorista/Controllers/Sell.php(27): Sell->insertar('8', NULL, 'FACTURA-COMPRA', '2026-07-16', '', '15000.00', 'Efectivo', '', Array, Array, Array, Array, Array)
+#3 {main}
+  thrown in /home4/jorginho/public_html/juniorista/Models/Connect.php on line 30
+[16-Jul-2026 16:02:18 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[17-Jul-2026 19:48:41 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[17-Jul-2026 19:48:41 America/Bogota] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'idusuario' cannot be null in /home4/jorginho/public_html/juniorista/Models/Connect.php:30
+Stack trace:
+#0 /home4/jorginho/public_html/juniorista/Models/Connect.php(30): PDOStatement->execute(Array)
+#1 /home4/jorginho/public_html/juniorista/Models/Sell.php(59): Conexion->getReturnId('INSERT INTO ven...', Array)
+#2 /home4/jorginho/public_html/juniorista/Controllers/Sell.php(27): Sell->insertar('8', NULL, 'FACTURA-COMPRA', '2026-07-17', '0', '114000.00', 'Efectivo', '', Array, Array, Array, Array, Array)
+#3 {main}
+  thrown in /home4/jorginho/public_html/juniorista/Models/Connect.php on line 30
+[17-Jul-2026 19:48:41 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[21-Jul-2026 19:32:41 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[21-Jul-2026 19:32:41 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[21-Jul-2026 19:32:41 America/Bogota] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'idusuario' cannot be null in /home4/jorginho/public_html/juniorista/Models/Connect.php:30
+Stack trace:
+#0 /home4/jorginho/public_html/juniorista/Models/Connect.php(30): PDOStatement->execute(Array)
+#1 /home4/jorginho/public_html/juniorista/Models/Sell.php(59): Conexion->getReturnId('INSERT INTO ven...', Array)
+#2 /home4/jorginho/public_html/juniorista/Controllers/Sell.php(27): Sell->insertar('8', NULL, 'FACTURA-COMPRA', '2026-07-21', '', '18500.00', 'Efectivo', '', Array, Array, Array, Array, Array)
+#3 {main}
+  thrown in /home4/jorginho/public_html/juniorista/Models/Connect.php on line 30
+[24-Jul-2026 15:22:47 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[24-Jul-2026 15:22:47 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[24-Jul-2026 15:22:47 America/Bogota] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'idusuario' cannot be null in /home4/jorginho/public_html/juniorista/Models/Connect.php:30
+Stack trace:
+#0 /home4/jorginho/public_html/juniorista/Models/Connect.php(30): PDOStatement->execute(Array)
+#1 /home4/jorginho/public_html/juniorista/Models/Sell.php(59): Conexion->getReturnId('INSERT INTO ven...', Array)
+#2 /home4/jorginho/public_html/juniorista/Controllers/Sell.php(27): Sell->insertar('8', NULL, 'FACTURA-COMPRA', '2026-07-24', '0', '18000.00', 'Efectivo', '', Array, Array, Array, Array, Array)
+#3 {main}
+  thrown in /home4/jorginho/public_html/juniorista/Models/Connect.php on line 30
+[24-Jul-2026 15:23:14 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[24-Jul-2026 15:23:14 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[24-Jul-2026 15:23:14 America/Bogota] PHP Warning:  Undefined array key "idarticulo" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 27
+[24-Jul-2026 15:23:14 America/Bogota] PHP Warning:  Undefined array key "cantidad" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 27
+[24-Jul-2026 15:23:14 America/Bogota] PHP Warning:  Undefined array key "precio_compra" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 27
+[24-Jul-2026 15:23:14 America/Bogota] PHP Warning:  Undefined array key "precio_venta" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 27
+[24-Jul-2026 15:23:14 America/Bogota] PHP Warning:  Undefined array key "descuento" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 27
+[24-Jul-2026 15:23:14 America/Bogota] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'idusuario' cannot be null in /home4/jorginho/public_html/juniorista/Models/Connect.php:30
+Stack trace:
+#0 /home4/jorginho/public_html/juniorista/Models/Connect.php(30): PDOStatement->execute(Array)
+#1 /home4/jorginho/public_html/juniorista/Models/Sell.php(59): Conexion->getReturnId('INSERT INTO ven...', Array)
+#2 /home4/jorginho/public_html/juniorista/Controllers/Sell.php(27): Sell->insertar('8', NULL, 'FACTURA-COMPRA', '2026-07-24', '', '', 'Efectivo', '', NULL, NULL, NULL, NULL, NULL)
+#3 {main}
+  thrown in /home4/jorginho/public_html/juniorista/Models/Connect.php on line 30
+[24-Jul-2026 15:24:22 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[24-Jul-2026 15:24:22 America/Bogota] PHP Warning:  Undefined array key "idarticulo" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 27
+[24-Jul-2026 15:24:22 America/Bogota] PHP Warning:  Undefined array key "cantidad" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 27
+[24-Jul-2026 15:24:22 America/Bogota] PHP Warning:  Undefined array key "precio_compra" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 27
+[24-Jul-2026 15:24:22 America/Bogota] PHP Warning:  Undefined array key "precio_venta" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 27
+[24-Jul-2026 15:24:22 America/Bogota] PHP Warning:  Undefined array key "descuento" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 27
+[24-Jul-2026 15:24:22 America/Bogota] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'idusuario' cannot be null in /home4/jorginho/public_html/juniorista/Models/Connect.php:30
+Stack trace:
+#0 /home4/jorginho/public_html/juniorista/Models/Connect.php(30): PDOStatement->execute(Array)
+#1 /home4/jorginho/public_html/juniorista/Models/Sell.php(59): Conexion->getReturnId('INSERT INTO ven...', Array)
+#2 /home4/jorginho/public_html/juniorista/Controllers/Sell.php(27): Sell->insertar('8', NULL, 'FACTURA-COMPRA', '2026-07-24', '', '', 'Efectivo', '', NULL, NULL, NULL, NULL, NULL)
+#3 {main}
+  thrown in /home4/jorginho/public_html/juniorista/Models/Connect.php on line 30
+[24-Jul-2026 15:24:22 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[24-Jul-2026 17:20:36 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[24-Jul-2026 17:20:36 America/Bogota] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'idusuario' cannot be null in /home4/jorginho/public_html/juniorista/Models/Connect.php:30
+Stack trace:
+#0 /home4/jorginho/public_html/juniorista/Models/Connect.php(30): PDOStatement->execute(Array)
+#1 /home4/jorginho/public_html/juniorista/Models/Sell.php(59): Conexion->getReturnId('INSERT INTO ven...', Array)
+#2 /home4/jorginho/public_html/juniorista/Controllers/Sell.php(27): Sell->insertar('8', NULL, 'FACTURA-COMPRA', '2026-07-24', '', '38000.00', 'Efectivo', '', Array, Array, Array, Array, Array)
+#3 {main}
+  thrown in /home4/jorginho/public_html/juniorista/Models/Connect.php on line 30
+[24-Jul-2026 17:20:36 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[24-Jul-2026 20:16:42 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[24-Jul-2026 20:16:42 America/Bogota] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'idusuario' cannot be null in /home4/jorginho/public_html/juniorista/Models/Connect.php:30
+Stack trace:
+#0 /home4/jorginho/public_html/juniorista/Models/Connect.php(30): PDOStatement->execute(Array)
+#1 /home4/jorginho/public_html/juniorista/Models/Sell.php(59): Conexion->getReturnId('INSERT INTO ven...', Array)
+#2 /home4/jorginho/public_html/juniorista/Controllers/Sell.php(27): Sell->insertar('8', NULL, 'FACTURA-COMPRA', '2026-07-24', '', '26500.00', 'Efectivo', '', Array, Array, Array, Array, Array)
+#3 {main}
+  thrown in /home4/jorginho/public_html/juniorista/Models/Connect.php on line 30
+[24-Jul-2026 20:16:42 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[24-Jul-2026 20:16:53 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[24-Jul-2026 20:16:53 America/Bogota] PHP Warning:  Undefined array key "idarticulo" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 27
+[24-Jul-2026 20:16:53 America/Bogota] PHP Warning:  Undefined array key "cantidad" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 27
+[24-Jul-2026 20:16:53 America/Bogota] PHP Warning:  Undefined array key "precio_compra" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 27
+[24-Jul-2026 20:16:53 America/Bogota] PHP Warning:  Undefined array key "precio_venta" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 27
+[24-Jul-2026 20:16:53 America/Bogota] PHP Warning:  Undefined array key "descuento" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 27
+[24-Jul-2026 20:16:53 America/Bogota] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'idusuario' cannot be null in /home4/jorginho/public_html/juniorista/Models/Connect.php:30
+Stack trace:
+#0 /home4/jorginho/public_html/juniorista/Models/Connect.php(30): PDOStatement->execute(Array)
+#1 /home4/jorginho/public_html/juniorista/Models/Sell.php(59): Conexion->getReturnId('INSERT INTO ven...', Array)
+#2 /home4/jorginho/public_html/juniorista/Controllers/Sell.php(27): Sell->insertar('8', NULL, 'FACTURA-COMPRA', '2026-07-24', '', '', 'Efectivo', '', NULL, NULL, NULL, NULL, NULL)
+#3 {main}
+  thrown in /home4/jorginho/public_html/juniorista/Models/Connect.php on line 30
+[24-Jul-2026 20:16:53 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[24-Jul-2026 20:17:30 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[24-Jul-2026 20:17:30 America/Bogota] PHP Warning:  Undefined array key "idarticulo" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 27
+[24-Jul-2026 20:17:30 America/Bogota] PHP Warning:  Undefined array key "cantidad" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 27
+[24-Jul-2026 20:17:30 America/Bogota] PHP Warning:  Undefined array key "precio_compra" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 27
+[24-Jul-2026 20:17:30 America/Bogota] PHP Warning:  Undefined array key "precio_venta" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 27
+[24-Jul-2026 20:17:30 America/Bogota] PHP Warning:  Undefined array key "descuento" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 27
+[24-Jul-2026 20:17:30 America/Bogota] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'idusuario' cannot be null in /home4/jorginho/public_html/juniorista/Models/Connect.php:30
+Stack trace:
+#0 /home4/jorginho/public_html/juniorista/Models/Connect.php(30): PDOStatement->execute(Array)
+#1 /home4/jorginho/public_html/juniorista/Models/Sell.php(59): Conexion->getReturnId('INSERT INTO ven...', Array)
+#2 /home4/jorginho/public_html/juniorista/Controllers/Sell.php(27): Sell->insertar('8', NULL, 'FACTURA-COMPRA', '2026-07-24', '', '', 'Efectivo', '', NULL, NULL, NULL, NULL, NULL)
+#3 {main}
+  thrown in /home4/jorginho/public_html/juniorista/Models/Connect.php on line 30
+[24-Jul-2026 20:17:30 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[25-Jul-2026 12:23:21 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[25-Jul-2026 12:23:21 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[25-Jul-2026 12:23:21 America/Bogota] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'idusuario' cannot be null in /home4/jorginho/public_html/juniorista/Models/Connect.php:30
+Stack trace:
+#0 /home4/jorginho/public_html/juniorista/Models/Connect.php(30): PDOStatement->execute(Array)
+#1 /home4/jorginho/public_html/juniorista/Models/Sell.php(59): Conexion->getReturnId('INSERT INTO ven...', Array)
+#2 /home4/jorginho/public_html/juniorista/Controllers/Sell.php(27): Sell->insertar('8', NULL, 'FACTURA-COMPRA', '2026-07-25', '', '7500.00', 'Efectivo', '', Array, Array, Array, Array, Array)
+#3 {main}
+  thrown in /home4/jorginho/public_html/juniorista/Models/Connect.php on line 30
+[25-Jul-2026 12:23:40 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[25-Jul-2026 12:23:40 America/Bogota] PHP Warning:  Undefined array key "idarticulo" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 27
+[25-Jul-2026 12:23:40 America/Bogota] PHP Warning:  Undefined array key "cantidad" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 27
+[25-Jul-2026 12:23:40 America/Bogota] PHP Warning:  Undefined array key "precio_compra" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 27
+[25-Jul-2026 12:23:40 America/Bogota] PHP Warning:  Undefined array key "precio_venta" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 27
+[25-Jul-2026 12:23:40 America/Bogota] PHP Warning:  Undefined array key "descuento" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 27
+[25-Jul-2026 12:23:40 America/Bogota] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'idusuario' cannot be null in /home4/jorginho/public_html/juniorista/Models/Connect.php:30
+Stack trace:
+#0 /home4/jorginho/public_html/juniorista/Models/Connect.php(30): PDOStatement->execute(Array)
+#1 /home4/jorginho/public_html/juniorista/Models/Sell.php(59): Conexion->getReturnId('INSERT INTO ven...', Array)
+#2 /home4/jorginho/public_html/juniorista/Controllers/Sell.php(27): Sell->insertar('8', NULL, 'FACTURA-COMPRA', '2026-07-25', '', '', 'Efectivo', '', NULL, NULL, NULL, NULL, NULL)
+#3 {main}
+  thrown in /home4/jorginho/public_html/juniorista/Models/Connect.php on line 30
+[25-Jul-2026 12:23:40 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[25-Jul-2026 13:58:04 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[25-Jul-2026 13:58:04 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[25-Jul-2026 13:58:04 America/Bogota] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'idusuario' cannot be null in /home4/jorginho/public_html/juniorista/Models/Connect.php:30
+Stack trace:
+#0 /home4/jorginho/public_html/juniorista/Models/Connect.php(30): PDOStatement->execute(Array)
+#1 /home4/jorginho/public_html/juniorista/Models/Sell.php(59): Conexion->getReturnId('INSERT INTO ven...', Array)
+#2 /home4/jorginho/public_html/juniorista/Controllers/Sell.php(27): Sell->insertar('8', NULL, 'FACTURA-COMPRA', '2026-07-25', '', '30000.00', 'Efectivo', '', Array, Array, Array, Array, Array)
+#3 {main}
+  thrown in /home4/jorginho/public_html/juniorista/Models/Connect.php on line 30
+[27-Jul-2026 12:21:23 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[27-Jul-2026 12:21:23 America/Bogota] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'idusuario' cannot be null in /home4/jorginho/public_html/juniorista/Models/Connect.php:30
+Stack trace:
+#0 /home4/jorginho/public_html/juniorista/Models/Connect.php(30): PDOStatement->execute(Array)
+#1 /home4/jorginho/public_html/juniorista/Models/Sell.php(59): Conexion->getReturnId('INSERT INTO ven...', Array)
+#2 /home4/jorginho/public_html/juniorista/Controllers/Sell.php(27): Sell->insertar('8', NULL, 'FACTURA-COMPRA', '2026-07-27', '', '27000.00', 'Efectivo', '', Array, Array, Array, Array, Array)
+#3 {main}
+  thrown in /home4/jorginho/public_html/juniorista/Models/Connect.php on line 30
+[27-Jul-2026 12:21:23 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[27-Jul-2026 12:22:20 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[27-Jul-2026 12:22:20 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[27-Jul-2026 12:22:20 America/Bogota] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'idusuario' cannot be null in /home4/jorginho/public_html/juniorista/Models/Connect.php:30
+Stack trace:
+#0 /home4/jorginho/public_html/juniorista/Models/Connect.php(30): PDOStatement->execute(Array)
+#1 /home4/jorginho/public_html/juniorista/Models/Sell.php(59): Conexion->getReturnId('INSERT INTO ven...', Array)
+#2 /home4/jorginho/public_html/juniorista/Controllers/Sell.php(27): Sell->insertar('8', NULL, 'FACTURA-COMPRA', '2026-07-27', '', '13500.00', 'Efectivo', '', Array, Array, Array, Array, Array)
+#3 {main}
+  thrown in /home4/jorginho/public_html/juniorista/Models/Connect.php on line 30
+[27-Jul-2026 12:24:49 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[27-Jul-2026 12:24:49 America/Bogota] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'idusuario' cannot be null in /home4/jorginho/public_html/juniorista/Models/Connect.php:30
+Stack trace:
+#0 /home4/jorginho/public_html/juniorista/Models/Connect.php(30): PDOStatement->execute(Array)
+#1 /home4/jorginho/public_html/juniorista/Models/Sell.php(59): Conexion->getReturnId('INSERT INTO ven...', Array)
+#2 /home4/jorginho/public_html/juniorista/Controllers/Sell.php(27): Sell->insertar('8', NULL, 'FACTURA-COMPRA', '2026-07-27', '', '9000.00', 'Efectivo', '', Array, Array, Array, Array, Array)
+#3 {main}
+  thrown in /home4/jorginho/public_html/juniorista/Models/Connect.php on line 30
+[27-Jul-2026 12:24:49 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[02-Aug-2026 19:46:55 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[02-Aug-2026 19:46:55 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[02-Aug-2026 19:46:55 America/Bogota] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'idusuario' cannot be null in /home4/jorginho/public_html/juniorista/Models/Connect.php:30
+Stack trace:
+#0 /home4/jorginho/public_html/juniorista/Models/Connect.php(30): PDOStatement->execute(Array)
+#1 /home4/jorginho/public_html/juniorista/Models/Sell.php(59): Conexion->getReturnId('INSERT INTO ven...', Array)
+#2 /home4/jorginho/public_html/juniorista/Controllers/Sell.php(27): Sell->insertar('8', NULL, 'FACTURA-COMPRA', '2026-08-02', '', '157500.00', 'Efectivo', '', Array, Array, Array, Array, Array)
+#3 {main}
+  thrown in /home4/jorginho/public_html/juniorista/Models/Connect.php on line 30
+[05-Aug-2026 13:05:50 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[05-Aug-2026 13:05:50 America/Bogota] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'idusuario' cannot be null in /home4/jorginho/public_html/juniorista/Models/Connect.php:30
+Stack trace:
+#0 /home4/jorginho/public_html/juniorista/Models/Connect.php(30): PDOStatement->execute(Array)
+#1 /home4/jorginho/public_html/juniorista/Models/Sell.php(59): Conexion->getReturnId('INSERT INTO ven...', Array)
+#2 /home4/jorginho/public_html/juniorista/Controllers/Sell.php(27): Sell->insertar('8', NULL, 'FACTURA-COMPRA', '2026-08-05', '', '7000.00', 'Efectivo', '', Array, Array, Array, Array, Array)
+#3 {main}
+  thrown in /home4/jorginho/public_html/juniorista/Models/Connect.php on line 30
+[05-Aug-2026 13:05:50 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[07-Aug-2026 21:15:34 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[07-Aug-2026 21:15:34 America/Bogota] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'idusuario' cannot be null in /home4/jorginho/public_html/juniorista/Models/Connect.php:30
+Stack trace:
+#0 /home4/jorginho/public_html/juniorista/Models/Connect.php(30): PDOStatement->execute(Array)
+#1 /home4/jorginho/public_html/juniorista/Models/Sell.php(59): Conexion->getReturnId('INSERT INTO ven...', Array)
+#2 /home4/jorginho/public_html/juniorista/Controllers/Sell.php(27): Sell->insertar('8', NULL, 'FACTURA-COMPRA', '2026-08-07', '0', '293500.00', 'Efectivo', '', Array, Array, Array, Array, Array)
+#3 {main}
+  thrown in /home4/jorginho/public_html/juniorista/Models/Connect.php on line 30
+[07-Aug-2026 21:15:34 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[10-Aug-2026 22:58:01 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Buy.php on line 10
+[10-Aug-2026 23:09:30 America/Bogota] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry 'SACHET MIGLIOR GATOS 100 GR' for key 'nombre_UNIQUE' in /home4/jorginho/public_html/juniorista/Models/Connect.php:24
+Stack trace:
+#0 /home4/jorginho/public_html/juniorista/Models/Connect.php(24): PDOStatement->execute(Array)
+#1 /home4/jorginho/public_html/juniorista/Models/Product.php(21): Conexion->setData('INSERT INTO art...', Array)
+#2 /home4/jorginho/public_html/juniorista/Controllers/Product.php(30): Product->insertar('3', 'OFHWB7069Y', 'SACHET MIGLIOR ...', 'COMIDA HUMEDA', 'default.png')
+#3 {main}
+  thrown in /home4/jorginho/public_html/juniorista/Models/Connect.php on line 24
+[10-Aug-2026 23:09:51 America/Bogota] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry 'SACHET MIGLIOR GATOS 100 GR' for key 'nombre_UNIQUE' in /home4/jorginho/public_html/juniorista/Models/Connect.php:24
+Stack trace:
+#0 /home4/jorginho/public_html/juniorista/Models/Connect.php(24): PDOStatement->execute(Array)
+#1 /home4/jorginho/public_html/juniorista/Models/Product.php(21): Conexion->setData('INSERT INTO art...', Array)
+#2 /home4/jorginho/public_html/juniorista/Controllers/Product.php(30): Product->insertar('3', 'OFHWB7069Y', 'SACHET MIGLIOR ...', 'COMIDA HUMEDA', 'default.png')
+#3 {main}
+  thrown in /home4/jorginho/public_html/juniorista/Models/Connect.php on line 24
+[13-Aug-2026 16:18:57 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[13-Aug-2026 16:18:57 America/Bogota] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'idusuario' cannot be null in /home4/jorginho/public_html/juniorista/Models/Connect.php:30
+Stack trace:
+#0 /home4/jorginho/public_html/juniorista/Models/Connect.php(30): PDOStatement->execute(Array)
+#1 /home4/jorginho/public_html/juniorista/Models/Sell.php(59): Conexion->getReturnId('INSERT INTO ven...', Array)
+#2 /home4/jorginho/public_html/juniorista/Controllers/Sell.php(27): Sell->insertar('8', NULL, 'FACTURA-COMPRA', '2026-08-13', '', '18000.00', 'Efectivo', '', Array, Array, Array, Array, Array)
+#3 {main}
+  thrown in /home4/jorginho/public_html/juniorista/Models/Connect.php on line 30
+[13-Aug-2026 16:18:57 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[16-Aug-2026 02:21:17 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Buy.php on line 10
+[17-Aug-2026 12:31:56 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[17-Aug-2026 12:31:56 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[17-Aug-2026 12:31:56 America/Bogota] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'idusuario' cannot be null in /home4/jorginho/public_html/juniorista/Models/Connect.php:30
+Stack trace:
+#0 /home4/jorginho/public_html/juniorista/Models/Connect.php(30): PDOStatement->execute(Array)
+#1 /home4/jorginho/public_html/juniorista/Models/Sell.php(59): Conexion->getReturnId('INSERT INTO ven...', Array)
+#2 /home4/jorginho/public_html/juniorista/Controllers/Sell.php(27): Sell->insertar('8', NULL, 'FACTURA-COMPRA', '2026-08-17', '', '43500.00', 'Efectivo', '', Array, Array, Array, Array, Array)
+#3 {main}
+  thrown in /home4/jorginho/public_html/juniorista/Models/Connect.php on line 30
+[17-Aug-2026 14:14:21 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[17-Aug-2026 14:14:21 America/Bogota] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'idusuario' cannot be null in /home4/jorginho/public_html/juniorista/Models/Connect.php:30
+Stack trace:
+#0 /home4/jorginho/public_html/juniorista/Models/Connect.php(30): PDOStatement->execute(Array)
+#1 /home4/jorginho/public_html/juniorista/Models/Sell.php(59): Conexion->getReturnId('INSERT INTO ven...', Array)
+#2 /home4/jorginho/public_html/juniorista/Controllers/Sell.php(27): Sell->insertar('8', NULL, 'FACTURA-COMPRA', '2026-08-17', '0', '12000.00', 'Efectivo', '', Array, Array, Array, Array, Array)
+#3 {main}
+  thrown in /home4/jorginho/public_html/juniorista/Models/Connect.php on line 30
+[17-Aug-2026 14:14:21 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[23-Aug-2026 14:06:28 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[23-Aug-2026 14:06:28 America/Bogota] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'idusuario' cannot be null in /home4/jorginho/public_html/juniorista/Models/Connect.php:30
+Stack trace:
+#0 /home4/jorginho/public_html/juniorista/Models/Connect.php(30): PDOStatement->execute(Array)
+#1 /home4/jorginho/public_html/juniorista/Models/Sell.php(59): Conexion->getReturnId('INSERT INTO ven...', Array)
+#2 /home4/jorginho/public_html/juniorista/Controllers/Sell.php(27): Sell->insertar('8', NULL, 'FACTURA-COMPRA', '2026-08-23', '', '28500.00', 'Efectivo', '', Array, Array, Array, Array, Array)
+#3 {main}
+  thrown in /home4/jorginho/public_html/juniorista/Models/Connect.php on line 30
+[23-Aug-2026 14:06:28 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[24-Aug-2026 16:11:06 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[24-Aug-2026 16:11:06 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[24-Aug-2026 16:11:06 America/Bogota] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'idusuario' cannot be null in /home4/jorginho/public_html/juniorista/Models/Connect.php:30
+Stack trace:
+#0 /home4/jorginho/public_html/juniorista/Models/Connect.php(30): PDOStatement->execute(Array)
+#1 /home4/jorginho/public_html/juniorista/Models/Sell.php(59): Conexion->getReturnId('INSERT INTO ven...', Array)
+#2 /home4/jorginho/public_html/juniorista/Controllers/Sell.php(27): Sell->insertar('8', NULL, 'FACTURA-COMPRA', '2026-08-24', '', '83000.00', 'Efectivo', '', Array, Array, Array, Array, Array)
+#3 {main}
+  thrown in /home4/jorginho/public_html/juniorista/Models/Connect.php on line 30
+[28-Aug-2026 19:46:57 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[28-Aug-2026 19:46:57 America/Bogota] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1048 Column 'idusuario' cannot be null in /home4/jorginho/public_html/juniorista/Models/Connect.php:30
+Stack trace:
+#0 /home4/jorginho/public_html/juniorista/Models/Connect.php(30): PDOStatement->execute(Array)
+#1 /home4/jorginho/public_html/juniorista/Models/Sell.php(59): Conexion->getReturnId('INSERT INTO ven...', Array)
+#2 /home4/jorginho/public_html/juniorista/Controllers/Sell.php(27): Sell->insertar('8', NULL, 'FACTURA-COMPRA', '2026-08-28', '', '58000.00', 'Efectivo', '', Array, Array, Array, Array, Array)
+#3 {main}
+  thrown in /home4/jorginho/public_html/juniorista/Models/Connect.php on line 30
+[28-Aug-2026 19:46:57 America/Bogota] PHP Warning:  Undefined array key "idusuario" in /home4/jorginho/public_html/juniorista/Controllers/Sell.php on line 10
+[30-Aug-2026 17:11:27 America/Bogota] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1452 Cannot add or update a child row: a foreign key constraint fails (`jorginho_juniorista`.`ingreso`, CONSTRAINT `fk_ingreso_persona` FOREIGN KEY (`idproveedor`) REFERENCES `persona` (`idpersona`) ON DELETE NO ACTION ON UPDATE NO ACTION) in /home4/jorginho/public_html/juniorista/Models/Connect.php:24
+Stack trace:
+#0 /home4/jorginho/public_html/juniorista/Models/Connect.php(24): PDOStatement->execute(Array)
+#1 /home4/jorginho/public_html/juniorista/Models/Buy.php(57): Conexion->setData('UPDATE ingreso ...', Array)
+#2 /home4/jorginho/public_html/juniorista/Controllers/Buy.php(25): Buy->editar('133', '0', 'Boleta', '', '-JN-40-', '2026-08-27', '0.00', '49.00', Array, Array, Array, Array, Array)
+#3 {main}
+  thrown in /home4/jorginho/public_html/juniorista/Models/Connect.php on line 24
+[24-Sep-2026 15:18:13 America/Bogota] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry 'PECHERA NACIONAL TALLA GRANDE' for key 'nombre_UNIQUE' in /home4/jorginho/public_html/juniorista/Models/Connect.php:24
+Stack trace:
+#0 /home4/jorginho/public_html/juniorista/Models/Connect.php(24): PDOStatement->execute(Array)
+#1 /home4/jorginho/public_html/juniorista/Models/Product.php(21): Conexion->setData('INSERT INTO art...', Array)
+#2 /home4/jorginho/public_html/juniorista/Controllers/Product.php(30): Product->insertar('3', 'HEWG4069AD78', 'PECHERA NACIONA...', 'PECHERA', 'default.png')
+#3 {main}
+  thrown in /home4/jorginho/public_html/juniorista/Models/Connect.php on line 24
+[06-Oct-2026 14:24:47 America/Bogota] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1452 Cannot add or update a child row: a foreign key constraint fails (`jorginho_juniorista`.`ingreso`, CONSTRAINT `fk_ingreso_persona` FOREIGN KEY (`idproveedor`) REFERENCES `persona` (`idpersona`) ON DELETE NO ACTION ON UPDATE NO ACTION) in /home4/jorginho/public_html/juniorista/Models/Connect.php:24
+Stack trace:
+#0 /home4/jorginho/public_html/juniorista/Models/Connect.php(24): PDOStatement->execute(Array)
+#1 /home4/jorginho/public_html/juniorista/Models/Buy.php(57): Conexion->setData('UPDATE ingreso ...', Array)
+#2 /home4/jorginho/public_html/juniorista/Controllers/Buy.php(25): Buy->editar('140', '0', 'Boleta', '', '-JN-45-', '2026-10-01', '0.00', '74.00', Array, Array, Array, Array, Array)
+#3 {main}
+  thrown in /home4/jorginho/public_html/juniorista/Models/Connect.php on line 24
