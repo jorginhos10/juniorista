@@ -1,0 +1,353 @@
+/* ── CONFIGURACIÓN ─────────────────────────────────── */
+
+/* Título de sección */
+.cfg-section-title {
+    font-size: .7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    gap: .45rem;
+    margin-bottom: .75rem;
+}
+
+/* ── TABS DE VETERINARIAS ───────────────────────────── */
+.cfg-tabs-wrapper {
+    padding: 1rem 1.25rem .5rem;
+    border-bottom: 1px solid #f1f5f9;
+    overflow-x: auto;
+}
+
+.cfg-tabs {
+    display: flex;
+    gap: .35rem;
+    flex-wrap: nowrap;
+    border: none;
+}
+
+.cfg-tab-btn {
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+    padding: .45rem 1rem;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 8px;
+    background: #f8fafc;
+    color: #64748b;
+    font-size: .82rem;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all .18s;
+}
+
+.cfg-tab-btn:hover {
+    background: #ede9fe;
+    border-color: #c4b5fd;
+    color: #4f46e5;
+}
+
+.cfg-tab-btn.active {
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    border-color: transparent;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(79,70,229,.3);
+}
+
+.cfg-tab-body {
+    padding: 1.25rem 1.25rem .75rem;
+}
+
+.cfg-tab-footer {
+    display: flex;
+    align-items: center;
+    padding: .75rem 1.25rem 1.25rem;
+    border-top: 1px solid #f1f5f9;
+    flex-wrap: wrap;
+    gap: .5rem;
+}
+
+/* Tarjeta base */
+.cfg-card {
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.06);
+    overflow: hidden;
+    transition: box-shadow .2s;
+}
+
+.cfg-card:hover {
+    box-shadow: 0 4px 18px rgba(0,0,0,.09);
+}
+
+/* Encabezado de tarjeta */
+.cfg-card-header {
+    display: flex;
+    align-items: center;
+    gap: .9rem;
+    padding: 1.1rem 1.25rem .75rem;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.cfg-card-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+
+.cfg-card-title {
+    font-weight: 700;
+    font-size: .9rem;
+    color: #1e293b;
+}
+
+.cfg-card-desc {
+    font-size: .78rem;
+    color: #94a3b8;
+    margin-top: .1rem;
+}
+
+/* Cuerpo de tarjeta */
+.cfg-card-body {
+    padding: 1.1rem 1.25rem;
+}
+
+/* Pie de tarjeta */
+.cfg-card-footer {
+    display: flex;
+    align-items: center;
+    padding-top: 1rem;
+    margin-top: 1rem;
+    border-top: 1px solid #f1f5f9;
+}
+
+/* ── PERFIL ─────────────────────────────────────────── */
+.cfg-profile-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1.25rem;
+    text-align: center;
+}
+
+.cfg-profile-avatar {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    color: #fff;
+    font-size: 1.8rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: .75rem;
+    box-shadow: 0 4px 14px rgba(79,70,229,.35);
+}
+
+.cfg-profile-name {
+    font-weight: 700;
+    font-size: 1rem;
+    color: #1e293b;
+}
+
+.cfg-profile-email {
+    font-size: .78rem;
+    color: #94a3b8;
+    margin-top: .15rem;
+}
+
+.cfg-profile-stats {
+    display: flex;
+    gap: 1.5rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #f1f5f9;
+    width: 100%;
+    justify-content: center;
+}
+
+.cfg-profile-stat { text-align: center; }
+
+.cfg-stat-val {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.cfg-stat-lbl {
+    font-size: .7rem;
+    color: #94a3b8;
+    margin-top: .1rem;
+}
+
+/* ── SESIONES ───────────────────────────────────────── */
+.sesion-item {
+    display: flex;
+    align-items: center;
+    gap: .85rem;
+    padding: .75rem;
+    border-radius: 10px;
+    background: #f8fafc;
+}
+
+.sesion-actual {
+    border: 1px solid #e0f2fe;
+    background: #f0f9ff;
+}
+
+.sesion-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 9px;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    color: #4f46e5;
+    box-shadow: 0 1px 3px rgba(0,0,0,.08);
+    flex-shrink: 0;
+}
+
+.sesion-device {
+    font-size: .85rem;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.sesion-meta {
+    font-size: .72rem;
+    color: #94a3b8;
+    margin-top: .1rem;
+}
+
+/* ── NOTIFICACIONES ─────────────────────────────────── */
+.notif-list {
+    display: flex;
+    flex-direction: column;
+    gap: .1rem;
+}
+
+.notif-item {
+    display: flex;
+    align-items: center;
+    gap: .9rem;
+    padding: .8rem .5rem;
+    border-bottom: 1px solid #f8fafc;
+}
+
+.notif-item:last-child { border-bottom: none; }
+
+.notif-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .95rem;
+    flex-shrink: 0;
+}
+
+.notif-title {
+    font-size: .85rem;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.notif-desc {
+    font-size: .75rem;
+    color: #94a3b8;
+    margin-top: .1rem;
+}
+
+.cfg-toggle {
+    width: 2.4em;
+    height: 1.25em;
+    cursor: not-allowed;
+}
+
+/* ── SISTEMA — tarjetas de acción ───────────────────── */
+.cfg-action-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1.75rem 1.25rem;
+    text-align: center;
+}
+
+.cfg-action-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    margin-bottom: .85rem;
+}
+
+.cfg-action-title {
+    font-size: .95rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: .35rem;
+}
+
+.cfg-action-desc {
+    font-size: .78rem;
+    color: #94a3b8;
+    line-height: 1.5;
+}
+
+/* ── SYSINFO ────────────────────────────────────────── */
+.sysinfo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: .85rem;
+}
+
+.sysinfo-item {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    padding: .75rem;
+    background: #f8fafc;
+    border-radius: 10px;
+}
+
+.sysinfo-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .95rem;
+    flex-shrink: 0;
+}
+
+.sysinfo-label {
+    font-size: .72rem;
+    color: #94a3b8;
+    font-weight: 500;
+}
+
+.sysinfo-value {
+    font-size: .82rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-top: .1rem;
+    word-break: break-all;
+}
+
+/* Soft color faltante */
+.bg-secondary-soft { background: #f1f5f9; }
