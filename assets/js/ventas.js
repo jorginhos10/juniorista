@@ -337,6 +337,11 @@ function registrarVenta() {
     document.getElementById('fPagoTransferencia').value = montos.transferencia || '';
     document.getElementById('fPagoDatafono').value      = montos.datafono || '';
 
+    // Fecha: solo se envía si el usuario la cambió; si no, el servidor usa la hora del registro
+    const inpFecha = document.getElementById('fechaVenta');
+    document.getElementById('fFecha').value = inpFecha && inpFecha.value && inpFecha.value !== inpFecha.dataset.inicial
+        ? inpFecha.value : '';
+
     // fClienteId ya fue llenado por el autocomplete
     document.getElementById('fNotas').value       = document.getElementById('notasVenta').value;
     document.getElementById('fDescuento').value   = descuento;

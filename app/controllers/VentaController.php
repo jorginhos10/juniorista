@@ -509,6 +509,10 @@ class VentaController {
         if (!isset($_SESSION['usuario_id'])) { header('Location: ' . BASE_URL . '/'); exit; }
     }
 
+    private function esAdmin(): bool {
+        return ($_SESSION['usuario_rol'] ?? '') === 'admin';
+    }
+
     private function redirect(string $ruta): void {
         header('Location: ' . BASE_URL . '/' . $ruta); exit;
     }

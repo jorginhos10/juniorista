@@ -482,17 +482,19 @@ class VentaModel {
         $this->db->begin_transaction();
         try {
             $stmt = $this->db->prepare(
-                'INSERT INTO ventas (veterinaria_id, cliente_id, notas, descuento, subtotal, total, usuario_id, metodo_pago, pago_detalle)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+                'INSERT INTO ventas (veterinaria_id, cliente_id, notas, descuento, subtotal, total, usuario_id, metodo_pago, pago_detalle, created_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(?, NOW()))'
             );
             $clienteId = $cabecera['cliente_id'] ?: null;
             $metodo    = $cabecera['metodo_pago'] ?? null;
             $detalle   = $cabecera['pago_detalle'] ?? null;
-            $stmt->bind_param('iisdddiss',
+            $fecha     = $cabecera['fecha'] ?? null;   // null = ahora
+            $stmt->bind_param('iisdddisss',
                 $cabecera['veterinaria_id'], $clienteId,
                 $cabecera['notas'],          $cabecera['descuento'],
                 $cabecera['subtotal'],       $cabecera['total'],
-                $cabecera['usuario_id'],     $metodo, $detalle
+                $cabecera['usuario_id'],     $metodo, $detalle,
+                $fecha
             );
             $stmt->execute();
             $venta_id = (int)$this->db->insert_id;

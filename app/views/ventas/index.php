@@ -154,7 +154,11 @@
                 <div class="pos-factura-header">
                     <div class="d-flex align-items-center justify-content-between mb-3">
                         <span class="fw-bold fs-6">Factura</span>
-                        <span class="text-muted small"><?= date('d/m/Y H:i') ?></span>
+                        <!-- Fecha de la venta: por defecto ahora; se puede poner una fecha pasada -->
+                        <input type="datetime-local" class="form-control form-control-sm text-muted" id="fechaVenta"
+                               style="width:auto;" title="Fecha de la venta"
+                               value="<?= date('Y-m-d\TH:i') ?>" data-inicial="<?= date('Y-m-d\TH:i') ?>"
+                               max="<?= date('Y-m-d') ?>T23:59">
                     </div>
 
                     <!-- Cliente -->
@@ -242,7 +246,9 @@
                     <?php if (!empty($descuentos)): ?>
                     <div class="d-flex align-items-center justify-content-between mb-2 gap-2">
                         <label class="small text-muted mb-0">Descuento ($)
+                            <?php if (empty($esAdmin)): ?>
                             <span class="badge bg-success-subtle text-success ms-1" title="El administrador autorizó un descuento. Vale para una sola venta.">Autorizado · 1 venta</span>
+                            <?php endif; ?>
                         </label>
                         <div class="input-group input-group-sm" style="width:130px;">
                             <span class="input-group-text">$</span>
@@ -300,6 +306,7 @@
 <form method="POST" action="<?= BASE_URL ?>/ventas/registrar" id="formVentaOculto">
     <input type="hidden" name="veterinaria_id" value="<?= $veterinaria_id ?>">
     <input type="hidden" name="cliente_id"     id="fClienteId">
+    <input type="hidden" name="fecha"           id="fFecha">
     <input type="hidden" name="notas"           id="fNotas">
     <input type="hidden" name="metodo_pago"     id="fMetodoPago">
     <input type="hidden" name="pago_efectivo"      id="fPagoEfectivo">
