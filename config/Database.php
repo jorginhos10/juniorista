@@ -6,9 +6,9 @@ class Database {
     private mysqli $connection;
 
     private string $host     = 'localhost';
-    private string $user     = 'root';
-    private string $password = '';
-    private string $dbname   = 'petcontrol';
+    private string $user     = 'jorginho_juniorista';
+    private string $password = 'jorginho10.';
+    private string $dbname   = 'jorginho_juniorista';
 
     private function __construct() {
         $this->connection = new mysqli($this->host, $this->user, $this->password, $this->dbname);
