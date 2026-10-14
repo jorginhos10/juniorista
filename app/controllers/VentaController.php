@@ -27,7 +27,9 @@ class VentaController {
             'productos'      => $this->model->getProductos($veterinaria_id),
             'clientes'       => $this->model->getClientes($veterinaria_id),
             'relacionados'   => $this->mapaRelacionados(),
-            'descuentos'     => $this->auditoria()->descuentosHabilitados($veterinaria_id),
+            // El administrador siempre puede dar descuento; los demás, solo con la autorización de la app
+            'descuentos'     => $this->esAdmin() || $this->auditoria()->descuentosHabilitados($veterinaria_id),
+            'esAdmin'        => $this->esAdmin(),
             'veterinarias'   => $veterinarias,
             'veterinaria_id' => $veterinaria_id,
             'usuario'        => [
@@ -88,8 +90,10 @@ class VentaController {
 
         // El descuento lo autoriza el administrador desde la app, por sucursal y para UNA sola venta:
         // al registrar una venta con descuento, la autorización se consume y vuelve a quedar desactivado.
-        $subtotal  = $lineas['subtotal'];
-        $descuento = $this->auditoria()->descuentosHabilitados($veterinaria_id)
+        // El administrador siempre puede dar descuento y no consume esa autorización.
+        $subtotal         = $lineas['subtotal'];
+        $usaAutorizacion  = !$this->esAdmin();
+        $descuento = (!$usaAutorizacion || $this->auditoria()->descuentosHabilitados($veterinaria_id))
             ? min($subtotal, max(0, (float)($_POST['descuento_global'] ?? 0)))
             : 0.0;
         $total     = max(0, $subtotal - $descuento);
@@ -109,8 +113,25 @@ class VentaController {
             $pago_detalle = json_encode($montos);
         }
 
+        // Fecha de la venta: vacía = ahora. Se puede registrar con fecha pasada, nunca futura.
+        $fecha    = null;
+        $fechaTxt = trim($_POST['fecha'] ?? '');
+        if ($fechaTxt !== '') {
+            $dt = DateTime::createFromFormat('Y-m-d\TH:i', $fechaTxt);
+            if (!$dt || $dt->format('Y-m-d\TH:i') !== $fechaTxt) {
+                $_SESSION['flash_error'] = 'La fecha de la venta no es válida.';
+                $this->redirect('ventas' . $vetQuery);
+            }
+            if ($dt > new DateTime('+5 minutes')) {
+                $_SESSION['flash_error'] = 'La fecha de la venta no puede ser futura.';
+                $this->redirect('ventas' . $vetQuery);
+            }
+            $fecha = $dt->format('Y-m-d H:i:s');
+        }
+
         $cabecera = [
             'veterinaria_id' => $veterinaria_id,
+            'fecha'          => $fecha,
             'cliente_id'     => (int)($_POST['cliente_id'] ?? 0),
             'metodo_pago'    => $metodo_pago,
             'pago_detalle'   => $pago_detalle,
@@ -126,7 +147,7 @@ class VentaController {
             ? 'Venta registrada correctamente. Stock actualizado.'
             : 'Error al registrar la venta.';
 
-        if ($ok && $descuento > 0) {
+        if ($ok && $descuento > 0 && $usaAutorizacion) {
             $this->auditoria()->setDescuentos($veterinaria_id, false);
             $_SESSION['flash_success'] .= ' Se usó el descuento autorizado: queda desactivado hasta que el administrador lo active de nuevo.';
         }
