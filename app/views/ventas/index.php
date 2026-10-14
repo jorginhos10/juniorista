@@ -183,7 +183,8 @@
                     const _inpCliente   = document.getElementById('inputCliente');
                     const _sugerencias  = document.getElementById('clienteSugerencias');
                     const _btnLimpiar   = document.getElementById('btnLimpiarCliente');
-                    const _fClienteId   = document.getElementById('fClienteId');
+                    // El campo oculto está en el formulario de más abajo: se busca al usarlo, no al cargar este script
+                    const _fClienteId   = { set value(v) { document.getElementById('fClienteId').value = v; } };
 
                     function renderSugerencias(lista) {
                         _sugerencias.innerHTML = '';
