@@ -1,5 +1,6 @@
 <?php
 
+<<<<<<< HEAD
 define('ROOT', __DIR__);
 define('BASE_URL', '/petcontrol');
 
@@ -589,3 +590,14 @@ switch ($uri) {
         echo '<h1>404 - Página no encontrada</h1>';
         break;
 }
+=======
+// Sin caché en las páginas, para que cada deploy se vea al recargar.
+header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+header("Pragma: no-cache");
+header("Expires: 0");
+
+require_once "Controllers/Plantilla.php";
+
+$plantilla = new Plantilla();
+$plantilla -> mostrarPlantilla();
+>>>>>>> parent of c4dd2d6 (eliminado juniorista)

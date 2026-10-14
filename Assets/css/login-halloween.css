@@ -1,0 +1,495 @@
+/* Login con la apariencia Halloween (copiada del login de Violet). Todo cuelga de .hwl para no chocar con el template. */
+
+html,
+body.hwl-body {
+  height: 100%;
+  margin: 0;
+  background: #0f0817;
+}
+
+.hwl {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+.hwl *,
+.hwl *::before,
+.hwl *::after {
+  box-sizing: border-box;
+}
+
+.hwl svg {
+  display: block;
+  overflow: visible;
+}
+
+/* ---------- Panel izquierdo ---------- */
+
+.hwl__brand {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 4rem 3.5rem;
+  overflow: hidden;
+  color: #f5ecd7;
+  background: linear-gradient(165deg, #160f0a 0%, #1f1030 55%, #3d2410 100%);
+}
+
+.hwl__scene {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.hwl__scene::after {
+  content: '';
+  position: absolute;
+  left: -10%;
+  right: -10%;
+  bottom: 0;
+  height: 140px;
+  background: linear-gradient(to top, rgba(61, 36, 16, 0.55), transparent);
+}
+
+.hwl__stars {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image:
+    radial-gradient(1.2px 1.2px at 30px 40px, rgba(255, 244, 220, 0.8), transparent),
+    radial-gradient(1px 1px at 120px 90px, rgba(255, 244, 220, 0.6), transparent),
+    radial-gradient(1.4px 1.4px at 210px 30px, rgba(255, 244, 220, 0.75), transparent),
+    radial-gradient(1px 1px at 290px 120px, rgba(255, 244, 220, 0.5), transparent),
+    radial-gradient(1.2px 1.2px at 340px 60px, rgba(255, 244, 220, 0.7), transparent),
+    radial-gradient(1px 1px at 70px 170px, rgba(255, 244, 220, 0.5), transparent),
+    radial-gradient(1.2px 1.2px at 250px 210px, rgba(255, 244, 220, 0.6), transparent);
+  background-size: 380px 260px;
+  -webkit-mask-image: linear-gradient(#000 30%, transparent);
+  mask-image: linear-gradient(#000 30%, transparent);
+}
+
+.hwl__moon {
+  position: absolute;
+  top: -40px;
+  right: -60px;
+  width: 340px;
+  opacity: 0.9;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 220, 140, 0.34) 0%, rgba(255, 200, 110, 0.12) 40%, rgba(255, 200, 110, 0) 70%);
+}
+
+.hwl__castle {
+  position: absolute;
+  left: -30px;
+  bottom: -8px;
+  width: 340px;
+}
+
+.hwl__castle .win {
+  animation: hwl-flicker 3.8s ease-in-out infinite;
+}
+
+.hwl__wolf {
+  position: absolute;
+  right: 24px;
+  bottom: 10px;
+  width: 130px;
+}
+
+.hwl__bat {
+  position: absolute;
+  color: #3a1b5c;
+  animation: hwl-bobbat 3.4s ease-in-out infinite;
+}
+
+.hwl__bat path {
+  transform-box: fill-box;
+  transform-origin: 50% 40%;
+  animation: hwl-flap 0.55s ease-in-out infinite;
+}
+
+.hwl__bat--a {
+  top: 90px;
+  right: 30%;
+  width: 34px;
+}
+
+.hwl__bat--b {
+  top: 150px;
+  right: 18%;
+  width: 22px;
+  opacity: 0.85;
+  animation-delay: -1.2s;
+}
+
+.hwl__bat--c {
+  top: 60px;
+  left: 46%;
+  width: 18px;
+  opacity: 0.8;
+  animation-delay: -2.1s;
+}
+
+.hwl__web {
+  position: absolute;
+  z-index: 1;
+  width: 130px;
+  color: rgba(234, 220, 255, 0.3);
+  pointer-events: none;
+}
+
+.hwl__web path {
+  stroke: currentColor;
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.hwl__web--tl {
+  top: 0;
+  left: 0;
+}
+
+.hwl__web--tr {
+  top: 0;
+  right: 0;
+  transform: scaleX(-1);
+}
+
+.hwl__spider {
+  position: absolute;
+  top: 0;
+  right: 96px;
+  z-index: 2;
+  width: 40px;
+  transform-origin: 50% 0;
+  animation: hwl-swing 3.6s ease-in-out infinite;
+}
+
+.hwl__brand-content {
+  position: relative;
+  z-index: 2;
+  max-width: 420px;
+}
+
+.hwl__logo {
+  display: inline-block;
+  width: 190px;
+  margin-bottom: 1.75rem;
+}
+
+.hwl__logo img {
+  display: block;
+  width: 100%;
+  height: auto;
+  filter: url(#hwl-logo-outline) drop-shadow(0 6px 14px rgba(0, 0, 0, 0.35));
+}
+
+.hwl__subtitle {
+  margin: 0 0 2.25rem;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: #d9c7ee;
+}
+
+.hwl__features {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.hwl__features li {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.95rem;
+  color: #f5ecd7;
+}
+
+.hwl__features svg {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  color: #ff9a3c;
+}
+
+/* ---------- Panel derecho ---------- */
+
+.hwl__form-side {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 2.5rem;
+  overflow-y: auto;
+  background:
+    radial-gradient(60% 40% at 82% 0%, rgba(124, 31, 160, 0.24), rgba(124, 31, 160, 0)),
+    radial-gradient(50% 40% at 10% 100%, rgba(255, 117, 24, 0.1), rgba(255, 117, 24, 0)),
+    #0f0817;
+}
+
+.hwl__form {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 400px;
+}
+
+.hwl__form-title {
+  margin: 0 0 0.4rem;
+  font-family: 'Creepster', cursive;
+  font-weight: 400;
+  font-size: 2.6rem;
+  line-height: 1;
+  letter-spacing: 0.6px;
+  background: linear-gradient(180deg, #ffd08a 0%, #ff9a3c 45%, #ff6a13 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 2px 10px rgba(255, 117, 24, 0.45));
+}
+
+.hwl__form-subtitle {
+  margin: 0 0 2rem;
+  font-size: 0.95rem;
+  color: #b9a8c9;
+}
+
+.hwl__field {
+  margin-bottom: 1.25rem;
+}
+
+.hwl__field label {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #d9c7ee;
+}
+
+.hwl__control {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.hwl__control input {
+  width: 100%;
+  height: auto;
+  margin: 0;
+  padding: 0.75rem 0.9rem 0.75rem 2.75rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+  color: #f5ecd7;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 140, 50, 0.28);
+  border-radius: 10px;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.hwl__control input::placeholder {
+  color: #8f7ea6;
+}
+
+.hwl__control input:focus {
+  border-color: #ff9a3c;
+  box-shadow: 0 0 0 4px rgba(255, 117, 24, 0.16);
+}
+
+.hwl__control input#clave {
+  padding-right: 2.9rem;
+}
+
+.hwl__icon {
+  position: absolute;
+  left: 0.85rem;
+  width: 18px;
+  height: 18px;
+  color: #a794bb;
+  pointer-events: none;
+}
+
+.hwl__toggle {
+  position: absolute;
+  right: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  color: #a794bb;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.hwl__toggle svg {
+  width: 18px;
+  height: 18px;
+}
+
+.hwl__toggle:hover {
+  color: #ffb469;
+  background: rgba(255, 117, 24, 0.14);
+}
+
+.hwl__submit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  margin-top: 1.75rem;
+  padding: 0.85rem;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #2a1206;
+  background: linear-gradient(180deg, #ff9a3c 0%, #ff6a13 55%, #e8560a 100%);
+  border: 2px solid #ffb469;
+  border-radius: 10px;
+  box-shadow: 0 8px 26px rgba(255, 117, 24, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  cursor: pointer;
+  transition: opacity 0.15s ease, transform 0.05s ease;
+}
+
+.hwl__submit svg {
+  width: 18px;
+  height: 18px;
+}
+
+.hwl__submit:hover {
+  opacity: 0.92;
+}
+
+.hwl__submit:active {
+  transform: translateY(1px);
+}
+
+.hwl__footer {
+  margin: 2rem 0 0;
+  font-size: 0.78rem;
+  text-align: center;
+  color: #b9a8c9;
+}
+
+/* ---------- Animaciones ---------- */
+
+@keyframes hwl-swing {
+  0%, 100% { transform: rotate(-5deg); }
+  50% { transform: rotate(5deg); }
+}
+
+@keyframes hwl-flap {
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(0.55); }
+}
+
+@keyframes hwl-bobbat {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(6px, -8px); }
+}
+
+@keyframes hwl-flicker {
+  0%, 100% { opacity: 1; }
+  42% { opacity: 0.8; }
+  48% { opacity: 0.35; }
+  54% { opacity: 0.95; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hwl * {
+    animation: none !important;
+  }
+}
+
+/* ---------- Mobile: una sola columna, la marca arriba y compacta ---------- */
+
+@media (max-width: 900px) {
+  .hwl {
+    grid-template-columns: 1fr;
+    height: auto;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+
+  .hwl__brand {
+    order: -1;
+    padding: 2.25rem 1.5rem 1.75rem;
+  }
+
+  .hwl__moon {
+    top: -20px;
+    right: -30px;
+    width: 150px;
+  }
+
+  .hwl .hwl__castle,
+  .hwl .hwl__wolf,
+  .hwl .hwl__bat--c {
+    display: none;
+  }
+
+  .hwl__bat--a {
+    top: 14px;
+    right: 20%;
+    width: 22px;
+  }
+
+  .hwl__bat--b {
+    top: 40px;
+    right: 10%;
+    width: 16px;
+  }
+
+  .hwl__logo {
+    width: 108px;
+    margin-bottom: 0.85rem;
+  }
+
+  .hwl__subtitle {
+    margin: 0;
+    font-size: 0.88rem;
+  }
+
+  .hwl__features {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem 0.75rem;
+    margin-top: 1rem;
+  }
+
+  .hwl__features li {
+    align-items: flex-start;
+    gap: 0.4rem;
+    font-size: 0.74rem;
+    line-height: 1.3;
+  }
+
+  .hwl__features svg {
+    width: 15px;
+    height: 15px;
+    margin-top: 1px;
+  }
+
+  .hwl__form-side {
+    height: auto;
+    overflow: visible;
+    padding: 1.75rem 1.5rem 2rem;
+  }
+}
