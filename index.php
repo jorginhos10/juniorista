@@ -1,7 +1,8 @@
 <?php
 
 define('ROOT', __DIR__);
-define('BASE_URL', '/petcontrol');
+// Carpeta web donde vive el sistema, detectada sola: '/petcontrol' en XAMPP, '' en la raíz de un (sub)dominio
+define('BASE_URL', rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'])), '/'));
 
 // Hora local de la clínica (UTC-5): «hoy» en citas, cierres y reportes coincide con el reloj del equipo y de MySQL
 date_default_timezone_set('America/Bogota');
@@ -26,7 +27,7 @@ set_exception_handler(function (Throwable $e) {
 
 // Router simple
 $uri = trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/');
-$uri = preg_replace('#^petcontrol/?#', '', $uri);
+$uri = preg_replace('#^' . preg_quote(ltrim(BASE_URL, '/'), '#') . '/?#', '', $uri);
 
 // API de la app de auditoría: no usa la sesión del navegador ni el token anti-CSRF; se autentica con su propio token
 if (str_starts_with($uri, 'api/')) {
