@@ -243,7 +243,8 @@ function confirmarVenta() {
     document.querySelectorAll('.pos-pago-monto').forEach(i => { i.value = ''; });
     fotosComprobante = [];
     pintarFotosComprobante();
-    seleccionarMetodoPago('');
+    // Al editar se propone el método que ya tenía la venta (en mixto hay que repartir de nuevo los montos)
+    seleccionarMetodoPago(typeof VENTA_EDITAR !== 'undefined' && VENTA_EDITAR ? (VENTA_EDITAR.metodo_pago || '') : '');
     bootstrap.Modal.getOrCreateInstance(document.getElementById('modalMetodoPago')).show();
 }
 
@@ -437,4 +438,27 @@ function verDetalle(id, cliente) {
                     </table>
                 </div>`;
         });
+}
+
+// ── EDICIÓN DE UNA VENTA ──────────────────────────────
+// Desde Facturación (?editar=ID): se cargan sus productos (con el precio con que se vendieron) y su cliente
+if (typeof VENTA_EDITAR !== 'undefined' && VENTA_EDITAR) {
+    VENTA_EDITAR.lineas.forEach(l => {
+        const id = String(l.producto_id);
+        carrito[id] = {
+            nombre:   l.nombre,
+            precio:   l.precio,
+            unidad:   l.unidad,
+            stock:    Math.max(parseInt(STOCK_MAP[id] ?? 0), l.cantidad),
+            cantidad: l.cantidad,
+        };
+        actualizarBadge(id);
+    });
+    renderCarrito();
+
+    if (VENTA_EDITAR.cliente_id) {
+        document.getElementById('fClienteId').value = VENTA_EDITAR.cliente_id;
+        document.getElementById('inputCliente').value = VENTA_EDITAR.cliente_nombre || '';
+        document.getElementById('btnLimpiarCliente').style.display = '';
+    }
 }

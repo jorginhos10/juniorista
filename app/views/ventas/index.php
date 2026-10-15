@@ -19,12 +19,18 @@
         <!-- Topbar -->
         <header class="topbar">
             <div class="topbar-left">
-                <h5 class="topbar-title mb-0">Punto de Venta</h5>
+                <h5 class="topbar-title mb-0"><?= $editar ? 'Editar venta' : 'Punto de Venta' ?></h5>
                 <p class="topbar-date mb-0"><?= date('l, d \d\e F \d\e Y') ?></p>
             </div>
             <div class="topbar-right">
                 <!-- Veterinaria -->
                 <?php require ROOT . '/app/views/layouts/vet_selector.php'; ?>
+
+                <?php if ($editar): ?>
+                <a href="<?= BASE_URL ?>/facturacion" class="btn btn-outline-danger btn-sm">
+                    <i class="bi bi-x-lg me-1"></i> Cancelar edición
+                </a>
+                <?php endif; ?>
 
                 <!-- Historial -->
                 <a href="<?= BASE_URL ?>/ventas/historial" class="btn btn-outline-secondary btn-sm">
@@ -153,11 +159,12 @@
                 <!-- Encabezado factura -->
                 <div class="pos-factura-header">
                     <div class="d-flex align-items-center justify-content-between mb-3">
-                        <span class="fw-bold fs-6">Factura</span>
+                        <span class="fw-bold fs-6"><?= $editar ? 'Editando factura' : 'Factura' ?></span>
                         <!-- Fecha de la venta: por defecto ahora; se puede poner una fecha pasada -->
                         <input type="datetime-local" class="form-control form-control-sm text-muted" id="fechaVenta"
                                style="width:auto;" title="Fecha de la venta"
-                               value="<?= date('Y-m-d\TH:i') ?>" data-inicial="<?= date('Y-m-d\TH:i') ?>"
+                               <?php $_fechaIni = $editar ? date('Y-m-d\TH:i', strtotime($editar['created_at'])) : date('Y-m-d\TH:i'); ?>
+                               value="<?= $_fechaIni ?>" data-inicial="<?= $_fechaIni ?>"
                                max="<?= date('Y-m-d') ?>T23:59">
                     </div>
 
@@ -254,7 +261,7 @@
                         <div class="input-group input-group-sm" style="width:130px;">
                             <span class="input-group-text">$</span>
                             <input type="number" class="form-control text-end" id="descuentoInput"
-                                min="0" step="0.01" value="0" oninput="actualizarTotales()">
+                                min="0" step="0.01" value="<?= $editar ? (float)$editar['descuento'] : 0 ?>" oninput="actualizarTotales()">
                         </div>
                     </div>
                     <?php else: ?>
@@ -263,7 +270,7 @@
                         <label class="small text-muted mb-0">Descuento ($)</label>
                         <div class="input-group input-group-sm" style="width:130px;">
                             <span class="input-group-text">$</span>
-                            <input type="number" class="form-control text-end" id="descuentoInput" value="0" disabled>
+                            <input type="number" class="form-control text-end" id="descuentoInput" value="<?= $editar ? (float)$editar['descuento'] : 0 ?>" disabled>
                         </div>
                     </div>
                     <?php endif; ?>
@@ -285,11 +292,11 @@
 
                     <!-- Notas -->
                     <input type="text" class="form-control form-control-sm mb-3" id="notasVenta"
-                        placeholder="Notas u observaciones…">
+                        placeholder="Notas u observaciones…" value="<?= htmlspecialchars($editar['notas'] ?? '') ?>">
 
                     <!-- Botones -->
                     <button class="btn btn-success w-100 fw-bold py-2" id="btnConfirmar" onclick="confirmarVenta()" disabled>
-                        <i class="bi bi-bag-check-fill me-2"></i> Confirmar Venta
+                        <i class="bi bi-bag-check-fill me-2"></i> <?= $editar ? 'Guardar cambios' : 'Confirmar Venta' ?>
                     </button>
                     <button class="btn btn-outline-danger btn-sm w-100 mt-2" onclick="limpiarCarrito()">
                         <i class="bi bi-trash me-1"></i> Limpiar carrito
@@ -306,6 +313,7 @@
 <!-- ── FORM OCULTO PARA SUBMIT ───────────────────────── -->
 <form method="POST" action="<?= BASE_URL ?>/ventas/registrar" id="formVentaOculto">
     <input type="hidden" name="veterinaria_id" value="<?= $veterinaria_id ?>">
+    <input type="hidden" name="venta_id"       value="<?= $editar ? (int)$editar['id'] : '' ?>">
     <input type="hidden" name="cliente_id"     id="fClienteId">
     <input type="hidden" name="fecha"           id="fFecha">
     <input type="hidden" name="notas"           id="fNotas">
@@ -382,7 +390,7 @@
             <div class="modal-footer border-0 pt-0">
                 <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
                 <button type="button" class="btn btn-success fw-bold px-4" id="btnRegistrarVenta" onclick="registrarVenta()" disabled>
-                    <i class="bi bi-bag-check-fill me-2"></i>Registrar venta
+                    <i class="bi bi-bag-check-fill me-2"></i><?= $editar ? 'Guardar cambios' : 'Registrar venta' ?>
                 </button>
             </div>
         </div>
@@ -412,6 +420,13 @@
 const STOCK_MAP = <?= json_encode(array_column($productos, 'stock', 'id')) ?>;
 const RELACIONADOS = <?= json_encode((object)($relacionados ?? [])) ?>;
 const BASE_URL  = '<?= BASE_URL ?>';
+// Venta que se está editando (null = venta nueva): ventas.js la carga en el carrito
+const VENTA_EDITAR = <?= json_encode($editar ? [
+    'cliente_id'     => (int)$editar['cliente_id'],
+    'cliente_nombre' => $editar['cliente_nombre'],
+    'metodo_pago'    => $editar['metodo_pago'],
+    'lineas'         => $editar['lineas'],
+] : null) ?>;
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="<?= BASE_URL ?>/assets/js/camara.js"></script>

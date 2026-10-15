@@ -524,6 +524,88 @@ class VentaModel {
         }
     }
 
+    /** Venta activa de la sucursal con sus líneas, para abrirla en el punto de venta en modo edición */
+    public function getParaEditar(int $id, int $veterinaria_id): ?array {
+        $stmt = $this->db->prepare(
+            "SELECT v.id, v.veterinaria_id, v.cliente_id, v.notas, v.descuento, v.metodo_pago, v.pago_detalle, v.created_at,
+                    CONCAT(c.nombre, ' ', c.apellido) AS cliente_nombre
+               FROM ventas v
+          LEFT JOIN clientes c ON c.id = v.cliente_id
+              WHERE v.id = ? AND v.veterinaria_id = ? AND v.estado <> 'anulada'"
+        );
+        $stmt->bind_param('ii', $id, $veterinaria_id);
+        $stmt->execute();
+        $venta = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+        if (!$venta) return null;
+
+        $venta['lineas'] = array_map(fn($d) => [
+            'producto_id' => (int)$d['producto_id'],
+            'nombre'      => $d['producto_nombre'],
+            'unidad'      => $d['unidad'],
+            'cantidad'    => (int)$d['cantidad'],
+            'precio'      => (float)$d['precio_unitario'],
+        ], $this->getDetalles($id));
+        return $venta;
+    }
+
+    /**
+     * Reemplaza los productos y los datos de una venta. Todo en una transacción: el stock de las líneas
+     * anteriores vuelve al inventario y se descuenta el de las nuevas, como si se anulara y se registrara de nuevo.
+     */
+    public function actualizar(int $id, array $cabecera, array $lineas): bool {
+        $this->db->begin_transaction();
+        try {
+            $r   = $this->db->query("SELECT veterinaria_id, estado FROM ventas WHERE id = $id FOR UPDATE");
+            $row = $r ? $r->fetch_assoc() : null;
+            if (!$row || $row['estado'] === 'anulada' || (int)$row['veterinaria_id'] !== (int)$cabecera['veterinaria_id']) {
+                $this->db->rollback();
+                return false;
+            }
+            $vet = (int)$row['veterinaria_id'];
+
+            foreach ($this->getDetalles($id) as $d) {
+                $this->incrementarStock($vet, (int)$d['producto_id'], (int)$d['cantidad']);
+            }
+            $this->db->query("DELETE FROM venta_detalles WHERE venta_id = $id");
+
+            $ins = $this->db->prepare(
+                'INSERT INTO venta_detalles (venta_id, producto_id, cantidad, precio_unitario, descuento)
+                 VALUES (?, ?, ?, ?, ?)'
+            );
+            foreach ($lineas as $l) {
+                $pid  = (int)$l['producto_id'];
+                $cant = (int)$l['cantidad'];
+                $prec = (float)$l['precio_unitario'];
+                $desc = (float)($l['descuento'] ?? 0);
+                $ins->bind_param('iiidd', $id, $pid, $cant, $prec, $desc);
+                $ins->execute();
+                $this->decrementarStock($vet, $pid, $cant);
+            }
+            $ins->close();
+
+            $clienteId = $cabecera['cliente_id'] ?: null;
+            $fecha     = $cabecera['fecha'] ?? null;   // null = se conserva la fecha original
+            $stmt = $this->db->prepare(
+                'UPDATE ventas SET cliente_id = ?, notas = ?, descuento = ?, subtotal = ?, total = ?,
+                                   metodo_pago = ?, pago_detalle = ?, created_at = COALESCE(?, created_at)
+                 WHERE id = ?'
+            );
+            $stmt->bind_param('isdddsssi',
+                $clienteId, $cabecera['notas'], $cabecera['descuento'], $cabecera['subtotal'], $cabecera['total'],
+                $cabecera['metodo_pago'], $cabecera['pago_detalle'], $fecha, $id
+            );
+            $stmt->execute();
+            $stmt->close();
+
+            $this->db->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->db->rollback();
+            return false;
+        }
+    }
+
     public function anular(int $id): bool {
         $r   = $this->db->query("SELECT veterinaria_id, estado FROM ventas WHERE id = $id");
         $row = $r->fetch_assoc();

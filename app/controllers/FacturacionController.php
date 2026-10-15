@@ -152,7 +152,7 @@ class FacturacionController {
                 ? 'El abono debe ser mayor a cero.'
                 : (new TratamientoModel())->actualizarAbono($id, $veterinaria_id, $monto, $fecha, mb_substr(trim($_POST['nota'] ?? ''), 0, 150));
         } else {
-            $error = 'Las ventas no se pueden editar: anúlala y regístrala de nuevo.';
+            $error = 'Este movimiento no se puede editar aquí.';
         }
 
         $_SESSION[$error === '' ? 'flash_success' : 'flash_error'] = $error === '' ? 'Movimiento actualizado.' : $error;

@@ -246,10 +246,10 @@ $url = fn(array $cambios) => BASE_URL . '/facturacion?' . http_build_query(array
                                     <td class="text-end monto"><?= $money($m['monto']) ?></td>
                                     <td class="text-center pe-3">
                                         <?php
-                                            $puedeEditar   = !$m['anulada'] && $m['tipo'] !== 'venta' && !$m['tratamiento_cancelado'];
+                                            $puedeEditar   = !$m['anulada'] && !$m['tratamiento_cancelado'];
                                             $puedeCancelar = !$m['anulada'] && ($m['tipo'] !== 'tratamiento' || $esAdmin);
                                             $motivoEditar  = $m['anulada'] ? 'Movimiento anulado'
-                                                : ($m['tratamiento_cancelado'] ? 'El tratamiento está cancelado' : 'Las ventas no se editan: anúlala y regístrala de nuevo');
+                                                : 'El tratamiento está cancelado';
                                             $motivoCancel  = $m['anulada'] ? 'Ya está anulado' : 'Solo un administrador puede anular abonos';
                                         ?>
                                         <div class="d-flex justify-content-center gap-1">
@@ -396,6 +396,8 @@ const money = n => '$' + Number(n).toLocaleString('en-US', { minimumFractionDigi
 const $id   = id => document.getElementById(id);
 
 async function editarMov(m) {
+    // Las ventas se editan en el punto de venta (productos, cantidades, cliente, fecha y pago)
+    if (m.tipo === 'venta') { location.href = BASE + '/ventas?editar=' + m.id; return; }
     $id('ed-tipo').value  = m.tipo;
     $id('ed-id').value    = m.id;
     $id('ed-monto').value = Number(m.monto).toFixed(2);

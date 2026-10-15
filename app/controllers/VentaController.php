@@ -20,11 +20,29 @@ class VentaController {
             $_SESSION['veterinaria_id'] = $veterinaria_id;
         }
 
+        // Modo edición (?editar=ID, desde Facturación): el punto de venta se abre con la venta cargada
+        $editar    = null;
+        $productos = $this->model->getProductos($veterinaria_id);
+        if (isset($_GET['editar'])) {
+            $editar = $this->model->getParaEditar((int)$_GET['editar'], $veterinaria_id);
+            if (!$editar) {
+                $_SESSION['flash_error'] = 'La venta no existe, está anulada o es de otra sucursal.';
+                $this->redirect('facturacion');
+            }
+            // Lo que ya tiene la venta vuelve al inventario al guardar: cuenta como disponible
+            $cantOriginal = array_column($editar['lineas'], 'cantidad', 'producto_id');
+            foreach ($productos as &$p) {
+                $p['stock'] = (int)$p['stock'] + ($cantOriginal[(int)$p['id']] ?? 0);
+            }
+            unset($p);
+        }
+
         $datos = [
             'activePage'     => 'ventas',
+            'editar'         => $editar,
             'ventas'         => $this->model->getAll($veterinaria_id),
             'totales'        => $this->model->getTotales($veterinaria_id),
-            'productos'      => $this->model->getProductos($veterinaria_id),
+            'productos'      => $productos,
             'clientes'       => $this->model->getClientes($veterinaria_id),
             'relacionados'   => $this->mapaRelacionados(),
             // El administrador siempre puede dar descuento; los demás, solo con la autorización de la app
@@ -59,43 +77,60 @@ class VentaController {
         $vetQuery       = $veterinaria_id > 0 ? '?vet=' . $veterinaria_id : '';
         $lineas         = $this->extraerLineas($_POST);
 
+        // Edición: venta_id > 0 reemplaza esa venta (misma sucursal y no anulada) en vez de crear una nueva
+        $venta_id = (int)($_POST['venta_id'] ?? 0);
+        $original = null;
+        if ($venta_id > 0) {
+            $original = $this->model->getParaEditar($venta_id, $veterinaria_id);
+            if (!$original) {
+                $_SESSION['flash_error'] = 'La venta no existe, está anulada o es de otra sucursal.';
+                $this->redirect('facturacion');
+            }
+        }
+        $volver = $venta_id > 0 ? 'ventas?editar=' . $venta_id : 'ventas' . $vetQuery;
+
         if ($veterinaria_id <= 0) {
             $_SESSION['flash_error'] = 'Selecciona una veterinaria.';
-            $this->redirect('ventas' . $vetQuery);
+            $this->redirect($volver);
         }
 
         if (empty($lineas['items'])) {
             $_SESSION['flash_error'] = 'Agrega al menos un producto a la venta.';
-            $this->redirect('ventas' . $vetQuery);
+            $this->redirect($volver);
         }
 
-        $errores = $this->model->validarStock($lineas['items'], $veterinaria_id);
+        // Al editar, lo que ya tenía la venta cuenta como disponible (vuelve al inventario antes de descontar)
+        $errores = $this->model->validarStock($lineas['items'], $veterinaria_id, $venta_id);
         if (!empty($errores)) {
             $_SESSION['flash_error'] = 'Stock insuficiente: ' . implode(' / ', $errores);
-            $this->redirect('ventas' . $vetQuery);
+            $this->redirect($volver);
         }
 
         $metodo_pago = $_POST['metodo_pago'] ?? '';
         if (!isset(VentaModel::METODOS_PAGO[$metodo_pago])) {
             $_SESSION['flash_error'] = 'Selecciona el método de pago de la venta.';
-            $this->redirect('ventas' . $vetQuery);
+            $this->redirect($volver);
         }
 
         // El cliente debe ser de la misma sucursal de la venta
         $cliente_id = (int)($_POST['cliente_id'] ?? 0);
         if ($cliente_id > 0 && !$this->model->clienteEsDe($cliente_id, $veterinaria_id)) {
             $_SESSION['flash_error'] = 'El cliente seleccionado no pertenece a esta sucursal.';
-            $this->redirect('ventas' . $vetQuery);
+            $this->redirect($volver);
         }
 
         // El descuento lo autoriza el administrador desde la app, por sucursal y para UNA sola venta:
         // al registrar una venta con descuento, la autorización se consume y vuelve a quedar desactivado.
         // El administrador siempre puede dar descuento y no consume esa autorización.
+        // Al editar sin autorización se conserva el descuento que ya tenía la venta.
         $subtotal         = $lineas['subtotal'];
         $usaAutorizacion  = !$this->esAdmin();
-        $descuento = (!$usaAutorizacion || $this->auditoria()->descuentosHabilitados($veterinaria_id))
-            ? min($subtotal, max(0, (float)($_POST['descuento_global'] ?? 0)))
-            : 0.0;
+        $descOriginal     = $original ? (float)$original['descuento'] : 0.0;
+        $descPedido       = max(0, (float)($_POST['descuento_global'] ?? 0));
+        $puedeDescontar   = !$usaAutorizacion || $this->auditoria()->descuentosHabilitados($veterinaria_id);
+        $descuento        = min($subtotal, $puedeDescontar ? $descPedido : $descOriginal);
+        // Solo se gasta la autorización si se aplicó un descuento nuevo o distinto al que ya tenía
+        $consumeAutorizacion = $usaAutorizacion && $puedeDescontar && $descuento > 0 && abs($descuento - $descOriginal) > 0.009;
         $total     = max(0, $subtotal - $descuento);
 
         // Pago mixto: los montos por método deben ser al menos dos y sumar el total de la venta
@@ -108,7 +143,7 @@ class VentaController {
             }
             if (count($montos) < 2 || abs(array_sum($montos) - $total) > 0.009) {
                 $_SESSION['flash_error'] = 'En un pago mixto indica el monto de al menos dos métodos y que sumen el total de la venta.';
-                $this->redirect('ventas' . $vetQuery);
+                $this->redirect($volver);
             }
             $pago_detalle = json_encode($montos);
         }
@@ -120,11 +155,11 @@ class VentaController {
             $dt = DateTime::createFromFormat('Y-m-d\TH:i', $fechaTxt);
             if (!$dt || $dt->format('Y-m-d\TH:i') !== $fechaTxt) {
                 $_SESSION['flash_error'] = 'La fecha de la venta no es válida.';
-                $this->redirect('ventas' . $vetQuery);
+                $this->redirect($volver);
             }
             if ($dt > new DateTime('+5 minutes')) {
                 $_SESSION['flash_error'] = 'La fecha de la venta no puede ser futura.';
-                $this->redirect('ventas' . $vetQuery);
+                $this->redirect($volver);
             }
             $fecha = $dt->format('Y-m-d H:i:s');
         }
@@ -142,12 +177,20 @@ class VentaController {
             'usuario_id'     => (int)($_SESSION['usuario_id'] ?? 0),
         ];
 
-        $ok = $this->model->crear($cabecera, $lineas['items']);
-        $_SESSION[$ok ? 'flash_success' : 'flash_error'] = $ok
-            ? 'Venta registrada correctamente. Stock actualizado.'
-            : 'Error al registrar la venta.';
+        if ($venta_id > 0) {
+            $ok = $this->model->actualizar($venta_id, $cabecera, $lineas['items']);
+            $_SESSION[$ok ? 'flash_success' : 'flash_error'] = $ok
+                ? 'Venta actualizada. El stock se ajustó con los cambios.'
+                : 'Error al actualizar la venta. No se guardaron cambios.';
+        } else {
+            $ok = $this->model->crear($cabecera, $lineas['items']);
+            $venta_id = $ok ? $this->model->ultimaVenta : 0;
+            $_SESSION[$ok ? 'flash_success' : 'flash_error'] = $ok
+                ? 'Venta registrada correctamente. Stock actualizado.'
+                : 'Error al registrar la venta.';
+        }
 
-        if ($ok && $descuento > 0 && $usaAutorizacion) {
+        if ($ok && $consumeAutorizacion) {
             $this->auditoria()->setDescuentos($veterinaria_id, false);
             $_SESSION['flash_success'] .= ' Se usó el descuento autorizado: queda desactivado hasta que el administrador lo active de nuevo.';
         }
@@ -155,13 +198,14 @@ class VentaController {
         // Fotos del comprobante tomadas al cobrar (solo en pagos con transferencia)
         if ($ok && in_array($metodo_pago, ['transferencia', 'mixto'], true)) {
             $fotos    = array_slice(array_filter((array)($_POST['comprobante'] ?? []), 'is_string'), 0, Comprobantes::MAX_POR_VENTA);
-            $fallidas = $this->guardarComprobantes($this->model->ultimaVenta, $veterinaria_id, $fotos);
+            $fallidas = $this->guardarComprobantes($venta_id, $veterinaria_id, $fotos);
             if ($fallidas > 0) {
                 $_SESSION['flash_success'] .= " No se pudo guardar $fallidas foto(s) del comprobante: puedes subirlas desde el historial.";
             }
         }
 
-        $this->redirect('ventas' . $vetQuery);
+        // Tras editar se vuelve a facturación; si falló, a la misma edición
+        $this->redirect($original ? ($ok ? 'facturacion' : $volver) : 'ventas' . $vetQuery);
     }
 
     public function reporteVentas(): void {
