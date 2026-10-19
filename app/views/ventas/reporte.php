@@ -333,18 +333,28 @@
                                 <?php endforeach; ?>
                             </tbody>
                             <tfoot>
+                                <?php $_desc = (float)($resumen['total_descuentos'] ?? 0); ?>
                                 <tr class="table-light fw-bold">
-                                    <td colspan="5" class="text-end">Total de productos vendidos</td>
+                                    <td colspan="5" class="text-end"><?= $_desc > 0 ? 'Subtotal de productos vendidos' : 'Total de productos vendidos' ?></td>
                                     <td class="text-end"><?= (int)$artUnidades ?></td>
                                     <td class="text-end pe-3">$<?= number_format($artTotal, 2) ?></td>
                                 </tr>
+                                <?php if ($_desc > 0): /* el descuento general de las ventas se resta al final */ ?>
+                                <tr class="table-light fw-bold">
+                                    <td colspan="6" class="text-end">Descuentos</td>
+                                    <td class="text-end pe-3 text-danger">−$<?= number_format($_desc, 2) ?></td>
+                                </tr>
+                                <tr class="table-light fw-bold">
+                                    <td colspan="6" class="text-end">Total vendido</td>
+                                    <td class="text-end pe-3">$<?= number_format(max(0, $artTotal - $_desc), 2) ?></td>
+                                </tr>
+                                <?php endif; ?>
                             </tfoot>
                         </table>
                     </div>
-                    <?php if ($hayPrecioVariado || ($resumen['total_descuentos'] ?? 0) > 0): ?>
+                    <?php if ($hayPrecioVariado): ?>
                     <div class="text-muted small px-3 py-2">
                         <?php if ($hayPrecioVariado): ?><div><span class="text-warning fw-bold">*</span> Producto vendido a precios distintos en el periodo: se muestra el precio promedio.</div><?php endif; ?>
-                        <?php if (($resumen['total_descuentos'] ?? 0) > 0): ?><div>El total por producto es antes del descuento general de cada venta ($<?= number_format($resumen['total_descuentos'], 2) ?> en el periodo).</div><?php endif; ?>
                     </div>
                     <?php endif; ?>
                     <script>

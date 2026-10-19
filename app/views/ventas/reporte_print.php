@@ -257,16 +257,25 @@ $tituloMov = ['' => 'Ventas y cobros', 'venta' => 'Ventas', 'peluqueria' => 'Pel
         </tbody>
         <tfoot>
             <tr>
-                <td colspan="5" class="r">Total de productos vendidos</td>
+                <td colspan="5" class="r"><?= $descuentos > 0 ? 'Subtotal de productos vendidos' : 'Total de productos vendidos' ?></td>
                 <td class="r"><?= (int)$artUnidades ?></td>
                 <td class="r"><?= $money($artTotal) ?></td>
             </tr>
+            <?php if ($descuentos > 0): /* el descuento general de las ventas se resta al final */ ?>
+            <tr>
+                <td colspan="6" class="r">Descuentos</td>
+                <td class="r" style="color:#b91c1c;">−<?= $money($descuentos) ?></td>
+            </tr>
+            <tr>
+                <td colspan="6" class="r">Total vendido</td>
+                <td class="r"><?= $money(max(0, $artTotal - $descuentos)) ?></td>
+            </tr>
+            <?php endif; ?>
         </tfoot>
     </table>
-    <?php if ($hayPrecioVariado || $descuentos > 0): ?>
+    <?php if ($hayPrecioVariado): ?>
     <div class="notas">
-        <?= $hayPrecioVariado ? '* Producto vendido a precios distintos en el período: se muestra el precio promedio.<br>' : '' ?>
-        <?= $descuentos > 0 ? 'El total por producto es antes del descuento general de cada venta (' . $money($descuentos) . ' en el período); por eso puede diferir del total de Ventas.' : '' ?>
+        * Producto vendido a precios distintos en el período: se muestra el precio promedio.
     </div>
     <?php endif; ?>
     <?php endif; ?>
