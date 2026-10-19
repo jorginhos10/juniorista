@@ -14,3 +14,8 @@ CREATE TABLE IF NOT EXISTS descargos (
     KEY idx_descargos_vet_fecha (veterinaria_id, created_at),
     KEY idx_descargos_producto (producto_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
+
+-- 2026-10-19: el descargo lleva su propia fecha (puede ser anterior al día en que se registra).
+ALTER TABLE descargos ADD COLUMN fecha DATE NULL AFTER producto_id;
+UPDATE descargos SET fecha = DATE(created_at) WHERE fecha IS NULL;
+ALTER TABLE descargos MODIFY fecha DATE NOT NULL, ADD KEY idx_descargos_vet_fecha_d (veterinaria_id, fecha);

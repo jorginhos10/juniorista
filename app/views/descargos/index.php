@@ -104,7 +104,7 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
                     </div>
                     <?php else: ?>
                     <form method="POST" action="<?= BASE_URL ?>/descargos/registrar" id="formDescargo" class="row g-3 align-items-start" autocomplete="off">
-                        <div class="col-lg-5">
+                        <div class="col-lg-4">
                             <label class="form-label fw-semibold">Producto <span class="text-danger">*</span></label>
                             <div class="dsc-ac">
                                 <input type="text" class="form-control" id="d-producto-buscar" autocomplete="off" required
@@ -123,10 +123,14 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
                             <div class="stock-info text-muted mt-1" id="d-stock-info">&nbsp;</div>
                         </div>
                         <div class="col-sm-4 col-lg-2">
+                            <label class="form-label fw-semibold">Fecha <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" name="fecha" id="d-fecha" value="<?= date('Y-m-d') ?>" max="<?= date('Y-m-d') ?>" required>
+                        </div>
+                        <div class="col-sm-4 col-lg-2">
                             <label class="form-label fw-semibold">Cantidad <span class="text-danger">*</span></label>
                             <input type="number" class="form-control" name="cantidad" id="d-cantidad" min="1" step="1" value="1" required>
                         </div>
-                        <div class="col-sm-8 col-lg-3">
+                        <div class="col-sm-4 col-lg-2">
                             <label class="form-label fw-semibold">Motivo <span class="text-danger">*</span></label>
                             <select class="form-select" name="motivo" id="d-motivo" required>
                                 <option value="">Selecciona…</option>
@@ -244,8 +248,12 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
                                 <?php foreach ($descargos as $d): $m = $motivos[$d['motivo']]; ?>
                                 <tr>
                                     <td class="ps-3 small text-nowrap">
-                                        <?= date('d/m/Y', strtotime($d['created_at'])) ?>
+                                        <?= date('d/m/Y', strtotime($d['fecha'])) ?>
+                                        <?php if ($d['fecha'] === date('Y-m-d', strtotime($d['created_at']))): ?>
                                         <div class="text-muted"><?= date('H:i', strtotime($d['created_at'])) ?></div>
+                                        <?php else: ?>
+                                        <div class="text-muted" title="Fecha en que se registró en el sistema">reg. <?= date('d/m/Y H:i', strtotime($d['created_at'])) ?></div>
+                                        <?php endif; ?>
                                     </td>
                                     <td>
                                         <div class="fw-semibold"><?= htmlspecialchars($d['producto_nombre']) ?></div>
@@ -260,7 +268,11 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
                                     </td>
                                     <td class="small text-muted"><?= htmlspecialchars($d['usuario_nombre'] ?? '—') ?></td>
                                     <td class="text-end monto"><?= $money($d['subtotal']) ?></td>
-                                    <td class="text-center">
+                                    <td class="text-center text-nowrap">
+                                        <button class="btn btn-sm btn-outline-primary btn-accion" title="Editar"
+                                                onclick='editarDescargo(<?= json_encode(['id' => (int)$d['id'], 'fecha' => $d['fecha'], 'producto' => $d['producto_nombre'], 'cantidad' => (int)$d['cantidad'], 'motivo' => $d['motivo'], 'detalle' => (string)$d['motivo_detalle'], 'unidad' => $d['unidad'] ?: 'unidad'], $jsonFlags) ?>)'>
+                                            <i class="bi bi-pencil-fill"></i>
+                                        </button>
                                         <button class="btn btn-sm btn-outline-danger btn-accion" title="Anular y devolver al stock"
                                                 onclick='anular(<?= (int)$d['id'] ?>, <?= json_encode($d['producto_nombre'], $jsonFlags) ?>, <?= (int)$d['cantidad'] ?>)'>
                                             <i class="bi bi-arrow-counterclockwise"></i>
@@ -289,6 +301,53 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
     </div>
 </div>
 
+<!-- Editar descargo: cantidad y motivo (el producto no cambia; el stock se ajusta por la diferencia) -->
+<div class="modal fade" id="modalEditarDescargo" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form method="POST" action="<?= BASE_URL ?>/descargos/editar" class="modal-content border-0 shadow" id="formEditarDescargo">
+            <input type="hidden" name="id" id="e-id">
+            <input type="hidden" name="volver" value="<?= htmlspecialchars('?' . http_build_query(['desde' => $desde, 'hasta' => $hasta, 'motivo' => $_GET['motivo'] ?? ''])) ?>">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold"><i class="bi bi-pencil-square text-primary me-2"></i>Editar descargo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <div class="small text-muted">Producto</div>
+                    <div class="fw-semibold" id="e-producto"></div>
+                </div>
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">Fecha <span class="text-danger">*</span></label>
+                        <input type="date" class="form-control" name="fecha" id="e-fecha" max="<?= date('Y-m-d') ?>" required>
+                    </div>
+                    <div class="col-5">
+                        <label class="form-label fw-semibold">Cantidad <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" name="cantidad" id="e-cantidad" min="1" step="1" required>
+                    </div>
+                    <div class="col-7">
+                        <label class="form-label fw-semibold">Motivo <span class="text-danger">*</span></label>
+                        <select class="form-select" name="motivo" id="e-motivo" required>
+                            <?php foreach ($motivos as $k => $m): ?>
+                            <option value="<?= $k ?>"><?= $m['label'] ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="col-12" id="e-detalle-box">
+                        <label class="form-label fw-semibold">Explica el motivo <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="motivo_detalle" id="e-detalle" maxlength="255">
+                    </div>
+                </div>
+                <div class="form-text mt-2" id="e-ayuda"></div>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-primary-custom"><i class="bi bi-save me-1"></i>Guardar cambios</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <form method="POST" action="<?= BASE_URL ?>/descargos/eliminar" id="formAnular" class="d-none">
     <input type="hidden" name="id">
 </form>
@@ -306,6 +365,30 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
 </style>
 <script>
 const OLD = <?= json_encode($old, $jsonFlags) ?>;
+
+// Editar: «Otros» pide explicación; el aviso indica cómo cambia el stock
+let cantOriginal = 0;
+function ayudaEditar() {
+    const otros = document.getElementById('e-motivo').value === 'otros';
+    document.getElementById('e-detalle-box').style.display = otros ? '' : 'none';
+    document.getElementById('e-detalle').required = otros;
+    const dif = (parseInt(document.getElementById('e-cantidad').value, 10) || 0) - cantOriginal;
+    document.getElementById('e-ayuda').textContent = dif > 0 ? 'Se descontarán ' + dif + ' unidad(es) más del inventario.'
+        : dif < 0 ? 'Volverán ' + (-dif) + ' unidad(es) al inventario.' : '';
+}
+function editarDescargo(d) {
+    cantOriginal = d.cantidad;
+    document.getElementById('e-id').value = d.id;
+    document.getElementById('e-fecha').value = d.fecha;
+    document.getElementById('e-producto').textContent = d.producto;
+    document.getElementById('e-cantidad').value = d.cantidad;
+    document.getElementById('e-motivo').value = d.motivo;
+    document.getElementById('e-detalle').value = d.detalle;
+    ayudaEditar();
+    new bootstrap.Modal(document.getElementById('modalEditarDescargo')).show();
+}
+document.getElementById('e-motivo').addEventListener('change', ayudaEditar);
+document.getElementById('e-cantidad').addEventListener('input', ayudaEditar);
 
 function anular(id, producto, cant) {
     if (!confirm('¿Anular el descargo de ' + cant + ' × ' + producto + '? Las unidades volverán al inventario.')) return;
@@ -426,6 +509,7 @@ if (form) {
         prod.value    = OLD.producto_id || '';
         buscar.value  = prod.selectedOptions[0]?.dataset.nombre || '';
         cant.value    = OLD.cantidad || 1;
+        if (OLD.fecha) document.getElementById('d-fecha').value = OLD.fecha;
         motivo.value  = OLD.motivo || '';
         detalle.value = OLD.motivo_detalle || '';
     }

@@ -14,10 +14,10 @@ if (togglePassword) {
 const loginForm = document.getElementById('loginForm');
 if (loginForm) {
     loginForm.addEventListener('submit', (e) => {
-        const email    = document.getElementById('email').value.trim();
+        const usuario  = document.getElementById('usuario').value.trim();
         const password = document.getElementById('password').value;
 
-        if (!email || !password) return;
+        if (!usuario || !password) return;
 
         const btn     = document.getElementById('btnLogin');
         const btnText = btn.querySelector('.btn-text');
@@ -30,10 +30,10 @@ if (loginForm) {
 }
 
 // Rellenar credenciales de demo
-function fillDemo(email) {
-    const emailInput = document.getElementById('email');
-    const passInput  = document.getElementById('password');
-    if (emailInput) emailInput.value = email;
-    if (passInput)  passInput.value  = 'password';
-    if (emailInput) emailInput.focus();
+function fillDemo(usuario) {
+    const usuarioInput = document.getElementById('usuario');
+    const passInput    = document.getElementById('password');
+    if (usuarioInput) usuarioInput.value = usuario;
+    if (passInput)    passInput.value    = 'password';
+    if (usuarioInput) usuarioInput.focus();
 }

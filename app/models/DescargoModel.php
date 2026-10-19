@@ -14,6 +14,15 @@ class DescargoModel {
 
     public function __construct() {
         $this->db = Database::getInstance()->getConnection();
+        $this->asegurarFecha();
+    }
+
+    /** El descargo lleva su propia fecha; en una base sin la columna se crea y se llena con el día de registro */
+    private function asegurarFecha(): void {
+        if ($this->db->query("SHOW COLUMNS FROM descargos LIKE 'fecha'")->num_rows) return;
+        $this->db->query('ALTER TABLE descargos ADD COLUMN fecha DATE NULL AFTER producto_id');
+        $this->db->query('UPDATE descargos SET fecha = DATE(created_at) WHERE fecha IS NULL');
+        $this->db->query('ALTER TABLE descargos MODIFY fecha DATE NOT NULL, ADD KEY idx_descargos_vet_fecha_d (veterinaria_id, fecha)');
     }
 
     /** Productos con stock disponible en la sucursal */
@@ -38,11 +47,11 @@ class DescargoModel {
                   FROM descargos d
                   JOIN productos p ON p.id = d.producto_id
              LEFT JOIN usuarios u ON u.id = d.usuario_id
-                 WHERE d.veterinaria_id = ? AND DATE(d.created_at) BETWEEN ? AND ?';
+                 WHERE d.veterinaria_id = ? AND d.fecha BETWEEN ? AND ?';
         if ($motivo !== '') {
             $sql .= ' AND d.motivo = ?';
         }
-        $sql .= ' ORDER BY d.created_at DESC, d.id DESC';
+        $sql .= ' ORDER BY d.fecha DESC, d.created_at DESC, d.id DESC';
 
         $stmt = $this->db->prepare($sql);
         if ($motivo !== '') {
@@ -79,11 +88,11 @@ class DescargoModel {
             }
 
             $ins = $this->db->prepare(
-                'INSERT INTO descargos (veterinaria_id, producto_id, cantidad, precio_unitario, motivo, motivo_detalle, usuario_id)
-                 SELECT ?, id, ?, precio_compra, ?, NULLIF(?, \'\'), ? FROM productos WHERE id = ?'
+                'INSERT INTO descargos (veterinaria_id, producto_id, fecha, cantidad, precio_unitario, motivo, motivo_detalle, usuario_id)
+                 SELECT ?, id, ?, ?, precio_compra, ?, NULLIF(?, \'\'), ? FROM productos WHERE id = ?'
             );
-            $ins->bind_param('iissii',
-                $d['veterinaria_id'], $d['cantidad'], $d['motivo'], $d['motivo_detalle'], $d['usuario_id'], $d['producto_id']
+            $ins->bind_param('isissii',
+                $d['veterinaria_id'], $d['fecha'], $d['cantidad'], $d['motivo'], $d['motivo_detalle'], $d['usuario_id'], $d['producto_id']
             );
             $insertado = $ins->execute() && $ins->affected_rows === 1;
             $ins->close();
@@ -96,6 +105,61 @@ class DescargoModel {
         } catch (Exception $e) {
             $this->db->rollback();
             return 'Error al registrar el descargo.';
+        }
+    }
+
+    /**
+     * Edita cantidad y motivo de un descargo (el producto no cambia). Si cambia la cantidad, ajusta el stock
+     * por la diferencia: más unidades se descuentan (si alcanza el stock), menos vuelven al inventario.
+     * Devuelve '' si todo salió bien o el mensaje de error.
+     */
+    public function actualizar(int $id, int $veterinaria_id, string $fecha, int $cantidad, string $motivo, string $detalle): string {
+        $this->db->begin_transaction();
+        try {
+            $sel = $this->db->prepare('SELECT producto_id, cantidad FROM descargos WHERE id = ? AND veterinaria_id = ? FOR UPDATE');
+            $sel->bind_param('ii', $id, $veterinaria_id);
+            $sel->execute();
+            $row = $sel->get_result()->fetch_assoc();
+            $sel->close();
+            if (!$row) {
+                $this->db->rollback();
+                return 'El descargo no existe.';
+            }
+
+            $diferencia = $cantidad - (int)$row['cantidad'];
+            if ($diferencia > 0) {
+                $upd = $this->db->prepare(
+                    'UPDATE inventario SET stock = stock - ? WHERE veterinaria_id = ? AND producto_id = ? AND stock >= ?'
+                );
+                $upd->bind_param('iiii', $diferencia, $veterinaria_id, $row['producto_id'], $diferencia);
+                $ok = $upd->execute() && $upd->affected_rows === 1;
+                $upd->close();
+                if (!$ok) {
+                    $this->db->rollback();
+                    $disp = $this->getStock($veterinaria_id, (int)$row['producto_id']);
+                    return "Stock insuficiente para aumentar el descargo: faltan $diferencia y hay $disp disponible(s).";
+                }
+            } elseif ($diferencia < 0) {
+                $devolver = -$diferencia;
+                $inv = $this->db->prepare(
+                    'INSERT INTO inventario (veterinaria_id, producto_id, stock) VALUES (?, ?, ?)
+                     ON DUPLICATE KEY UPDATE stock = stock + VALUES(stock)'
+                );
+                $inv->bind_param('iii', $veterinaria_id, $row['producto_id'], $devolver);
+                if (!$inv->execute()) throw new Exception('No se devolvió el stock');
+                $inv->close();
+            }
+
+            $up = $this->db->prepare("UPDATE descargos SET fecha = ?, cantidad = ?, motivo = ?, motivo_detalle = NULLIF(?, '') WHERE id = ?");
+            $up->bind_param('sissi', $fecha, $cantidad, $motivo, $detalle, $id);
+            if (!$up->execute()) throw new Exception('No se actualizó el descargo');
+            $up->close();
+
+            $this->db->commit();
+            return '';
+        } catch (Exception $e) {
+            $this->db->rollback();
+            return 'Error al editar el descargo.';
         }
     }
 

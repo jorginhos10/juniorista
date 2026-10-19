@@ -56,6 +56,7 @@ class DescargoController {
         $d = [
             'veterinaria_id' => $veterinaria_id,
             'producto_id'    => (int)($_POST['producto_id'] ?? 0),
+            'fecha'          => $this->fechaValida($_POST['fecha'] ?? '') ?? '',
             'cantidad'       => (int)($_POST['cantidad'] ?? 0),
             'motivo'         => $_POST['motivo'] ?? '',
             'motivo_detalle' => mb_substr(trim($_POST['motivo_detalle'] ?? ''), 0, 255),
@@ -65,6 +66,10 @@ class DescargoController {
         $error = '';
         if ($d['producto_id'] <= 0) {
             $error = 'Selecciona un producto.';
+        } elseif ($d['fecha'] === '') {
+            $error = 'Indica una fecha válida para el descargo.';
+        } elseif ($d['fecha'] > date('Y-m-d')) {
+            $error = 'La fecha del descargo no puede ser futura.';
         } elseif ($d['cantidad'] <= 0) {
             $error = 'La cantidad debe ser mayor a cero.';
         } elseif (!isset(DescargoModel::MOTIVOS[$d['motivo']])) {
@@ -87,6 +92,40 @@ class DescargoController {
             $_SESSION['flash_success'] = 'Descargo registrado. Se descontaron ' . $d['cantidad'] . ' unidad(es) del inventario.';
         }
         $this->redirect('descargos');
+    }
+
+    /** POST: cambia cantidad y motivo de un descargo; el stock se ajusta por la diferencia */
+    public function editar(): void {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect('descargos');
+        }
+
+        $veterinaria_id = $this->veterinariaActual($this->vetModel->getAll());
+        $id       = (int)($_POST['id'] ?? 0);
+        $fecha    = $this->fechaValida($_POST['fecha'] ?? '') ?? '';
+        $cantidad = (int)($_POST['cantidad'] ?? 0);
+        $motivo   = $_POST['motivo'] ?? '';
+        $detalle  = mb_substr(trim($_POST['motivo_detalle'] ?? ''), 0, 255);
+
+        $error = '';
+        if ($fecha === '' || $fecha > date('Y-m-d')) {
+            $error = 'Indica una fecha válida para el descargo (hoy o anterior).';
+        } elseif ($cantidad <= 0) {
+            $error = 'La cantidad debe ser mayor a cero.';
+        } elseif (!isset(DescargoModel::MOTIVOS[$motivo])) {
+            $error = 'Selecciona el motivo del descargo.';
+        } elseif ($motivo === 'otros' && $detalle === '') {
+            $error = 'Explica el motivo del descargo.';
+        }
+        if ($motivo !== 'otros') {
+            $detalle = '';   // el detalle solo aplica a «Otros»
+        }
+        if ($error === '') {
+            $error = $this->model->actualizar($id, $veterinaria_id, $fecha, $cantidad, $motivo, $detalle);
+        }
+
+        $_SESSION[$error === '' ? 'flash_success' : 'flash_error'] = $error === '' ? 'Descargo actualizado.' : $error;
+        $this->redirect('descargos' . (isset($_POST['volver']) && str_starts_with((string)$_POST['volver'], '?') ? $_POST['volver'] : ''));
     }
 
     public function eliminar(): void {

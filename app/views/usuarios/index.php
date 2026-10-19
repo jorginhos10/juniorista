@@ -347,16 +347,16 @@
                         </div>
 
                         <div class="col-12" id="campoPassword">
-                            <label class="form-label fw-semibold">Contraseña <span class="text-danger">*</span></label>
+                            <label class="form-label fw-semibold" id="lbl-password">Contraseña <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <span class="input-group-text"><i class="bi bi-lock"></i></span>
                                 <input type="password" class="form-control" name="password" id="inp-password"
-                                       placeholder="Mínimo 6 caracteres">
+                                       placeholder="Mínimo 6 caracteres" minlength="6" autocomplete="new-password">
                                 <button type="button" class="btn btn-outline-secondary" onclick="toggleVer('inp-password')">
-                                    <i class="bi bi-eye" id="eye-password"></i>
+                                    <i class="bi bi-eye" id="eye-inp-password"></i>
                                 </button>
                             </div>
-                            <div class="form-text">Solo se requiere al crear un nuevo usuario.</div>
+                            <div class="form-text" id="ayuda-password">Mínimo 6 caracteres.</div>
                         </div>
 
                     </div>
@@ -395,9 +395,9 @@
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-lock"></i></span>
                         <input type="password" class="form-control" name="password" id="inp-nueva-pass"
-                               placeholder="Nueva contraseña" required minlength="6">
+                               placeholder="Nueva contraseña" required minlength="6" autocomplete="new-password">
                         <button type="button" class="btn btn-outline-secondary" onclick="toggleVer('inp-nueva-pass')">
-                            <i class="bi bi-eye" id="eye-nueva-pass"></i>
+                            <i class="bi bi-eye" id="eye-inp-nueva-pass"></i>
                         </button>
                     </div>
                     <div class="form-text">Mínimo 6 caracteres.</div>
@@ -485,7 +485,8 @@ function nuevoUsuario() {
     document.getElementById('inp-rol').value      = 'recepcion';
     marcarSucursales([]);
     document.getElementById('inp-password').value = '';
-    document.getElementById('campoPassword').style.display = '';
+    document.getElementById('lbl-password').innerHTML = 'Contraseña <span class="text-danger">*</span>';
+    document.getElementById('ayuda-password').textContent = 'Mínimo 6 caracteres.';
     document.getElementById('inp-password').required = true;
 }
 
@@ -498,7 +499,8 @@ function editarUsuario(u) {
     document.getElementById('inp-rol').value      = u.rol;
     marcarSucursales(JSON.parse(u.sucursales || '[]'));
     document.getElementById('inp-password').value = '';
-    document.getElementById('campoPassword').style.display = 'none';
+    document.getElementById('lbl-password').textContent = 'Nueva contraseña (opcional)';
+    document.getElementById('ayuda-password').textContent = 'Déjala vacía para conservar la contraseña actual. Mínimo 6 caracteres.';
     document.getElementById('inp-password').required = false;
     new bootstrap.Modal(document.getElementById('modalUsuario')).show();
 }

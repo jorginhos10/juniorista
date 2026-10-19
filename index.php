@@ -263,6 +263,11 @@ switch ($uri) {
         (new DescargoController())->registrar();
         break;
 
+    case 'descargos/editar':
+        require_once ROOT . '/app/controllers/DescargoController.php';
+        (new DescargoController())->editar();
+        break;
+
     case 'descargos/eliminar':
         require_once ROOT . '/app/controllers/DescargoController.php';
         (new DescargoController())->eliminar();

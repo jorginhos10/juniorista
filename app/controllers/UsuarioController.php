@@ -82,9 +82,17 @@ class UsuarioController {
         }
 
         if ($id > 0) {
+            // Al editar, la contraseña es opcional: si se escribe una, se cambia
+            if ($pass !== '' && strlen($pass) < 6) {
+                $_SESSION['flash_error'] = 'La contraseña debe tener al menos 6 caracteres.';
+                $this->redirect('usuarios');
+            }
             $ok = $this->model->actualizar($id, compact('nombre', 'usuario', 'rol', 'sucursal_id', 'sucursales'));
+            if ($ok && $pass !== '') {
+                $ok = $this->model->cambiarPassword($id, $pass);
+            }
             $_SESSION[$ok ? 'flash_success' : 'flash_error'] = $ok
-                ? 'Usuario actualizado correctamente.'
+                ? ($pass !== '' ? 'Usuario y contraseña actualizados correctamente.' : 'Usuario actualizado correctamente.')
                 : 'Error al actualizar el usuario.';
         } else {
             if (empty($pass) || strlen($pass) < 6) {
