@@ -945,3 +945,13 @@
     font-weight: 500;
     word-break: break-word;
 }
+
+/* Pop ups desplazables cuyo contenido va dentro de un <form> (historial clínico, ingresos, pérdidas…):
+   el formulario debe ser columna flexible para que .modal-body haga scroll y el pie quede visible */
+.modal-dialog-scrollable .modal-content > form {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+}
