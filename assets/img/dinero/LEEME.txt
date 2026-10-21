@@ -1,0 +1,3 @@
+Ilustraciones de las monedas y billetes para el arqueo de caja.
+Para usar una foto real, guarda aquí el archivo con el valor como nombre (por ejemplo 50000.jpg, 500.png o 2000.webp):
+el arqueo mostrará la foto en lugar de la ilustración.

@@ -15,7 +15,10 @@ $estadoClase = ['pendiente' => 'bg-warning-subtle text-warning-emphasis border-w
     <link href="<?= BASE_URL ?>/assets/css/style.css" rel="stylesheet">
     <style>
         .arq-grupo-titulo { font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: #64748b; margin-bottom: .5rem; }
-        .arq-fila { display: grid; grid-template-columns: 110px 1fr 120px; align-items: center; gap: .75rem; padding: .3rem 0; }
+        .arq-fila { display: grid; grid-template-columns: 76px 90px 1fr 110px; align-items: center; gap: .75rem; padding: .3rem 0; }
+        .arq-img { display: flex; justify-content: center; align-items: center; height: 42px; margin: 0; cursor: pointer; }
+        .arq-img img { height: 38px; width: 38px; object-fit: contain; filter: drop-shadow(0 1px 2px rgba(15, 23, 42, .25)); }
+        .arq-billete .arq-img img { height: 34px; width: 74px; border-radius: 3px; }
         .arq-den { font-weight: 700; font-variant-numeric: tabular-nums; }
         .arq-sub { text-align: right; color: #64748b; font-variant-numeric: tabular-nums; font-size: .9rem; }
         .arq-fila input { text-align: center; }
@@ -23,7 +26,13 @@ $estadoClase = ['pendiente' => 'bg-warning-subtle text-warning-emphasis border-w
                      background: #f0fdf4; color: #166534; }
         .arq-total strong { font-size: 1.6rem; font-weight: 800; font-variant-numeric: tabular-nums; }
         .monto { font-variant-numeric: tabular-nums; font-weight: 700; white-space: nowrap; }
-        @media (max-width: 480px) { .arq-fila { grid-template-columns: 90px 1fr 95px; } }
+        @media (max-width: 576px) {   /* celular: imagen pequeña y columnas que se ajustan al contenido */
+            .arq-fila { grid-template-columns: 44px 70px minmax(0, 1fr) 64px; gap: .4rem; }
+            .arq-den { font-size: .85rem; }
+            .arq-sub { font-size: .75rem; }
+            .arq-img img { width: 30px; height: 30px; }
+            .arq-billete .arq-img img { width: 44px; height: 21px; }
+        }
     </style>
 </head>
 <body class="dashboard-body">
@@ -91,9 +100,19 @@ $estadoClase = ['pendiente' => 'bg-warning-subtle text-warning-emphasis border-w
                         <div class="card-body">
                             <form method="POST" action="<?= BASE_URL ?>/arqueo/registrar" id="formArqueo" autocomplete="off">
 
+                                <?php
+                                // Imagen de cada denominación: una foto real si existe en assets/img/dinero (p. ej. 50000.jpg); si no, la ilustración .svg
+                                $imgDen = function (int $den): string {
+                                    foreach (['jpg', 'jpeg', 'png', 'webp'] as $ext) {
+                                        if (is_file(ROOT . "/assets/img/dinero/$den.$ext")) return BASE_URL . "/assets/img/dinero/$den.$ext";
+                                    }
+                                    return BASE_URL . "/assets/img/dinero/$den.svg";
+                                };
+                                ?>
                                 <div class="arq-grupo-titulo">Monedas</div>
                                 <?php foreach ($monedas as $den): ?>
                                 <div class="arq-fila">
+                                    <label class="arq-img" for="den-<?= $den ?>"><img src="<?= $imgDen($den) ?>" alt="<?= $pesos($den) ?>" loading="lazy"></label>
                                     <label class="arq-den" for="den-<?= $den ?>"><?= $pesos($den) ?></label>
                                     <input type="number" class="form-control arq-cant" id="den-<?= $den ?>" name="conteo[<?= $den ?>]"
                                            data-den="<?= $den ?>" min="0" step="1" inputmode="numeric" placeholder="0">
@@ -103,7 +122,8 @@ $estadoClase = ['pendiente' => 'bg-warning-subtle text-warning-emphasis border-w
 
                                 <div class="arq-grupo-titulo mt-3">Billetes</div>
                                 <?php foreach ($billetes as $den): ?>
-                                <div class="arq-fila">
+                                <div class="arq-fila arq-billete">
+                                    <label class="arq-img" for="den-<?= $den ?>"><img src="<?= $imgDen($den) ?>" alt="<?= $pesos($den) ?>" loading="lazy"></label>
                                     <label class="arq-den" for="den-<?= $den ?>"><?= $pesos($den) ?></label>
                                     <input type="number" class="form-control arq-cant" id="den-<?= $den ?>" name="conteo[<?= $den ?>]"
                                            data-den="<?= $den ?>" min="0" step="1" inputmode="numeric" placeholder="0">

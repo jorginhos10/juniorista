@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 92" role="img" aria-label="Billete de $2 mil">
+  <defs>
+    <linearGradient id="f" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2b7bc0"/><stop offset=".55" stop-color="#2b7bc0"/><stop offset="1" stop-color="#174a78"/></linearGradient>
+    <pattern id="g" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(35)"><line x1="0" y1="0" x2="0" y2="6" stroke="#fff" stroke-opacity=".08" stroke-width="2"/></pattern>
+  </defs>
+  <rect x="1" y="1" width="198" height="90" rx="6" fill="url(#f)" stroke="#174a78" stroke-width="1.5"/>
+  <rect x="1" y="1" width="198" height="90" rx="6" fill="url(#g)"/>
+  <rect x="7" y="7" width="186" height="78" rx="4" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="1"/>
+  <!-- retrato (silueta) -->
+  <ellipse cx="148" cy="48" rx="30" ry="33" fill="#fff" fill-opacity=".14"/>
+  <circle cx="148" cy="38" r="12" fill="#fff" fill-opacity=".38"/>
+  <path d="M124 76 q24 -26 48 0 z" fill="#fff" fill-opacity=".38"/>
+  <!-- hilo de seguridad -->
+  <rect x="104" y="1" width="4" height="90" fill="#fff" fill-opacity=".22"/>
+  <text x="14" y="34" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="30" fill="#fff">2</text>
+  <text x="15" y="47" font-family="Arial, sans-serif" font-weight="700" font-size="10" letter-spacing="1" fill="#fff">MIL PESOS</text>
+  <text x="15" y="66" font-family="Arial, sans-serif" font-size="6.5" letter-spacing=".6" fill="#fff" fill-opacity=".9">BANCO DE LA REPÚBLICA</text>
+  <text x="15" y="76" font-family="Arial, sans-serif" font-size="6" fill="#fff" fill-opacity=".8">Débora Arango</text>
+  <text x="186" y="80" text-anchor="end" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="13" fill="#fff" fill-opacity=".85">2</text>
+</svg>
