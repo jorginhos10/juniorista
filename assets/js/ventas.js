@@ -406,8 +406,10 @@ function aplicarModoCotizacion(activo) {
         inpDesc.disabled = !activo;
         if (!activo) inpDesc.value = 0;
     }
-    document.getElementById('btnConfirmarTexto').textContent = activo ? 'Cotizar' : 'Confirmar Venta';
-    document.getElementById('tituloFactura').textContent = activo ? 'Cotización' : 'Factura';
+    document.getElementById('tituloFactura').textContent = activo ? (COT_EDITANDO ? 'Editando ' + COT_EDITANDO.numero : 'Cotización') : 'Factura';
+    const hist = document.getElementById('btnHistorial');
+    if (hist) hist.href = activo ? hist.dataset.cotizaciones : hist.dataset.ventas;
+    document.getElementById('btnConfirmarTexto').textContent = activo ? (COT_EDITANDO ? 'Guardar cotización' : 'Cotizar') : 'Confirmar Venta';
     const btn = document.getElementById('btnConfirmar');
     btn.classList.toggle('btn-success', !activo);
     btn.classList.toggle('btn-primary', activo);
@@ -423,7 +425,7 @@ function aplicarModoCotizacion(activo) {
         if (quitados) mostrarToastError('Se quitaron del carrito los servicios y lo que no tiene stock suficiente');
     }
     renderCarrito();
-    try { localStorage.setItem('pc_modo_cotizacion', activo ? '1' : '0'); } catch (e) {}
+    if (!COT_EDITANDO) { try { localStorage.setItem('pc_modo_cotizacion', activo ? '1' : '0'); } catch (e) {} }   // editar no cambia el modo recordado
 }
 
 function abrirServicio() {
@@ -474,14 +476,42 @@ function cotizar() {
         });
     });
     document.getElementById('formCotizacion').submit();
+    // Al editar, tras guardar se vuelve al historial de cotizaciones
+    if (COT_EDITANDO) setTimeout(() => { location.href = BASE_URL + '/ventas/cotizaciones'; }, 600);
 }
 
+// Edición de una cotización guardada: modo cotización fijo y sus líneas cargadas
+const COT_EDITANDO = typeof COTIZACION_EDITAR !== 'undefined' ? COTIZACION_EDITAR : null;
 const switchCotizacion = document.getElementById('modoCotizacion');
-if (switchCotizacion) {
+if (switchCotizacion && COT_EDITANDO) {
+    switchCotizacion.checked = true;
+    switchCotizacion.disabled = true;
+    aplicarModoCotizacion(true);
+    COT_EDITANDO.lineas.forEach(l => {
+        if (l.producto_id) {
+            const card = document.querySelector(`.pos-card[data-id="${l.producto_id}"]`);
+            if (!card) return;   // producto que ya no está en el catálogo
+            carrito[String(l.producto_id)] = { nombre: card.dataset.nombre, precio: parseFloat(card.dataset.precio),
+                unidad: card.dataset.unidad, stock: parseInt(card.dataset.stock), cantidad: l.cantidad };
+            actualizarBadge(String(l.producto_id));
+        } else {
+            carrito['srv-' + (++contadorServicios)] = { nombre: l.concepto, precio: l.precio, unidad: 'servicio', stock: Infinity, cantidad: l.cantidad, servicio: true };
+        }
+    });
+    document.getElementById('descuentoInput').value = COT_EDITANDO.descuento || 0;
+    document.getElementById('notasVenta').value = COT_EDITANDO.notas || '';
+    if (COT_EDITANDO.cliente_id) {
+        document.getElementById('fClienteId').value = COT_EDITANDO.cliente_id;
+        document.getElementById('inputCliente').value = COT_EDITANDO.cliente_nombre || '';
+        document.getElementById('btnLimpiarCliente').style.display = '';
+    }
+    renderCarrito();
+} else if (switchCotizacion) {
     switchCotizacion.addEventListener('change', () => aplicarModoCotizacion(switchCotizacion.checked));
     let guardado = '0';
     try { guardado = localStorage.getItem('pc_modo_cotizacion') || '0'; } catch (e) {}
-    if (guardado === '1') { switchCotizacion.checked = true; aplicarModoCotizacion(true); }
+    // ?cotizar=1 (desde «Nueva cotización») abre directamente en modo cotización
+    if (guardado === '1' || new URLSearchParams(location.search).has('cotizar')) { switchCotizacion.checked = true; aplicarModoCotizacion(true); }
 }
 
 // ── TOAST TEMPORAL ────────────────────────────────────

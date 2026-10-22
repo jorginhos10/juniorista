@@ -33,7 +33,14 @@
                 <?php endif; ?>
 
                 <!-- Historial -->
-                <a href="<?= BASE_URL ?>/ventas/historial" class="btn btn-outline-secondary btn-sm">
+                <?php if ($cotizacion): ?>
+                <a href="<?= BASE_URL ?>/ventas/cotizaciones" class="btn btn-outline-danger btn-sm">
+                    <i class="bi bi-x-lg me-1"></i> Cancelar edición
+                </a>
+                <?php endif; ?>
+                <!-- En modo cotización lleva al historial de cotizaciones -->
+                <a href="<?= BASE_URL ?>/ventas/historial" class="btn btn-outline-secondary btn-sm" id="btnHistorial"
+                   data-ventas="<?= BASE_URL ?>/ventas/historial" data-cotizaciones="<?= BASE_URL ?>/ventas/cotizaciones">
                     <i class="bi bi-clock-history me-1"></i> Historial
                 </a>
 
@@ -341,6 +348,7 @@
 
 <!-- ── FORM DE LA COTIZACIÓN (se imprime en otra pestaña) ── -->
 <form method="POST" action="<?= BASE_URL ?>/ventas/cotizacion" id="formCotizacion" target="_blank">
+    <input type="hidden" name="cotizacion_id" id="cCotizacionId" value="<?= $cotizacion ? (int)$cotizacion['id'] : '' ?>">
     <input type="hidden" name="cliente_id" id="cClienteId">
     <input type="hidden" name="notas"      id="cNotas">
     <input type="hidden" name="descuento"  id="cDescuento">
@@ -479,6 +487,17 @@
 const STOCK_MAP = <?= json_encode(array_column($productos, 'stock', 'id')) ?>;
 const RELACIONADOS = <?= json_encode((object)($relacionados ?? [])) ?>;
 const BASE_URL  = '<?= BASE_URL ?>';
+// Cotización que se está editando (null = ninguna): ventas.js la carga en modo cotización
+const COTIZACION_EDITAR = <?= json_encode($cotizacion ? [
+    'id'             => (int)$cotizacion['id'],
+    'numero'         => $cotizacion['numero'],
+    'cliente_id'     => (int)$cotizacion['cliente_id'],
+    'cliente_nombre' => trim($cotizacion['cliente_nombre'] . ' ' . $cotizacion['cliente_apellido']),
+    'descuento'      => $cotizacion['descuento_pct'] !== null ? rtrim(rtrim(number_format((float)$cotizacion['descuento_pct'], 2, '.', ''), '0'), '.') . '%' : (float)$cotizacion['descuento'],
+    'notas'          => (string)$cotizacion['notas'],
+    'lineas'         => array_map(fn($l) => ['producto_id' => $l['producto_id'] !== null ? (int)$l['producto_id'] : null, 'concepto' => $l['concepto'],
+                                             'cantidad' => (int)$l['cantidad'], 'precio' => (float)$l['precio']], $cotizacion['lineas']),
+] : null, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE) ?>;
 // Venta que se está editando (null = venta nueva): ventas.js la carga en el carrito
 const VENTA_EDITAR = <?= json_encode($editar ? [
     'cliente_id'     => (int)$editar['cliente_id'],

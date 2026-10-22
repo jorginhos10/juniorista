@@ -37,9 +37,25 @@ class VentaController {
             unset($p);
         }
 
+        // Editar una cotización (?cotizacion=ID, desde su historial): se abre en modo cotización con sus líneas
+        $cotizacion = null;
+        if (!$editar && isset($_GET['cotizacion'])) {
+            require_once ROOT . '/app/models/CotizacionModel.php';
+            require_once ROOT . '/app/models/VeterinariaModel.php';
+            $cotizacion = (new CotizacionModel())->getCotizacion((int)$_GET['cotizacion']);
+            if (!$cotizacion) {
+                $_SESSION['flash_error'] = 'La cotización no existe o es de otra sucursal.';
+                $this->redirect('ventas/cotizaciones');
+            }
+            $sucursal = '';
+            foreach ($veterinarias as $v) { if ((int)$v['id'] === $veterinaria_id) { $sucursal = $v['nombre']; break; } }
+            $cotizacion['numero'] = VeterinariaModel::serialServicio($sucursal, 'COT', (int)$cotizacion['id'], $cotizacion['created_at']);
+        }
+
         $datos = [
             'activePage'     => 'ventas',
             'editar'         => $editar,
+            'cotizacion'     => $cotizacion,
             'ventas'         => $this->model->getAll($veterinaria_id),
             'totales'        => $this->model->getTotales($veterinaria_id),
             'productos'      => $productos,
@@ -426,7 +442,6 @@ class VentaController {
         $datos = [
             'activePage'     => 'historial-ventas',
             'ventas'         => $this->model->getAll($veterinaria_id),
-            'cotizaciones'   => (function () use ($veterinaria_id) { require_once ROOT . '/app/models/CotizacionModel.php'; return (new CotizacionModel())->getAll($veterinaria_id); })(),
             'totales'        => $this->model->getTotales($veterinaria_id),
             'veterinarias'   => $veterinarias,
             'veterinaria_id' => $veterinaria_id,
@@ -606,7 +621,10 @@ class VentaController {
         $cid = (int)($_POST['cliente_id'] ?? 0);
         $cliente_id = $cid > 0 && (new ClienteModel())->findById($cid) ? $cid : null;
 
-        $id = (new CotizacionModel())->guardar([
+        $modelo = new CotizacionModel();
+        $editarId = (int)($_POST['cotizacion_id'] ?? 0);
+        if ($editarId > 0 && !$modelo->getCotizacion($editarId)) $editarId = 0;   // de otra sucursal o inexistente: se crea nueva
+        $id = $modelo->guardar([
             'veterinaria_id' => $veterinaria_id,
             'cliente_id'     => $cliente_id,
             'usuario_id'     => (int)$_SESSION['usuario_id'],
@@ -615,7 +633,7 @@ class VentaController {
             'descuento_pct'  => $pct,
             'total'          => max(0, $subtotal - $descuento),
             'notas'          => mb_substr(trim((string)($_POST['notas'] ?? '')), 0, 500) ?: null,
-        ], $lineas);
+        ], $lineas, $editarId);
 
         if (!$id) {
             http_response_code(500);
@@ -624,6 +642,28 @@ class VentaController {
         }
         // Se abre por GET: recargar la pestaña no crea otra cotización
         $this->redirect('ventas/cotizacion/ver?id=' . $id);
+    }
+
+    /** GET: historial de cotizaciones (solo cotizaciones) */
+    public function cotizaciones(): void {
+        require_once ROOT . '/app/models/CotizacionModel.php';
+        $veterinarias   = $this->model->getVeterinarias();
+        $veterinaria_id = (int)($_SESSION['veterinaria_id'] ?? 0);
+        $datos = [
+            'activePage'     => 'ventas',
+            'veterinarias'   => $veterinarias,
+            'veterinaria_id' => $veterinaria_id,
+            'cotizaciones'   => (new CotizacionModel())->getAll($veterinaria_id),
+            'usuario'        => [
+                'nombre' => $_SESSION['usuario_nombre'],
+                'email'  => $_SESSION['usuario_email'],
+                'rol'    => $_SESSION['usuario_rol'],
+            ],
+            'success' => $_SESSION['flash_success'] ?? '',
+            'error'   => $_SESSION['flash_error']   ?? '',
+        ];
+        unset($_SESSION['flash_success'], $_SESSION['flash_error']);
+        $this->render('ventas/cotizaciones', $datos);
     }
 
     /** GET: formato imprimible de una cotización guardada */

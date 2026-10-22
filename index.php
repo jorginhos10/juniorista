@@ -553,6 +553,11 @@ switch ($uri) {
         (new VentaController())->historial();
         break;
 
+    case 'ventas/cotizaciones':
+        require_once ROOT . '/app/controllers/VentaController.php';
+        (new VentaController())->cotizaciones();
+        break;
+
     case 'ventas/cotizacion/ver':
         require_once ROOT . '/app/controllers/VentaController.php';
         (new VentaController())->verCotizacion();

@@ -48,19 +48,34 @@ class CotizacionModel {
         );
     }
 
-    /** Guarda la cotización con sus líneas; devuelve el id (0 si falla) */
-    public function guardar(array $c, array $lineas): int {
+    /** Guarda la cotización con sus líneas ($id > 0: la actualiza, conservando su número y fecha); devuelve el id (0 si falla) */
+    public function guardar(array $c, array $lineas, int $id = 0): int {
         $this->db->begin_transaction();
         try {
-            $stmt = $this->db->prepare(
-                'INSERT INTO cotizaciones (veterinaria_id, cliente_id, usuario_id, subtotal, descuento, descuento_pct, total, notas)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
-            );
-            $stmt->bind_param('iiidddds', $c['veterinaria_id'], $c['cliente_id'], $c['usuario_id'], $c['subtotal'],
-                $c['descuento'], $c['descuento_pct'], $c['total'], $c['notas']);
-            $stmt->execute();
-            $id = (int)$this->db->insert_id;
-            $stmt->close();
+            if ($id > 0) {
+                $stmt = $this->db->prepare(
+                    'UPDATE cotizaciones SET cliente_id = ?, subtotal = ?, descuento = ?, descuento_pct = ?, total = ?, notas = ?
+                      WHERE id = ? AND veterinaria_id = ?'
+                );
+                $stmt->bind_param('iddddsii', $c['cliente_id'], $c['subtotal'], $c['descuento'], $c['descuento_pct'],
+                    $c['total'], $c['notas'], $id, $c['veterinaria_id']);
+                $stmt->execute();
+                $stmt->close();
+                $del = $this->db->prepare('DELETE FROM cotizacion_items WHERE cotizacion_id = ?');
+                $del->bind_param('i', $id);
+                $del->execute();
+                $del->close();
+            } else {
+                $stmt = $this->db->prepare(
+                    'INSERT INTO cotizaciones (veterinaria_id, cliente_id, usuario_id, subtotal, descuento, descuento_pct, total, notas)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+                );
+                $stmt->bind_param('iiidddds', $c['veterinaria_id'], $c['cliente_id'], $c['usuario_id'], $c['subtotal'],
+                    $c['descuento'], $c['descuento_pct'], $c['total'], $c['notas']);
+                $stmt->execute();
+                $id = (int)$this->db->insert_id;
+                $stmt->close();
+            }
 
             $ins = $this->db->prepare(
                 'INSERT INTO cotizacion_items (cotizacion_id, orden, producto_id, concepto, detalle, cantidad, precio, subtotal)
