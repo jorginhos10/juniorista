@@ -55,6 +55,7 @@ class FormulaController {
             'formula'        => $formula,
             'old'            => $_SESSION['formula_old'] ?? null,
             'mascotaInicial' => $formula ? (int)$formula['mascota_id'] : (int)($_GET['mascota'] ?? 0),
+            'especies'       => FormulaModel::ESPECIES,
             'mascotas'       => $this->model->getMascotas(),
             'productos'      => $this->model->getProductos(),
             'veterinarios'   => $this->model->getVeterinarios(),
@@ -113,9 +114,24 @@ class FormulaController {
             ];
         }
 
+        // Paciente: mascota registrada o, si no está guardada, sus datos escritos en la fórmula
+        if ($d['mascota_id'] > 0 && !$this->model->mascotaEsDeLaSucursal($d['mascota_id'])) $d['mascota_id'] = 0;
+        $libre = $d['mascota_id'] === 0;
+        $especie = (string)($_POST['paciente_especie'] ?? '');
+        $sexo    = (string)($_POST['paciente_sexo'] ?? '');
+        $d['paciente_nombre']      = $libre ? $txt('paciente_nombre', 100) : null;
+        $d['paciente_especie']     = $libre && in_array($especie, FormulaModel::ESPECIES, true) ? $especie : null;
+        $d['paciente_raza']        = $libre ? $txt('paciente_raza', 100) : null;
+        $d['paciente_sexo']        = $libre && in_array($sexo, ['macho', 'hembra'], true) ? $sexo : null;
+        $d['paciente_edad']        = $libre ? $txt('paciente_edad', 40) : null;
+        $d['propietario_nombre']   = $libre ? $txt('propietario_nombre', 150) : null;
+        $d['propietario_telefono'] = $libre ? $txt('propietario_telefono', 40) : null;
+        if (!$libre) $d['paciente_nombre'] = null;
+        $d['mascota_id'] = $libre ? null : $d['mascota_id'];
+
         $error = '';
-        if (!$this->model->mascotaEsDeLaSucursal($d['mascota_id'])) {
-            $error = 'Selecciona el paciente (mascota).';
+        if ($libre && $d['paciente_nombre'] === null) {
+            $error = 'Escribe el nombre del paciente o elígelo de la lista.';
         } elseif ($d['fecha'] === '' || $d['fecha'] > date('Y-m-d')) {
             $error = 'La fecha de la fórmula no es válida (hoy o anterior).';
         } elseif ($d['veterinario_id'] === null) {
@@ -141,7 +157,7 @@ class FormulaController {
 
         $_SESSION['flash_success'] = $id > 0 ? 'Fórmula actualizada.' : 'Fórmula médica guardada.';
         $_SESSION['formula_imprimir'] = $nuevoId;   // el listado la abre para imprimir
-        $this->redirect('formulas?mascota=' . $d['mascota_id']);
+        $this->redirect($d['mascota_id'] ? 'formulas?mascota=' . $d['mascota_id'] : 'formulas');
     }
 
     /** Formato imprimible de la fórmula */

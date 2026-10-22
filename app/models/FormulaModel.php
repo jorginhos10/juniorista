@@ -11,6 +11,11 @@ require_once ROOT . '/app/helpers/Seguridad.php';
 class FormulaModel {
 
     /** Vías de administración habituales */
+    public const ESPECIES = ['Perro', 'Gato', 'Ave', 'Conejo', 'Roedor', 'Reptil', 'Otro'];
+
+    /** Datos del paciente cuando no es una mascota registrada (se guardan en la propia fórmula) */
+    private const LIBRES = ['paciente_nombre', 'paciente_especie', 'paciente_raza', 'paciente_sexo', 'paciente_edad', 'propietario_nombre', 'propietario_telefono'];
+
     public const VIAS = ['Oral', 'Tópica', 'Oftálmica', 'Ótica', 'Subcutánea', 'Intramuscular', 'Intravenosa', 'Rectal', 'Inhalada', 'Otra'];
 
     private mysqli $db;
@@ -22,7 +27,7 @@ class FormulaModel {
 
     /** Crea las tablas la primera vez (así basta con subir los archivos al servidor) */
     private function asegurarTablas(): void {
-        if ($this->db->query("SHOW TABLES LIKE 'formulas_medicas'")->num_rows) return;
+        if ($this->db->query("SHOW TABLES LIKE 'formulas_medicas'")->num_rows) { $this->asegurarPacienteLibre(); return; }
         $this->db->query(
             "CREATE TABLE formulas_medicas (
                 id                  INT AUTO_INCREMENT PRIMARY KEY,
@@ -63,16 +68,33 @@ class FormulaModel {
         );
     }
 
+    /** Columnas para recetar a un paciente que no está registrado como mascota */
+    private function asegurarPacienteLibre(): void {
+        if ($this->db->query("SHOW COLUMNS FROM formulas_medicas LIKE 'paciente_nombre'")->num_rows) return;
+        $this->db->query(
+            "ALTER TABLE formulas_medicas
+                MODIFY mascota_id INT DEFAULT NULL,
+                ADD COLUMN paciente_nombre      VARCHAR(100) DEFAULT NULL AFTER mascota_id,
+                ADD COLUMN paciente_especie     VARCHAR(50)  DEFAULT NULL AFTER paciente_nombre,
+                ADD COLUMN paciente_raza        VARCHAR(100) DEFAULT NULL AFTER paciente_especie,
+                ADD COLUMN paciente_sexo        VARCHAR(10)  DEFAULT NULL AFTER paciente_raza,
+                ADD COLUMN paciente_edad        VARCHAR(40)  DEFAULT NULL AFTER paciente_sexo,
+                ADD COLUMN propietario_nombre   VARCHAR(150) DEFAULT NULL AFTER paciente_edad,
+                ADD COLUMN propietario_telefono VARCHAR(40)  DEFAULT NULL AFTER propietario_nombre"
+        );
+    }
+
     /** Fórmulas de la sucursal en un rango de fechas (opcional: de una mascota) */
     public function getRango(string $desde, string $hasta, int $mascota_id = 0): array {
         $vet = Seguridad::sucursalActual();
         $sql = "SELECT f.id, f.fecha, f.diagnostico, f.created_at, f.mascota_id,
-                       m.nombre AS mascota, m.especie, CONCAT(c.nombre, ' ', c.apellido) AS cliente,
+                       COALESCE(m.nombre, f.paciente_nombre) AS mascota, COALESCE(m.especie, f.paciente_especie) AS especie,
+                       COALESCE(CONCAT(c.nombre, ' ', c.apellido), f.propietario_nombre) AS cliente,
                        u.nombre AS veterinario,
                        (SELECT COUNT(*) FROM formula_items i WHERE i.formula_id = f.id) AS medicamentos,
                        (SELECT GROUP_CONCAT(i.medicamento ORDER BY i.orden SEPARATOR ', ') FROM formula_items i WHERE i.formula_id = f.id) AS lista
                   FROM formulas_medicas f
-                  JOIN mascotas m      ON m.id = f.mascota_id
+             LEFT JOIN mascotas m      ON m.id = f.mascota_id
              LEFT JOIN clientes c      ON c.id = m.cliente_id
              LEFT JOIN usuarios u      ON u.id = f.veterinario_id
                  WHERE f.activo = 1 AND f.veterinaria_id = ? AND f.fecha BETWEEN ? AND ?";
@@ -90,12 +112,13 @@ class FormulaModel {
     public function getFormula(int $id): ?array {
         $vet  = Seguridad::sucursalActual();
         $stmt = $this->db->prepare(
-            "SELECT f.*, m.nombre AS mascota, m.especie, m.raza, m.sexo, m.fecha_nacimiento,
-                    c.id AS cliente_id, CONCAT(c.nombre, ' ', c.apellido) AS cliente, c.dni AS cliente_dni,
-                    c.telefono AS cliente_telefono, c.direccion AS cliente_direccion,
+            "SELECT f.*, COALESCE(m.nombre, f.paciente_nombre) AS mascota, COALESCE(m.especie, f.paciente_especie) AS especie,
+                    COALESCE(m.raza, f.paciente_raza) AS raza, COALESCE(m.sexo, f.paciente_sexo) AS sexo, m.fecha_nacimiento,
+                    c.id AS cliente_id, COALESCE(CONCAT(c.nombre, ' ', c.apellido), f.propietario_nombre) AS cliente, c.dni AS cliente_dni,
+                    COALESCE(c.telefono, f.propietario_telefono) AS cliente_telefono, c.direccion AS cliente_direccion,
                     u.nombre AS veterinario
                FROM formulas_medicas f
-               JOIN mascotas m ON m.id = f.mascota_id
+          LEFT JOIN mascotas m ON m.id = f.mascota_id
           LEFT JOIN clientes c ON c.id = m.cliente_id
           LEFT JOIN usuarios u ON u.id = f.veterinario_id
               WHERE f.id = ? AND f.activo = 1 AND f.veterinaria_id = ?"
@@ -183,11 +206,15 @@ class FormulaModel {
             if ($id > 0) {
                 $stmt = $this->db->prepare(
                     'UPDATE formulas_medicas SET mascota_id = ?, veterinario_id = ?, fecha = ?, peso = ?, diagnostico = ?,
-                            indicaciones = ?, proximo_control = ?, tarjeta_profesional = ?
+                            indicaciones = ?, proximo_control = ?, tarjeta_profesional = ?,
+                            paciente_nombre = ?, paciente_especie = ?, paciente_raza = ?, paciente_sexo = ?, paciente_edad = ?,
+                            propietario_nombre = ?, propietario_telefono = ?
                       WHERE id = ? AND activo = 1 AND veterinaria_id = ?'
                 );
-                $stmt->bind_param('iisdssssii', $d['mascota_id'], $d['veterinario_id'], $d['fecha'], $d['peso'], $d['diagnostico'],
-                    $d['indicaciones'], $d['proximo_control'], $d['tarjeta_profesional'], $id, $d['veterinaria_id']);
+                $stmt->bind_param('iisdsssssssssssii', $d['mascota_id'], $d['veterinario_id'], $d['fecha'], $d['peso'], $d['diagnostico'],
+                    $d['indicaciones'], $d['proximo_control'], $d['tarjeta_profesional'],
+                    $d['paciente_nombre'], $d['paciente_especie'], $d['paciente_raza'], $d['paciente_sexo'], $d['paciente_edad'],
+                    $d['propietario_nombre'], $d['propietario_telefono'], $id, $d['veterinaria_id']);
                 $stmt->execute();
                 $stmt->close();
                 $del = $this->db->prepare('DELETE FROM formula_items WHERE formula_id = ?');
@@ -197,11 +224,15 @@ class FormulaModel {
             } else {
                 $stmt = $this->db->prepare(
                     'INSERT INTO formulas_medicas (veterinaria_id, mascota_id, veterinario_id, fecha, peso, diagnostico,
-                                                   indicaciones, proximo_control, tarjeta_profesional, usuario_id)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+                                                   indicaciones, proximo_control, tarjeta_profesional, usuario_id,
+                                                   paciente_nombre, paciente_especie, paciente_raza, paciente_sexo, paciente_edad,
+                                                   propietario_nombre, propietario_telefono)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
                 );
-                $stmt->bind_param('iiisdssssi', $d['veterinaria_id'], $d['mascota_id'], $d['veterinario_id'], $d['fecha'], $d['peso'],
-                    $d['diagnostico'], $d['indicaciones'], $d['proximo_control'], $d['tarjeta_profesional'], $d['usuario_id']);
+                $stmt->bind_param('iiisdssssisssssss', $d['veterinaria_id'], $d['mascota_id'], $d['veterinario_id'], $d['fecha'], $d['peso'],
+                    $d['diagnostico'], $d['indicaciones'], $d['proximo_control'], $d['tarjeta_profesional'], $d['usuario_id'],
+                    $d['paciente_nombre'], $d['paciente_especie'], $d['paciente_raza'], $d['paciente_sexo'], $d['paciente_edad'],
+                    $d['propietario_nombre'], $d['propietario_telefono']);
                 $stmt->execute();
                 $id = (int)$this->db->insert_id;
                 $stmt->close();

@@ -103,9 +103,10 @@ $sexo = ['macho' => 'Macho', 'hembra' => 'Hembra'][$f['sexo'] ?? ''] ?? '';
         <div>
             <div class="lbl">Paciente</div>
             <div class="fila"><b>Nombre</b><span><?= $e($f['mascota']) ?></span></div>
-            <div class="fila"><b>Especie</b><span><?= $e($f['especie']) ?><?= $f['raza'] ? ' · ' . $e($f['raza']) : '' ?></span></div>
-            <?php if ($sexo || $f['fecha_nacimiento']): ?>
-            <div class="fila"><b>Sexo / edad</b><span><?= $e(trim($sexo . ($sexo && $f['fecha_nacimiento'] ? ' · ' : '') . $edad($f['fecha_nacimiento']))) ?></span></div>
+            <?php if ($f['especie'] || $f['raza']): ?><div class="fila"><b>Especie</b><span><?= $e(trim($f['especie'] . ($f['especie'] && $f['raza'] ? ' · ' : '') . $f['raza'])) ?></span></div><?php endif; ?>
+            <?php $edadTxt = $f['fecha_nacimiento'] ? $edad($f['fecha_nacimiento']) : (string)($f['paciente_edad'] ?? ''); ?>
+            <?php if ($sexo || $edadTxt !== ''): ?>
+            <div class="fila"><b>Sexo / edad</b><span><?= $e(trim($sexo . ($sexo && $edadTxt !== '' ? ' · ' : '') . $edadTxt)) ?></span></div>
             <?php endif; ?>
             <?php if ($f['peso'] !== null): ?><div class="fila"><b>Peso</b><span><?= rtrim(rtrim(number_format((float)$f['peso'], 2, ',', ''), '0'), ',') ?> kg</span></div><?php endif; ?>
         </div>

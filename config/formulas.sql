@@ -34,3 +34,14 @@ CREATE TABLE IF NOT EXISTS formula_items (
     KEY idx_formula_items_formula (formula_id),
     CONSTRAINT fk_formula_items_formula FOREIGN KEY (formula_id) REFERENCES formulas_medicas (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
+
+-- 2026-10-21: recetar a pacientes que no están registrados como mascota (FormulaModel lo aplica solo).
+ALTER TABLE formulas_medicas
+    MODIFY mascota_id INT DEFAULT NULL,
+    ADD COLUMN paciente_nombre      VARCHAR(100) DEFAULT NULL AFTER mascota_id,
+    ADD COLUMN paciente_especie     VARCHAR(50)  DEFAULT NULL AFTER paciente_nombre,
+    ADD COLUMN paciente_raza        VARCHAR(100) DEFAULT NULL AFTER paciente_especie,
+    ADD COLUMN paciente_sexo        VARCHAR(10)  DEFAULT NULL AFTER paciente_raza,
+    ADD COLUMN paciente_edad        VARCHAR(40)  DEFAULT NULL AFTER paciente_sexo,
+    ADD COLUMN propietario_nombre   VARCHAR(150) DEFAULT NULL AFTER paciente_edad,
+    ADD COLUMN propietario_telefono VARCHAR(40)  DEFAULT NULL AFTER propietario_nombre;

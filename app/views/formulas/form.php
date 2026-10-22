@@ -50,7 +50,7 @@ if (!$vetSel) {
         .ac-op:hover, .ac-op.activa { background: #eef2ff; }
         .ac-op small { color: #94a3b8; }
         .ac-vacio { padding: .5rem .7rem; font-size: .84rem; color: #94a3b8; }
-        .dato-animal[readonly] { background: #f1f5f9; color: #334155; cursor: default; }
+        .dato-animal[readonly], .dato-animal.bloqueado { background-color: #f1f5f9; color: #334155; cursor: default; pointer-events: none; }
         .dato-animal[readonly]:focus { box-shadow: none; border-color: #dee2e6; }
         .rx-item { border: 1px solid #e2e8f0; border-radius: .75rem; padding: .85rem .9rem .6rem; margin-bottom: .75rem; position: relative; background: #fff; }
         .rx-item-num { position: absolute; top: -10px; left: 12px; background: #4f46e5; color: #fff; font-size: .72rem; font-weight: 700;
@@ -99,11 +99,14 @@ if (!$vetSel) {
                             <div class="col-lg-6">
                                 <label class="form-label fw-semibold">Paciente (mascota) <span class="text-danger">*</span></label>
                                 <div class="ac">
-                                    <input type="text" class="form-control" id="pacienteBuscar" placeholder="Nombre de la mascota o del propietario…">
+                                    <input type="text" class="form-control" id="pacienteBuscar" name="paciente_nombre" maxlength="100"
+                                           value="<?= htmlspecialchars((string)$valor('paciente_nombre', '')) ?>"
+                                           placeholder="Busca la mascota o escribe el nombre si no está registrada…">
                                     <div class="ac-lista" id="pacienteLista"></div>
                                 </div>
                                 <input type="hidden" name="mascota_id" id="mascotaId" value="<?= $mascotaSel ?: '' ?>">
                                 <div class="form-text" id="pacientePropietario"></div>
+                                <div class="form-text text-warning-emphasis d-none" id="pacienteNuevo"><i class="bi bi-info-circle me-1"></i>Paciente no registrado: completa sus datos abajo.</div>
                             </div>
                             <div class="col-sm-6 col-lg-3">
                                 <label class="form-label fw-semibold">Fecha <span class="text-danger">*</span></label>
@@ -117,28 +120,46 @@ if (!$vetSel) {
                                     <?php endforeach; ?>
                                 </select>
                             </div>
-                            <!-- Datos del animal: se llenan al elegir la mascota y quedan bloqueados -->
+                            <!-- Datos del animal: de una mascota registrada se llenan y quedan bloqueados; de un paciente nuevo se escriben -->
                             <div class="col-6 col-md">
                                 <label class="form-label fw-semibold">Especie</label>
-                                <input type="text" class="form-control dato-animal" id="aEspecie" readonly tabindex="-1" placeholder="—">
+                                <select class="form-select dato-animal" id="aEspecie" name="paciente_especie" data-inicial="<?= htmlspecialchars((string)$valor('paciente_especie', '')) ?>">
+                                    <option value="">—</option>
+                                    <?php foreach ($especies as $es): ?><option value="<?= $es ?>"><?= $es ?></option><?php endforeach; ?>
+                                </select>
                             </div>
                             <div class="col-6 col-md">
                                 <label class="form-label fw-semibold">Raza</label>
-                                <input type="text" class="form-control dato-animal" id="aRaza" readonly tabindex="-1" placeholder="—">
+                                <input type="text" class="form-control dato-animal" id="aRaza" name="paciente_raza" maxlength="100" placeholder="—"
+                                       data-inicial="<?= htmlspecialchars((string)$valor('paciente_raza', '')) ?>">
                             </div>
                             <div class="col-6 col-md">
                                 <label class="form-label fw-semibold">Sexo</label>
-                                <input type="text" class="form-control dato-animal" id="aSexo" readonly tabindex="-1" placeholder="—">
+                                <select class="form-select dato-animal" id="aSexo" name="paciente_sexo" data-inicial="<?= htmlspecialchars((string)$valor('paciente_sexo', '')) ?>">
+                                    <option value="">—</option><option value="macho">Macho</option><option value="hembra">Hembra</option>
+                                </select>
                             </div>
                             <div class="col-6 col-md">
                                 <label class="form-label fw-semibold">Edad</label>
-                                <input type="text" class="form-control dato-animal" id="aEdad" readonly tabindex="-1" placeholder="—">
+                                <input type="text" class="form-control dato-animal" id="aEdad" name="paciente_edad" maxlength="40" placeholder="—"
+                                       data-inicial="<?= htmlspecialchars((string)$valor('paciente_edad', '')) ?>">
                             </div>
                             <div class="col-6 col-md">
                                 <label class="form-label fw-semibold">Peso (kg)</label>
                                 <input type="text" class="form-control dato-animal" name="peso" id="aPeso" inputmode="decimal" readonly
                                        value="<?= htmlspecialchars((string)$valor('peso', '')) ?>" data-inicial="<?= htmlspecialchars((string)$valor('peso', '')) ?>" placeholder="—">
                                 <div class="form-text" id="aPesoAyuda"></div>
+                            </div>
+                            <div class="w-100 m-0"></div><!-- el propietario va en su propia fila -->
+                            <div class="col-md-6 d-none fila-libre">
+                                <label class="form-label fw-semibold">Propietario</label>
+                                <input type="text" class="form-control" name="propietario_nombre" maxlength="150" placeholder="Nombre del propietario (opcional)"
+                                       value="<?= htmlspecialchars((string)$valor('propietario_nombre', '')) ?>">
+                            </div>
+                            <div class="col-md-3 d-none fila-libre">
+                                <label class="form-label fw-semibold">Teléfono</label>
+                                <input type="text" class="form-control" name="propietario_telefono" maxlength="40" placeholder="Opcional"
+                                       value="<?= htmlspecialchars((string)$valor('propietario_telefono', '')) ?>">
                             </div>
                         </div>
                     </div>
@@ -297,9 +318,10 @@ function elegirMascota(m, inicial = false) {
     document.getElementById('mascotaId').value = m.id;
     document.getElementById('pacienteBuscar').value = (ICONOS[m.especie] || '🐾') + ' ' + m.nombre + (m.cliente ? ' — ' + m.cliente : '');
     document.getElementById('pacientePropietario').textContent = 'Propietario: ' + (m.cliente || 'sin registrar') + (m.cliente_telefono ? ' · Tel. ' + m.cliente_telefono : '');
+    modoPaciente(false);
     document.getElementById('aEspecie').value = m.especie || '';
     document.getElementById('aRaza').value    = m.raza || '';
-    document.getElementById('aSexo').value    = m.sexo ? (m.sexo === 'macho' ? 'Macho' : 'Hembra') : '';
+    document.getElementById('aSexo').value    = m.sexo || '';
     document.getElementById('aEdad').value    = m.fecha_nacimiento ? edad(m.fecha_nacimiento) : '';
     const peso = document.getElementById('aPeso'), ayuda = document.getElementById('aPesoAyuda');
     // Al editar una fórmula se conserva el peso con que se recetó
@@ -308,22 +330,51 @@ function elegirMascota(m, inicial = false) {
     peso.readOnly = valor !== '';
     ayuda.textContent = valor !== '' ? (inicial && peso.dataset.inicial ? 'Peso de esta fórmula' : 'Último peso del historial') : 'Sin peso en el historial: escríbelo';
 }
+// Registrada: datos bloqueados. Paciente nuevo (nombre escrito a mano): datos editables y propietario opcional
+function modoPaciente(libre) {
+    ['aRaza', 'aEdad'].forEach(id => document.getElementById(id).readOnly = !libre);
+    ['aEspecie', 'aSexo'].forEach(id => { const s = document.getElementById(id); s.classList.toggle('bloqueado', !libre); s.tabIndex = libre ? 0 : -1; });
+    document.querySelectorAll('.fila-libre').forEach(el => el.classList.toggle('d-none', !libre));
+    document.getElementById('pacienteNuevo').classList.toggle('d-none', !libre);
+    if (libre) {
+        document.getElementById('pacientePropietario').textContent = '';
+        const peso = document.getElementById('aPeso');
+        peso.readOnly = false;
+        document.getElementById('aPesoAyuda').textContent = '';
+    }
+}
 function limpiarAnimal() {
     ['aEspecie', 'aRaza', 'aSexo', 'aEdad', 'aPeso'].forEach(id => document.getElementById(id).value = '');
-    document.getElementById('aPeso').readOnly = true;
     document.getElementById('aPesoAyuda').textContent = '';
     document.getElementById('pacientePropietario').textContent = '';
+    // Con un nombre escrito que no está en la lista, se registra como paciente nuevo
+    modoPaciente(document.getElementById('pacienteBuscar').value.trim() !== '');
 }
 autocompletar(document.getElementById('pacienteBuscar'), document.getElementById('pacienteLista'),
     q => MASCOTAS.filter(m => !q || sinTildes(m.nombre + ' ' + (m.cliente || '')).includes(q)).slice(0, 30)
                  .map(m => ({ valor: m, html: `<span>${ICONOS[m.especie] || '🐾'} ${escHtml(m.nombre)}</span><small>${escHtml(m.cliente || 'sin propietario')}</small>` })),
     elegirMascota);
 document.getElementById('pacienteBuscar').addEventListener('input', () => {
-    document.getElementById('mascotaId').value = '';
-    limpiarAnimal();
+    const mid = document.getElementById('mascotaId');
+    if (mid.value) {
+        // Se dejó de lado la mascota registrada: sus datos se borran
+        mid.value = '';
+        limpiarAnimal();
+    } else {
+        // Paciente nuevo: corregir el nombre no borra lo que ya se escribió
+        modoPaciente(document.getElementById('pacienteBuscar').value.trim() !== '');
+    }
 });
 const inicial = MASCOTAS.find(m => String(m.id) === document.getElementById('mascotaId').value);
-if (inicial) elegirMascota(inicial, true); else limpiarAnimal();
+if (inicial) {
+    elegirMascota(inicial, true);
+} else {
+    // Paciente no registrado (fórmula guardada o datos devueltos por un error): se recuperan sus datos
+    limpiarAnimal();
+    ['aEspecie', 'aRaza', 'aSexo', 'aEdad'].forEach(id => { const el = document.getElementById(id); if (el.dataset.inicial) el.value = el.dataset.inicial; });
+    const peso = document.getElementById('aPeso');
+    if (peso.dataset.inicial) peso.value = String(parseFloat(peso.dataset.inicial)).replace('.', ',');
+}
 
 // ── Prescripción ──
 function renumerar() {
@@ -369,9 +420,9 @@ function agregarItem(datos = {}) {
 window.scrollTo(0, 0);
 
 document.getElementById('formFormula').addEventListener('submit', e => {
-    if (!document.getElementById('mascotaId').value) {
+    if (!document.getElementById('mascotaId').value && !document.getElementById('pacienteBuscar').value.trim()) {
         e.preventDefault();
-        alert('Selecciona el paciente de la lista.');
+        alert('Busca la mascota o escribe el nombre del paciente.');
         document.getElementById('pacienteBuscar').focus();
     }
 });
