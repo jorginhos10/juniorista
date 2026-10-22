@@ -7,8 +7,12 @@ $m     = $motivos[$c['motivo']] ?? ['label' => ucfirst($c['motivo'])];
 $totalU = array_sum(array_map(fn($i) => (int)$i['cantidad'], $items));
 $totalV = array_sum(array_map(fn($i) => (float)$i['subtotal'], $items));
 $meses  = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
-$ts     = strtotime($c['fecha']);
-$fechaLarga = (int)date('j', $ts) . ' de ' . $meses[date('n', $ts) - 1] . ' de ' . date('Y', $ts);
+$larga  = fn(string $f) => (int)date('j', strtotime($f)) . ' de ' . $meses[date('n', strtotime($f)) - 1] . ' de ' . date('Y', strtotime($f));
+// Con descargos de varios días, la fecha es el rango
+$fechas = array_column($items, 'fecha');
+$fechaLarga = min($fechas) === max($fechas) ? $larga(min($fechas)) : 'del ' . $larga(min($fechas)) . ' al ' . $larga(max($fechas));
+$personas = implode(', ', array_unique(array_filter(array_column($items, 'usuario_nombre')))) ?: '—';
+$variosMotivos = count(array_unique(array_column($items, 'motivo'))) > 1 || count(array_unique(array_column($items, 'motivo_detalle'))) > 1;
 $nProd  = count($items);
 ?>
 <!DOCTYPE html>
@@ -96,18 +100,19 @@ $nProd  = count($items);
         Por medio de la presente se hace descargo del inventario de <strong><?= $e($empresa['nombre']) ?></strong>
         de <?= $nProd === 1 ? 'el producto relacionado' : 'los ' . $nProd . ' productos relacionados' ?> a continuación
         (<?= $totalU ?> unidad<?= $totalU === 1 ? '' : 'es' ?> por un valor de <?= $money($totalV) ?>), que se retiran de las existencias
-        por el motivo indicado y dejan de estar disponibles para la venta. El descargo fue registrado en el sistema
-        por <?= $e($c['usuario_nombre'] ?: '—') ?> y se firma en constancia por quienes intervienen.
+        por <?= $variosMotivos ? 'los motivos indicados' : 'el motivo indicado' ?> y dejan de estar disponibles para la venta. El descargo fue registrado en el sistema
+        por <?= $e($personas) ?> y se firma en constancia por quienes intervienen.
     </p>
 
     <table>
         <thead>
-            <tr><th style="width:30px">#</th><th>Concepto</th><th class="c" style="width:90px">Cantidad</th><th class="r" style="width:110px">Valor</th><th style="width:34%">Motivo</th></tr>
+            <tr><th style="width:30px">#</th><?php if (min($fechas) !== max($fechas)): ?><th style="width:80px">Fecha</th><?php endif; ?><th>Concepto</th><th class="c" style="width:90px">Cantidad</th><th class="r" style="width:110px">Valor</th><th style="width:34%">Motivo</th></tr>
         </thead>
         <tbody>
             <?php foreach ($items as $n => $i): $mi = $motivos[$i['motivo']] ?? ['label' => ucfirst($i['motivo'])]; ?>
             <tr>
                 <td><?= $n + 1 ?></td>
+                <?php if (min($fechas) !== max($fechas)): ?><td><?= date('d/m/Y', strtotime($i['fecha'])) ?></td><?php endif; ?>
                 <td><?= $e($i['producto_nombre']) ?><?php if ($i['codigo']): ?><div class="cod"><?= $e($i['codigo']) ?></div><?php endif; ?></td>
                 <td class="c"><?= (int)$i['cantidad'] ?> <?= $e($i['unidad']) ?></td>
                 <td class="r"><?= $money($i['subtotal']) ?><div class="cod"><?= $money($i['precio_unitario']) ?> c/u</div></td>
@@ -116,13 +121,13 @@ $nProd  = count($items);
             <?php endforeach; ?>
         </tbody>
         <tfoot>
-            <tr><td colspan="2" class="r">Total</td><td class="c"><?= $totalU ?></td><td class="r"><?= $money($totalV) ?></td><td></td></tr>
+            <tr><td colspan="<?= min($fechas) !== max($fechas) ? 3 : 2 ?>" class="r">Total</td><td class="c"><?= $totalU ?></td><td class="r"><?= $money($totalV) ?></td><td></td></tr>
         </tfoot>
     </table>
     <div class="nota">Valores a precio de compra.</div>
 
     <div class="firmas">
-        <div><?= $e($c['usuario_nombre'] ?: '') ?><small>Vendedor</small></div>
+        <div><?= $e($personas !== '—' ? $personas : '') ?><small>Vendedor</small></div>
         <div>&nbsp;<small>Administrador</small></div>
     </div>
     <div class="pie">Acta generada por PetControl · <?= $e($numero) ?></div>

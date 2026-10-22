@@ -66,6 +66,28 @@ class DescargoModel {
         }
     }
 
+    /** Descargos elegidos (por id) de la sucursal, para un acta con todos ellos */
+    public function getPorIds(array $ids, int $veterinaria_id): array {
+        $ids = array_values(array_unique(array_filter(array_map('intval', $ids))));
+        if (!$ids) return [];
+        $ids = array_slice($ids, 0, 300);
+        $marcas = implode(',', array_fill(0, count($ids), '?'));
+        $stmt = $this->db->prepare(
+            "SELECT d.*, (d.cantidad * d.precio_unitario) AS subtotal, p.nombre AS producto_nombre, p.codigo, p.unidad,
+                    u.nombre AS usuario_nombre
+               FROM descargos d
+               JOIN productos p ON p.id = d.producto_id
+          LEFT JOIN usuarios u  ON u.id = d.usuario_id
+              WHERE d.veterinaria_id = ? AND d.id IN ($marcas)
+           ORDER BY d.fecha, d.id"
+        );
+        $stmt->bind_param('i' . str_repeat('i', count($ids)), $veterinaria_id, ...$ids);
+        $stmt->execute();
+        $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
+        return $rows;
+    }
+
     /** Productos de un acta de descargo (de la sucursal en sesión) con su producto y quien la registró */
     public function getActa(int $grupo, int $veterinaria_id): array {
         $stmt = $this->db->prepare(

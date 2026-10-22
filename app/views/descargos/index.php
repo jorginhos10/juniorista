@@ -210,7 +210,11 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white border-0 pt-3 pb-2">
                     <form method="GET" action="<?= BASE_URL ?>/descargos" class="filtro-bar">
-                        <h6 class="card-title mb-0 fw-semibold me-auto align-self-center">Historial de descargos</h6>
+                        <h6 class="card-title mb-0 fw-semibold me-auto align-self-center">Historial de descargos
+                            <button type="button" class="btn btn-sm btn-danger ms-2 d-none" id="btnActaMarcados">
+                                <i class="bi bi-printer me-1"></i>Acta con los marcados (<span>0</span>)
+                            </button>
+                        </h6>
                         <div>
                             <label class="form-label small fw-semibold mb-1">Desde</label>
                             <input type="date" class="form-control form-control-sm" name="desde" value="<?= $desde ?>" max="<?= $hoyF ?>">
@@ -242,7 +246,8 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
                         <table class="table table-hover align-middle mb-0">
                             <thead class="table-light">
                                 <tr>
-                                    <th class="ps-3">Fecha</th>
+                                    <th class="ps-3" style="width:36px;"><input class="form-check-input" type="checkbox" id="marcarTodos" title="Marcar todos"></th>
+                                    <th>Fecha</th>
                                     <th>Producto</th>
                                     <th class="text-center">Cantidad</th>
                                     <th>Motivo</th>
@@ -254,7 +259,7 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
                             <tbody>
                                 <?php if (empty($descargos)): ?>
                                 <tr>
-                                    <td colspan="7" class="text-center text-muted py-5">
+                                    <td colspan="8" class="text-center text-muted py-5">
                                         <i class="bi bi-inbox fs-2 d-block mb-2 opacity-25"></i>
                                         No hay descargos en este período.
                                     </td>
@@ -262,7 +267,8 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
                                 <?php endif; ?>
                                 <?php foreach ($descargos as $d): $m = $motivos[$d['motivo']]; ?>
                                 <tr>
-                                    <td class="ps-3 small text-nowrap">
+                                    <td class="ps-3"><input class="form-check-input dsc-marca" type="checkbox" value="<?= (int)$d['id'] ?>" aria-label="Incluir en el acta"></td>
+                                    <td class="small text-nowrap">
                                         <?= date('d/m/Y', strtotime($d['fecha'])) ?>
                                         <?php if ($d['fecha'] === date('Y-m-d', strtotime($d['created_at']))): ?>
                                         <div class="text-muted"><?= date('H:i', strtotime($d['created_at'])) ?></div>
@@ -301,7 +307,7 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
                             <?php if ($descargos): ?>
                             <tfoot>
                                 <tr class="fw-bold">
-                                    <td colspan="2" class="ps-3 text-end">Total</td>
+                                    <td colspan="3" class="ps-3 text-end">Total</td>
                                     <td class="text-center"><?= $unidades ?></td>
                                     <td colspan="2"></td>
                                     <td class="text-end monto"><?= $money($valor) ?></td>
@@ -555,6 +561,26 @@ if (form) {
     box.classList.toggle('visible', motivo.value === 'otros');
     detalle.required = motivo.value === 'otros';
 }
+
+// Casillas: el acta lleva todos los descargos marcados
+(function () {
+    const marcas = () => [...document.querySelectorAll('.dsc-marca')];
+    const btn = document.getElementById('btnActaMarcados');
+    const todos = document.getElementById('marcarTodos');
+    function actualizar() {
+        const sel = marcas().filter(c => c.checked);
+        btn.classList.toggle('d-none', sel.length === 0);
+        btn.querySelector('span').textContent = sel.length;
+        if (todos) { todos.checked = sel.length > 0 && sel.length === marcas().length; todos.indeterminate = sel.length > 0 && sel.length < marcas().length; }
+        marcas().forEach(c => c.closest('tr').classList.toggle('table-active', c.checked));
+    }
+    marcas().forEach(c => c.addEventListener('change', actualizar));
+    todos?.addEventListener('change', () => { marcas().forEach(c => c.checked = todos.checked); actualizar(); });
+    btn.addEventListener('click', () => {
+        const ids = marcas().filter(c => c.checked).map(c => c.value).join(',');
+        if (ids) window.open('<?= BASE_URL ?>/descargos/acta?ids=' + ids, '_blank');
+    });
+})();
 
 <?php if ($acta): ?>
 // Recién registrado: se abre el acta de descargo para imprimir

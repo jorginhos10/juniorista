@@ -112,8 +112,13 @@ class DescargoController {
     /** GET: acta de descargo imprimible (todos los productos descargados juntos) */
     public function acta(): void {
         $veterinaria_id = $this->veterinariaActual($this->vetModel->getAll());
-        $grupo = (int)($_GET['grupo'] ?? 0);
-        $items = $this->model->getActa($grupo, $veterinaria_id);
+        if (isset($_GET['ids'])) {
+            $items = $this->model->getPorIds(explode(',', (string)$_GET['ids']), $veterinaria_id);
+            $grupo = $items ? (int)min(array_column($items, 'id')) : 0;
+        } else {
+            $grupo = (int)($_GET['grupo'] ?? 0);
+            $items = $this->model->getActa($grupo, $veterinaria_id);
+        }
         if (!$items) {
             http_response_code(404);
             echo 'Acta de descargo no encontrada.';
