@@ -118,7 +118,9 @@ class FormulaModel {
     public function getMascotas(): array {
         $r = $this->db->query(
             "SELECT m.id, m.nombre, m.especie, m.raza, m.sexo, m.fecha_nacimiento,
-                    CONCAT(c.nombre, ' ', c.apellido) AS cliente, c.telefono AS cliente_telefono
+                    CONCAT(c.nombre, ' ', c.apellido) AS cliente, c.telefono AS cliente_telefono,
+                    (SELECT h.peso FROM historial_medico h WHERE h.mascota_id = m.id AND h.activo = 1 AND h.peso IS NOT NULL
+                      ORDER BY h.fecha DESC, h.id DESC LIMIT 1) AS ultimo_peso
                FROM mascotas m
           LEFT JOIN clientes c ON c.id = m.cliente_id AND c.activo = 1
               WHERE m.activo = 1 AND m.veterinaria_id = " . Seguridad::sucursalActual() . "

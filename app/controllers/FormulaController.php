@@ -58,7 +58,6 @@ class FormulaController {
             'mascotas'       => $this->model->getMascotas(),
             'productos'      => $this->model->getProductos(),
             'veterinarios'   => $this->model->getVeterinarios(),
-            'tarjetas'       => $this->model->getTarjetas(),
             'vias'           => FormulaModel::VIAS,
             'usuario'        => $this->usuario(),
             'error'          => $_SESSION['flash_error'] ?? '',
@@ -86,7 +85,7 @@ class FormulaController {
             'diagnostico'         => $txt('diagnostico', 2000),
             'indicaciones'        => $txt('indicaciones', 3000),
             'proximo_control'     => $this->fechaValida($_POST['proximo_control'] ?? ''),
-            'tarjeta_profesional' => $txt('tarjeta_profesional', 40),
+            'tarjeta_profesional' => null,
             'usuario_id'          => (int)$_SESSION['usuario_id'],
         ];
 

@@ -50,7 +50,8 @@ if (!$vetSel) {
         .ac-op:hover, .ac-op.activa { background: #eef2ff; }
         .ac-op small { color: #94a3b8; }
         .ac-vacio { padding: .5rem .7rem; font-size: .84rem; color: #94a3b8; }
-        .paciente-ficha { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: .6rem; padding: .6rem .8rem; font-size: .85rem; }
+        .dato-animal[readonly] { background: #f1f5f9; color: #334155; cursor: default; }
+        .dato-animal[readonly]:focus { box-shadow: none; border-color: #dee2e6; }
         .rx-item { border: 1px solid #e2e8f0; border-radius: .75rem; padding: .85rem .9rem .6rem; margin-bottom: .75rem; position: relative; background: #fff; }
         .rx-item-num { position: absolute; top: -10px; left: 12px; background: #4f46e5; color: #fff; font-size: .72rem; font-weight: 700;
                        border-radius: 999px; padding: .05rem .5rem; }
@@ -95,22 +96,18 @@ if (!$vetSel) {
                     <div class="card-header"><h6 class="rx-titulo"><span class="letra">1</span>Paciente y médico</h6></div>
                     <div class="card-body pt-2">
                         <div class="row g-3">
-                            <div class="col-lg-5">
+                            <div class="col-lg-6">
                                 <label class="form-label fw-semibold">Paciente (mascota) <span class="text-danger">*</span></label>
                                 <div class="ac">
                                     <input type="text" class="form-control" id="pacienteBuscar" placeholder="Nombre de la mascota o del propietario…">
                                     <div class="ac-lista" id="pacienteLista"></div>
                                 </div>
                                 <input type="hidden" name="mascota_id" id="mascotaId" value="<?= $mascotaSel ?: '' ?>">
-                                <div class="paciente-ficha mt-2 d-none" id="pacienteFicha"></div>
+                                <div class="form-text" id="pacientePropietario"></div>
                             </div>
-                            <div class="col-sm-6 col-lg-2">
+                            <div class="col-sm-6 col-lg-3">
                                 <label class="form-label fw-semibold">Fecha <span class="text-danger">*</span></label>
                                 <input type="date" class="form-control" name="fecha" value="<?= htmlspecialchars($valor('fecha', date('Y-m-d'))) ?>" max="<?= date('Y-m-d') ?>" required>
-                            </div>
-                            <div class="col-sm-6 col-lg-2">
-                                <label class="form-label fw-semibold">Peso (kg)</label>
-                                <input type="text" class="form-control" name="peso" inputmode="decimal" value="<?= htmlspecialchars((string)$valor('peso', '')) ?>" placeholder="Ej: 12,5">
                             </div>
                             <div class="col-sm-6 col-lg-3">
                                 <label class="form-label fw-semibold">Médico veterinario <span class="text-danger">*</span></label>
@@ -120,10 +117,28 @@ if (!$vetSel) {
                                     <?php endforeach; ?>
                                 </select>
                             </div>
-                            <div class="col-sm-6 col-lg-3 offset-lg-9">
-                                <label class="form-label fw-semibold">Tarjeta profesional</label>
-                                <input type="text" class="form-control" name="tarjeta_profesional" id="tarjetaProfesional" maxlength="40"
-                                       value="<?= htmlspecialchars((string)$valor('tarjeta_profesional', '')) ?>" placeholder="N.º de registro (aparece en la firma)">
+                            <!-- Datos del animal: se llenan al elegir la mascota y quedan bloqueados -->
+                            <div class="col-6 col-md">
+                                <label class="form-label fw-semibold">Especie</label>
+                                <input type="text" class="form-control dato-animal" id="aEspecie" readonly tabindex="-1" placeholder="—">
+                            </div>
+                            <div class="col-6 col-md">
+                                <label class="form-label fw-semibold">Raza</label>
+                                <input type="text" class="form-control dato-animal" id="aRaza" readonly tabindex="-1" placeholder="—">
+                            </div>
+                            <div class="col-6 col-md">
+                                <label class="form-label fw-semibold">Sexo</label>
+                                <input type="text" class="form-control dato-animal" id="aSexo" readonly tabindex="-1" placeholder="—">
+                            </div>
+                            <div class="col-6 col-md">
+                                <label class="form-label fw-semibold">Edad</label>
+                                <input type="text" class="form-control dato-animal" id="aEdad" readonly tabindex="-1" placeholder="—">
+                            </div>
+                            <div class="col-6 col-md">
+                                <label class="form-label fw-semibold">Peso (kg)</label>
+                                <input type="text" class="form-control dato-animal" name="peso" id="aPeso" inputmode="decimal" readonly
+                                       value="<?= htmlspecialchars((string)$valor('peso', '')) ?>" data-inicial="<?= htmlspecialchars((string)$valor('peso', '')) ?>" placeholder="—">
+                                <div class="form-text" id="aPesoAyuda"></div>
                             </div>
                         </div>
                     </div>
@@ -234,7 +249,6 @@ if (!$vetSel) {
 const MASCOTAS  = <?= json_encode($mascotas, $jsonFlags) ?>;
 const PRODUCTOS = <?= json_encode(array_map(fn($p) => ['id' => (int)$p['id'], 'nombre' => $p['nombre'], 'codigo' => (string)$p['codigo'],
                     'descripcion' => (string)$p['descripcion'], 'unidad' => (string)$p['unidad'], 'stock' => (int)$p['stock']], $productos), $jsonFlags) ?>;
-const TARJETAS  = <?= json_encode((object)$tarjetas, $jsonFlags) ?>;
 const ITEMS     = <?= json_encode(array_values($items), $jsonFlags) ?>;
 const ICONOS    = { Perro: '🐶', Gato: '🐱', Ave: '🐦', Conejo: '🐰', Roedor: '🐹', Reptil: '🦎', Otro: '🐾' };
 const sinTildes = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
@@ -277,14 +291,28 @@ function edad(nac) {
     let meses = (h.getFullYear() - d.getFullYear()) * 12 + h.getMonth() - d.getMonth() - (h.getDate() < d.getDate() ? 1 : 0);
     return meses >= 12 ? Math.floor(meses / 12) + (Math.floor(meses / 12) === 1 ? ' año' : ' años') : Math.max(meses, 0) + (meses === 1 ? ' mes' : ' meses');
 }
-function elegirMascota(m) {
+// Al elegir la mascota se llenan sus datos y quedan bloqueados. El peso sale del último registro del historial;
+// si no tiene ninguno, se deja escribir.
+function elegirMascota(m, inicial = false) {
     document.getElementById('mascotaId').value = m.id;
-    document.getElementById('pacienteBuscar').value = m.nombre + (m.cliente ? ' — ' + m.cliente : '');
-    const ficha = document.getElementById('pacienteFicha');
-    ficha.classList.remove('d-none');
-    ficha.innerHTML = `<strong>${ICONOS[m.especie] || '🐾'} ${escHtml(m.nombre)}</strong> · ${escHtml(m.especie)}${m.raza ? ' · ' + escHtml(m.raza) : ''}`
-        + `${m.sexo ? ' · ' + (m.sexo === 'macho' ? 'Macho' : 'Hembra') : ''}${m.fecha_nacimiento ? ' · ' + edad(m.fecha_nacimiento) : ''}`
-        + `<div class="text-muted">Propietario: ${escHtml(m.cliente || 'sin registrar')}${m.cliente_telefono ? ' · Tel. ' + escHtml(m.cliente_telefono) : ''}</div>`;
+    document.getElementById('pacienteBuscar').value = (ICONOS[m.especie] || '🐾') + ' ' + m.nombre + (m.cliente ? ' — ' + m.cliente : '');
+    document.getElementById('pacientePropietario').textContent = 'Propietario: ' + (m.cliente || 'sin registrar') + (m.cliente_telefono ? ' · Tel. ' + m.cliente_telefono : '');
+    document.getElementById('aEspecie').value = m.especie || '';
+    document.getElementById('aRaza').value    = m.raza || '';
+    document.getElementById('aSexo').value    = m.sexo ? (m.sexo === 'macho' ? 'Macho' : 'Hembra') : '';
+    document.getElementById('aEdad').value    = m.fecha_nacimiento ? edad(m.fecha_nacimiento) : '';
+    const peso = document.getElementById('aPeso'), ayuda = document.getElementById('aPesoAyuda');
+    // Al editar una fórmula se conserva el peso con que se recetó
+    const valor = inicial && peso.dataset.inicial ? String(parseFloat(peso.dataset.inicial)) : (m.ultimo_peso !== null && m.ultimo_peso !== undefined ? String(parseFloat(m.ultimo_peso)) : '');
+    peso.value = valor.replace('.', ',');
+    peso.readOnly = valor !== '';
+    ayuda.textContent = valor !== '' ? (inicial && peso.dataset.inicial ? 'Peso de esta fórmula' : 'Último peso del historial') : 'Sin peso en el historial: escríbelo';
+}
+function limpiarAnimal() {
+    ['aEspecie', 'aRaza', 'aSexo', 'aEdad', 'aPeso'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('aPeso').readOnly = true;
+    document.getElementById('aPesoAyuda').textContent = '';
+    document.getElementById('pacientePropietario').textContent = '';
 }
 autocompletar(document.getElementById('pacienteBuscar'), document.getElementById('pacienteLista'),
     q => MASCOTAS.filter(m => !q || sinTildes(m.nombre + ' ' + (m.cliente || '')).includes(q)).slice(0, 30)
@@ -292,20 +320,10 @@ autocompletar(document.getElementById('pacienteBuscar'), document.getElementById
     elegirMascota);
 document.getElementById('pacienteBuscar').addEventListener('input', () => {
     document.getElementById('mascotaId').value = '';
-    document.getElementById('pacienteFicha').classList.add('d-none');
+    limpiarAnimal();
 });
 const inicial = MASCOTAS.find(m => String(m.id) === document.getElementById('mascotaId').value);
-if (inicial) elegirMascota(inicial);
-
-// ── Médico: propone su última tarjeta profesional ──
-document.getElementById('veterinarioId').addEventListener('change', e => {
-    const t = TARJETAS[e.target.value];
-    if (t) document.getElementById('tarjetaProfesional').value = t;
-});
-if (!document.getElementById('tarjetaProfesional').value) {
-    const t = TARJETAS[document.getElementById('veterinarioId').value];
-    if (t) document.getElementById('tarjetaProfesional').value = t;
-}
+if (inicial) elegirMascota(inicial, true); else limpiarAnimal();
 
 // ── Prescripción ──
 function renumerar() {

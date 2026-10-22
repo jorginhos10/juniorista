@@ -164,7 +164,6 @@ $sexo = ['macho' => 'Macho', 'hembra' => 'Hembra'][$f['sexo'] ?? ''] ?? '';
         <div class="firma-linea"><?= $e($f['veterinario'] ?: 'Médico veterinario') ?></div>
         <div class="firma-sub">
             Médico veterinario
-            <?php if (!empty($f['tarjeta_profesional'])): ?><br>T.P. <?= $e($f['tarjeta_profesional']) ?><?php endif; ?>
         </div>
     </div>
 
