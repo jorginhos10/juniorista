@@ -19,3 +19,6 @@ CREATE TABLE IF NOT EXISTS descargos (
 ALTER TABLE descargos ADD COLUMN fecha DATE NULL AFTER producto_id;
 UPDATE descargos SET fecha = DATE(created_at) WHERE fecha IS NULL;
 ALTER TABLE descargos MODIFY fecha DATE NOT NULL, ADD KEY idx_descargos_vet_fecha_d (veterinaria_id, fecha);
+
+-- 2026-10-21: varios productos por descargo; comparten «grupo» (número del acta). DescargoModel lo aplica solo.
+ALTER TABLE descargos ADD COLUMN grupo INT DEFAULT NULL AFTER id, ADD KEY idx_descargos_grupo (grupo);

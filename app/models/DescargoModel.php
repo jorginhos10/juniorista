@@ -15,9 +15,75 @@ class DescargoModel {
     public function __construct() {
         $this->db = Database::getInstance()->getConnection();
         $this->asegurarFecha();
+        $this->asegurarGrupo();
     }
 
     /** El descargo lleva su propia fecha; en una base sin la columna se crea y se llena con el día de registro */
+    /** Los productos descargados juntos comparten «grupo» (el acta de descargo); sin grupo, el acta es el propio descargo */
+    private function asegurarGrupo(): void {
+        if ($this->db->query("SHOW COLUMNS FROM descargos LIKE 'grupo'")->num_rows) return;
+        $this->db->query('ALTER TABLE descargos ADD COLUMN grupo INT DEFAULT NULL AFTER id, ADD KEY idx_descargos_grupo (grupo)');
+    }
+
+    /**
+     * Descarga varios productos con la misma fecha y motivo, en una sola transacción (todo o nada).
+     * $items: [[producto_id, cantidad], …]. Devuelve ['error' => '', 'grupo' => id] o ['error' => mensaje].
+     */
+    public function crearVarios(array $comun, array $items): array {
+        $this->db->begin_transaction();
+        try {
+            $grupo = 0;
+            foreach ($items as [$pid, $cant]) {
+                $upd = $this->db->prepare('UPDATE inventario SET stock = stock - ? WHERE veterinaria_id = ? AND producto_id = ? AND stock >= ?');
+                $upd->bind_param('iiii', $cant, $comun['veterinaria_id'], $pid, $cant);
+                $ok = $upd->execute() && $upd->affected_rows === 1;
+                $upd->close();
+                if (!$ok) {
+                    $this->db->rollback();
+                    $disp   = $this->getStock($comun['veterinaria_id'], $pid);
+                    $nombre = $this->db->query('SELECT nombre FROM productos WHERE id = ' . (int)$pid)->fetch_row()[0] ?? 'producto';
+                    return ['error' => "Stock insuficiente de $nombre: solicitado $cant, disponible $disp. No se descargó nada."];
+                }
+                $ins = $this->db->prepare(
+                    'INSERT INTO descargos (grupo, veterinaria_id, producto_id, fecha, cantidad, precio_unitario, motivo, motivo_detalle, usuario_id)
+                     SELECT NULLIF(?, 0), ?, id, ?, ?, precio_compra, ?, NULLIF(?, \'\'), ? FROM productos WHERE id = ?'
+                );
+                $ins->bind_param('iisissii', $grupo, $comun['veterinaria_id'], $comun['fecha'], $cant, $comun['motivo'],
+                    $comun['motivo_detalle'], $comun['usuario_id'], $pid);
+                if (!$ins->execute() || $ins->affected_rows !== 1) throw new Exception('No se insertó el descargo');
+                $id = (int)$this->db->insert_id;
+                $ins->close();
+                if ($grupo === 0) {
+                    $grupo = $id;   // el primer descargo da el número del acta
+                    $this->db->query("UPDATE descargos SET grupo = $grupo WHERE id = $id");
+                }
+            }
+            $this->db->commit();
+            return ['error' => '', 'grupo' => $grupo];
+        } catch (Exception $e) {
+            $this->db->rollback();
+            return ['error' => 'Error al registrar el descargo.'];
+        }
+    }
+
+    /** Productos de un acta de descargo (de la sucursal en sesión) con su producto y quien la registró */
+    public function getActa(int $grupo, int $veterinaria_id): array {
+        $stmt = $this->db->prepare(
+            'SELECT d.*, (d.cantidad * d.precio_unitario) AS subtotal, p.nombre AS producto_nombre, p.codigo, p.unidad,
+                    u.nombre AS usuario_nombre
+               FROM descargos d
+               JOIN productos p ON p.id = d.producto_id
+          LEFT JOIN usuarios u  ON u.id = d.usuario_id
+              WHERE d.veterinaria_id = ? AND (d.grupo = ? OR (d.grupo IS NULL AND d.id = ?))
+           ORDER BY d.id'
+        );
+        $stmt->bind_param('iii', $veterinaria_id, $grupo, $grupo);
+        $stmt->execute();
+        $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
+        return $rows;
+    }
+
     private function asegurarFecha(): void {
         if ($this->db->query("SHOW COLUMNS FROM descargos LIKE 'fecha'")->num_rows) return;
         $this->db->query('ALTER TABLE descargos ADD COLUMN fecha DATE NULL AFTER producto_id');

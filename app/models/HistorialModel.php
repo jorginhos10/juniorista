@@ -18,7 +18,26 @@ class HistorialModel {
 
     public const MUCOSAS     = ['Rosadas', 'Pálidas', 'Ictéricas', 'Cianóticas', 'Congestivas'];
     public const TLLC        = ['< 2 s', '> 2 s'];
-    public const HIDRATACION = ['Normal', '5 %', '7 %', '10 %', '> 12 %'];
+    // Estado de hidratación según el formato de historia clínica (los valores anteriores se siguen aceptando)
+    public const HIDRATACION          = ['Normal', '0-5 %', '6-7 %', '8-9 %', '+10 %'];
+    public const HIDRATACION_ANTERIOR = ['5 %', '7 %', '10 %', '> 12 %'];
+
+    // Formato de historia clínica de pequeños animales
+    public const VACUNAS = [
+        'canino' => ['pvc' => 'PVC', 'triple' => 'Triple', 'rabia' => 'Rabia', 'otra' => 'Otra'],
+        'felino' => ['triple' => 'Triple', 'rabia' => 'Rabia', 'otra' => 'Otra'],
+    ];
+    public const ACTITUD     = ['Asténico', 'Apoplético', 'Linfático'];
+    public const CONDICION   = ['Caquéctico', 'Delgado', 'Normal', 'Obeso', 'Sobrepeso'];
+    public const ALIMENTACION = ['Balanceada', 'Casera', 'Mixta', 'Otra'];
+    public const HABITAT     = ['Casa', 'Lote', 'Finca', 'Taller', 'Otro'];
+    public const MUCOSAS_ZONAS = ['conjuntival' => 'Conjuntival', 'oral' => 'Oral', 'vulvar' => 'Vulvar / prepucial', 'rectal' => 'Rectal'];
+    public const SISTEMAS = [
+        'ojos' => 'Ojos', 'oidos' => 'Oídos', 'nodulos' => 'Nódulos linfáticos', 'piel' => 'Piel y anexos',
+        'locomocion' => 'Locomoción', 'musculo' => 'A. musculoesquelético', 'nervioso' => 'Sistema nervioso',
+        'cardio' => 'A. cardiovascular', 'respiratorio' => 'A. respiratorio', 'digestivo' => 'A. digestivo',
+        'genitourinario' => 'A. genitourinario',
+    ];
 
     /** Rangos normales de referencia por especie (adultos en reposo) */
     public const RANGOS = [
@@ -30,13 +49,38 @@ class HistorialModel {
         'veterinario_id', 'fecha', 'tipo', 'motivo', 'anamnesis', 'peso', 'temperatura',
         'frecuencia_cardiaca', 'frecuencia_respiratoria', 'mucosas', 'tllc', 'hidratacion',
         'condicion_corporal', 'examen_fisico', 'diagnostico', 'tratamiento', 'producto_aplicado',
-        'lote', 'proximo_control', 'observaciones',
+        'lote', 'proximo_control', 'observaciones', 'formato',
     ];
 
     private mysqli $db;
 
     public function __construct() {
         $this->db = Database::getInstance()->getConnection();
+        // Respuestas del formato de historia clínica (JSON); se crea sola en una base que no la tenga
+        if (!$this->db->query("SHOW COLUMNS FROM historial_medico LIKE 'formato'")->num_rows) {
+            $this->db->query('ALTER TABLE historial_medico ADD COLUMN formato MEDIUMTEXT DEFAULT NULL AFTER observaciones');
+        }
+    }
+
+    /** Un registro con los datos de la mascota y del propietario (para imprimir el formato) */
+    public function getRegistro(int $id): ?array {
+        $stmt = $this->db->prepare(
+            "SELECT h.*, u.nombre AS veterinario_nombre,
+                    m.nombre AS mascota_nombre, m.especie, m.raza, m.sexo, m.fecha_nacimiento,
+                    CONCAT(c.nombre, ' ', c.apellido) AS cliente_nombre, c.dni AS cliente_dni,
+                    c.direccion AS cliente_direccion, c.telefono AS cliente_telefono
+               FROM historial_medico h
+               JOIN mascotas m ON m.id = h.mascota_id
+          LEFT JOIN clientes c ON c.id = m.cliente_id
+          LEFT JOIN usuarios u ON u.id = h.veterinario_id
+              WHERE h.id = ? AND h.activo = 1 AND m.veterinaria_id = ?"
+        );
+        $vet = Seguridad::sucursalActual();
+        $stmt->bind_param('ii', $id, $vet);
+        $stmt->execute();
+        $r = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+        return $r ?: null;
     }
 
     /** Mascotas con datos del dueño y resumen de su historial */
@@ -44,6 +88,7 @@ class HistorialModel {
         $result = $this->db->query(
             "SELECT m.id, m.nombre, m.especie, m.raza, m.sexo, m.fecha_nacimiento, m.notas, m.cliente_id,
                     CONCAT(c.nombre, ' ', c.apellido) AS cliente_nombre, c.telefono AS cliente_telefono,
+                    c.dni AS cliente_dni, c.direccion AS cliente_direccion,
                     COUNT(h.id) AS total_registros, MAX(h.fecha) AS ultima_visita
                FROM mascotas m
           LEFT JOIN clientes c ON c.id = m.cliente_id AND c.activo = 1

@@ -302,6 +302,8 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
                                             </div>
                                         </div>
                                         <div class="d-flex gap-1 align-items-start">
+                                            <a href="<?= BASE_URL ?>/historial/formato?id=<?= (int)$r['id'] ?>" target="_blank"
+                                               class="btn btn-sm btn-outline-secondary btn-accion" title="Imprimir formato de historia clínica"><i class="bi bi-printer"></i></a>
                                             <button class="btn btn-sm btn-outline-primary btn-accion" title="Editar"
                                                     onclick='editarRegistro(<?= json_encode($r, $jsonFlags) ?>)'><i class="bi bi-pencil-fill"></i></button>
                                             <?php if ($esAdmin): ?>
@@ -398,6 +400,7 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
                             <i class="bi bi-journal-medical text-primary me-2"></i><span id="registroTitulo">Nuevo registro clínico</span>
                         </h5>
                         <div class="text-muted small">
+                            Formato de historia clínica de pequeños animales ·
                             <?= $iconos[$mascota['especie']] ?? '🐾' ?> <?= htmlspecialchars($mascota['nombre']) ?> · <?= htmlspecialchars($mascota['especie']) ?>
                             <?= $mascota['fecha_nacimiento'] ? ' · ' . $edad($mascota['fecha_nacimiento']) : '' ?>
                         </div>
@@ -417,140 +420,270 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
                         <?php endforeach; ?>
                     </div>
 
-                    <!-- Datos generales -->
-                    <div class="row g-3 mb-2">
-                        <div class="col-md-3">
-                            <label class="form-label fw-semibold">Fecha <span class="text-danger">*</span></label>
-                            <input type="date" class="form-control" name="fecha" id="h-fecha" max="<?= $hoy ?>" required>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label fw-semibold">Veterinario</label>
-                            <select class="form-select" name="veterinario_id" id="h-veterinario_id">
-                                <option value="0">—</option>
-                                <?php foreach ($veterinarios as $v): ?>
-                                <option value="<?= $v['id'] ?>"><?= htmlspecialchars($v['nombre']) ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Motivo <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" name="motivo" id="h-motivo" maxlength="200" required>
-                            <div class="sugerencias mt-1" id="sugerenciasMotivo"></div>
-                        </div>
-                    </div>
+                    <?php
+                    // ── Formato de historia clínica de pequeños animales ──
+                    $grupoVac = $mascota['especie'] === 'Gato' ? 'felino' : 'canino';
+                    $radios = function (string $name, array $opciones, string $extraClass = '') {
+                        foreach ($opciones as $o) {
+                            $id = 'r' . substr(md5($name . $o), 0, 8);
+                            echo '<div class="form-check form-check-inline ' . $extraClass . '"><input class="form-check-input" type="radio" name="' . $name . '" id="' . $id . '" value="' . htmlspecialchars($o) . '">'
+                               . '<label class="form-check-label" for="' . $id . '">' . htmlspecialchars($o) . '</label></div>';
+                        }
+                    };
+                    $check = function (string $name, string $label) {
+                        $id = 'c' . substr(md5($name), 0, 8);
+                        echo '<div class="form-check form-check-inline"><input class="form-check-input" type="checkbox" name="' . $name . '" id="' . $id . '" value="1">'
+                           . '<label class="form-check-label" for="' . $id . '">' . htmlspecialchars($label) . '</label></div>';
+                    };
+                    ?>
 
-                    <!-- S -->
-                    <div class="soap-seccion">
-                        <div class="soap-seccion-titulo"><span class="soap-letra">S</span>Subjetivo <small>Anamnesis: lo que refiere el dueño</small></div>
-                        <textarea class="form-control" name="anamnesis" id="h-anamnesis" rows="2"
-                                  placeholder="Inicio y evolución de los síntomas, apetito, vómitos, diarrea, actividad, vacunas y desparasitaciones previas…"></textarea>
-                    </div>
-
-                    <!-- O -->
-                    <div class="soap-seccion">
-                        <div class="soap-seccion-titulo">
-                            <span class="soap-letra">O</span>Objetivo <small>Constantes vitales y examen físico</small>
-                            <?php if ($rango): ?>
-                            <span class="ms-auto rango-ayuda"><i class="bi bi-info-circle me-1"></i>Rangos normales: <?= htmlspecialchars($mascota['especie']) ?></span>
-                            <?php endif; ?>
-                        </div>
+                    <!-- Admisión -->
+                    <div class="hc-sec">
+                        <div class="hc-sec-titulo">Admisión</div>
                         <div class="row g-2">
-                            <div class="col-6 col-md-3">
-                                <label class="form-label small fw-semibold mb-1">Peso</label>
-                                <div class="input-group input-group-sm">
-                                    <input type="number" class="form-control" name="peso" id="h-peso" step="0.01" min="0.01" max="200">
-                                    <span class="input-group-text">kg</span>
-                                </div>
-                                <?php if ($ultimoPeso): ?>
-                                <div class="vital-hint">Último: <?= rtrim(rtrim(number_format($ultimoPeso['peso'], 2), '0'), '.') ?> kg</div>
-                                <?php endif; ?>
+                            <div class="col-6 col-md-2">
+                                <label class="form-label">Fecha de admisión <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control form-control-sm" name="fecha" id="h-fecha" max="<?= $hoy ?>" required>
+                            </div>
+                            <div class="col-6 col-md-2">
+                                <label class="form-label">Hora</label>
+                                <input type="time" class="form-control form-control-sm" name="f[admision][hora]">
+                            </div>
+                            <div class="col-6 col-md-2">
+                                <label class="form-label">H.C.</label>
+                                <input type="text" class="form-control form-control-sm" value="HC-<?= str_pad((string)$mascota['id'], 5, '0', STR_PAD_LEFT) ?>" readonly tabindex="-1">
                             </div>
                             <div class="col-6 col-md-3">
-                                <label class="form-label small fw-semibold mb-1">Temperatura</label>
-                                <div class="input-group input-group-sm">
-                                    <input type="number" class="form-control vital-input" name="temperatura" id="h-temperatura" step="0.1" min="30" max="45" data-rango="temperatura">
-                                    <span class="input-group-text">°C</span>
-                                </div>
-                                <div class="vital-hint" data-hint="temperatura"></div>
-                            </div>
-                            <div class="col-6 col-md-3">
-                                <label class="form-label small fw-semibold mb-1">Frec. cardíaca</label>
-                                <div class="input-group input-group-sm">
-                                    <input type="number" class="form-control vital-input" name="frecuencia_cardiaca" id="h-frecuencia_cardiaca" step="1" min="10" max="400" data-rango="frecuencia_cardiaca">
-                                    <span class="input-group-text">lpm</span>
-                                </div>
-                                <div class="vital-hint" data-hint="frecuencia_cardiaca"></div>
-                            </div>
-                            <div class="col-6 col-md-3">
-                                <label class="form-label small fw-semibold mb-1">Frec. respiratoria</label>
-                                <div class="input-group input-group-sm">
-                                    <input type="number" class="form-control vital-input" name="frecuencia_respiratoria" id="h-frecuencia_respiratoria" step="1" min="2" max="200" data-rango="frecuencia_respiratoria">
-                                    <span class="input-group-text">rpm</span>
-                                </div>
-                                <div class="vital-hint" data-hint="frecuencia_respiratoria"></div>
-                            </div>
-                            <div class="col-6 col-md-3">
-                                <label class="form-label small fw-semibold mb-1">Mucosas</label>
-                                <select class="form-select form-select-sm" name="mucosas" id="h-mucosas">
-                                    <option value="">—</option>
-                                    <?php foreach ($mucosas as $o): ?><option><?= $o ?></option><?php endforeach; ?>
+                                <label class="form-label">Médico veterinario</label>
+                                <select class="form-select form-select-sm" name="veterinario_id" id="h-veterinario_id">
+                                    <option value="0">—</option>
+                                    <?php foreach ($veterinarios as $v): ?>
+                                    <option value="<?= $v['id'] ?>"><?= htmlspecialchars($v['nombre']) ?></option>
+                                    <?php endforeach; ?>
                                 </select>
                             </div>
-                            <div class="col-6 col-md-3">
-                                <label class="form-label small fw-semibold mb-1">TLLC</label>
+                            <div class="col-6 col-md-1">
+                                <label class="form-label">T.P.</label>
+                                <input type="text" class="form-control form-control-sm" name="f[admision][tp]" maxlength="40">
+                            </div>
+                            <div class="col-6 col-md-2">
+                                <label class="form-label">Chip</label>
+                                <input type="text" class="form-control form-control-sm" name="f[admision][chip]" maxlength="40">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Reseña del paciente -->
+                    <div class="hc-sec">
+                        <div class="hc-sec-titulo">Reseña del paciente</div>
+                        <div class="row g-2">
+                            <div class="col-6 col-md-3"><label class="form-label">Nombre</label><input class="form-control form-control-sm" value="<?= htmlspecialchars($mascota['nombre']) ?>" readonly tabindex="-1"></div>
+                            <div class="col-6 col-md-2"><label class="form-label">Especie</label><input class="form-control form-control-sm" value="<?= htmlspecialchars($mascota['especie']) ?>" readonly tabindex="-1"></div>
+                            <div class="col-6 col-md-3"><label class="form-label">Raza</label><input class="form-control form-control-sm" value="<?= htmlspecialchars((string)$mascota['raza']) ?>" readonly tabindex="-1"></div>
+                            <div class="col-6 col-md-2"><label class="form-label">Sexo</label><input class="form-control form-control-sm" value="<?= $mascota['sexo'] ? ($mascota['sexo'] === 'macho' ? 'Macho' : 'Hembra') : '' ?>" readonly tabindex="-1"></div>
+                            <div class="col-6 col-md-2"><label class="form-label">Edad</label><input class="form-control form-control-sm" value="<?= $mascota['fecha_nacimiento'] ? $edad($mascota['fecha_nacimiento']) : '' ?>" readonly tabindex="-1"></div>
+                            <div class="col-6 col-md-3"><label class="form-label">Color</label><input type="text" class="form-control form-control-sm" name="f[resena][color]" maxlength="60"></div>
+                            <div class="col-12 col-md-6"><label class="form-label">Señas particulares</label><input type="text" class="form-control form-control-sm" name="f[resena][senas]" maxlength="200"></div>
+                            <div class="col-12 col-md-3">
+                                <label class="form-label d-block">Procedencia</label>
+                                <?php $radios('f[resena][procedencia]', ['Urbana', 'Rural']); ?>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Datos del propietario -->
+                    <div class="hc-sec">
+                        <div class="hc-sec-titulo">Datos del propietario</div>
+                        <div class="row g-2">
+                            <div class="col-md-4"><label class="form-label">Nombre</label><input class="form-control form-control-sm" value="<?= htmlspecialchars((string)$mascota['cliente_nombre']) ?>" readonly tabindex="-1"></div>
+                            <div class="col-6 col-md-2"><label class="form-label">Identificación</label><input class="form-control form-control-sm" value="<?= htmlspecialchars((string)($mascota['cliente_dni'] ?? '')) ?>" readonly tabindex="-1"></div>
+                            <div class="col-6 col-md-2"><label class="form-label">Teléfono</label><input class="form-control form-control-sm" value="<?= htmlspecialchars((string)$mascota['cliente_telefono']) ?>" readonly tabindex="-1"></div>
+                            <div class="col-md-4"><label class="form-label">Dirección</label><input class="form-control form-control-sm" value="<?= htmlspecialchars((string)($mascota['cliente_direccion'] ?? '')) ?>" readonly tabindex="-1"></div>
+                            <div class="col-4 col-md-2"><label class="form-label">Estrato</label><input type="text" class="form-control form-control-sm" name="f[propietario][estrato]" maxlength="10"></div>
+                            <div class="col-8 col-md-4"><label class="form-label">Municipio</label><input type="text" class="form-control form-control-sm" name="f[propietario][municipio]" maxlength="80"></div>
+                            <div class="col-md-6"><label class="form-label">Ocupación</label><input type="text" class="form-control form-control-sm" name="f[propietario][ocupacion]" maxlength="80"></div>
+                        </div>
+                        <?php if (!$mascota['cliente_nombre']): ?><div class="form-text">Esta mascota no tiene propietario registrado; se asigna en Mascotas.</div><?php endif; ?>
+                    </div>
+
+                    <!-- Motivo y anamnésicos -->
+                    <div class="hc-sec">
+                        <div class="hc-sec-titulo">Motivo de la consulta</div>
+                        <input type="text" class="form-control form-control-sm" name="motivo" id="h-motivo" maxlength="200" required>
+                        <div class="sugerencias mt-1" id="sugerenciasMotivo"></div>
+                        <label class="form-label mt-2">Anamnésicos</label>
+                        <textarea class="form-control form-control-sm" name="anamnesis" id="h-anamnesis" rows="2"
+                                  placeholder="Inicio y evolución de los síntomas, apetito, vómitos, diarrea, actividad…"></textarea>
+                    </div>
+
+                    <!-- Historia del paciente -->
+                    <div class="hc-sec">
+                        <div class="hc-sec-titulo">Historia del paciente <small>se trae de la consulta anterior</small></div>
+                        <div class="hc-fila">
+                            <div class="hc-lbl">Vacunación <small><?= $grupoVac === 'felino' ? 'Felinos' : 'Caninos' ?></small></div>
+                            <div class="flex-grow-1">
+                                <?php $check('f[vacunacion][no]', 'No vacunado'); ?>
+                                <div class="row g-2 mt-1">
+                                    <?php foreach ($vacunas[$grupoVac] as $k => $lbl): ?>
+                                    <div class="col-md-6 d-flex align-items-center gap-2">
+                                        <div style="min-width:80px;"><?php $check("f[vacunacion][$k][si]", $lbl); ?></div>
+                                        <input type="date" class="form-control form-control-sm" name="f[vacunacion][<?= $k ?>][fecha]" title="Fecha" style="max-width:160px;">
+                                        <?php if ($k === 'otra'): ?><input type="text" class="form-control form-control-sm" name="f[vacunacion][otra][cual]" placeholder="¿Cuál?" maxlength="80"><?php endif; ?>
+                                    </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="hc-fila">
+                            <div class="hc-lbl">Última desparasitación</div>
+                            <div class="flex-grow-1 d-flex flex-wrap align-items-center gap-2">
+                                <?php $radios('f[desparasitacion][estado]', ['Sí', 'No']); ?>
+                                <input type="text" class="form-control form-control-sm" name="f[desparasitacion][producto]" placeholder="Producto" maxlength="100" style="max-width:240px;">
+                                <input type="date" class="form-control form-control-sm" name="f[desparasitacion][fecha]" title="Fecha" style="max-width:160px;">
+                            </div>
+                        </div>
+                        <div class="hc-fila">
+                            <div class="hc-lbl">Alimentación</div>
+                            <div class="flex-grow-1 d-flex flex-wrap align-items-center gap-1">
+                                <?php $radios('f[alimentacion][tipo]', $alimentaciones); ?>
+                                <input type="text" class="form-control form-control-sm" name="f[alimentacion][otra]" placeholder="¿Cuál?" maxlength="100" style="max-width:220px;">
+                            </div>
+                        </div>
+                        <div class="hc-fila">
+                            <div class="hc-lbl">Estado reproductivo</div>
+                            <div class="flex-grow-1">
+                                <?php $radios('f[reproductivo][estado]', ['Castrado', 'Entero']); ?>
+                                <?php $check('f[reproductivo][gestacion]', 'Gestación'); ?>
+                                <?php $check('f[reproductivo][lactancia]', 'Lactancia'); ?>
+                            </div>
+                        </div>
+                        <div class="row g-2 mt-1">
+                            <div class="col-md-6"><label class="form-label">Alergias</label><input type="text" class="form-control form-control-sm" name="f[alergias]" maxlength="300"></div>
+                            <div class="col-md-6"><label class="form-label">Enfermedades anteriores</label><input type="text" class="form-control form-control-sm" name="f[enfermedades]" maxlength="300"></div>
+                            <div class="col-md-6"><label class="form-label">Cirugías</label><input type="text" class="form-control form-control-sm" name="f[cirugias]" maxlength="300"></div>
+                            <div class="col-md-6"><label class="form-label">Antecedentes familiares</label><input type="text" class="form-control form-control-sm" name="f[antecedentes]" maxlength="300"></div>
+                        </div>
+                        <div class="hc-fila mt-2">
+                            <div class="hc-lbl">Hábitat</div>
+                            <div class="flex-grow-1 d-flex flex-wrap align-items-center gap-1">
+                                <?php $radios('f[habitat][tipo]', $habitats); ?>
+                                <input type="text" class="form-control form-control-sm" name="f[habitat][otro]" placeholder="¿Cuál?" maxlength="100" style="max-width:220px;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Constantes fisiológicas -->
+                    <div class="hc-sec">
+                        <div class="hc-sec-titulo">
+                            Constantes fisiológicas
+                            <?php if ($rango): ?><span class="ms-auto rango-ayuda"><i class="bi bi-info-circle me-1"></i>Rangos normales: <?= htmlspecialchars($mascota['especie']) ?></span><?php endif; ?>
+                        </div>
+                        <div class="row g-2">
+                            <div class="col-6 col-md-2">
+                                <label class="form-label">T.Ll.C.</label>
                                 <select class="form-select form-select-sm" name="tllc" id="h-tllc" title="Tiempo de llenado capilar">
                                     <option value="">—</option>
                                     <?php foreach ($tllcOpciones as $o): ?><option><?= $o ?></option><?php endforeach; ?>
                                 </select>
                             </div>
-                            <div class="col-6 col-md-3">
-                                <label class="form-label small fw-semibold mb-1">Deshidratación</label>
-                                <select class="form-select form-select-sm" name="hidratacion" id="h-hidratacion">
-                                    <option value="">—</option>
-                                    <?php foreach ($hidratacion as $o): ?><option><?= $o ?></option><?php endforeach; ?>
-                                </select>
+                            <div class="col-6 col-md-2">
+                                <label class="form-label">F.C. (lpm)</label>
+                                <input type="number" class="form-control form-control-sm vital-input" name="frecuencia_cardiaca" id="h-frecuencia_cardiaca" step="1" min="10" max="400" data-rango="frecuencia_cardiaca">
+                                <div class="vital-hint" data-hint="frecuencia_cardiaca"></div>
                             </div>
-                            <div class="col-6 col-md-3">
-                                <label class="form-label small fw-semibold mb-1">Condición corporal</label>
-                                <select class="form-select form-select-sm" name="condicion_corporal" id="h-condicion_corporal">
-                                    <option value="">—</option>
-                                    <?php
-                                    $cc = [1 => 'Emaciado', 2 => 'Muy delgado', 3 => 'Delgado', 4 => 'Ideal', 5 => 'Ideal', 6 => 'Sobrepeso', 7 => 'Obeso', 8 => 'Obeso', 9 => 'Obesidad severa'];
-                                    foreach ($cc as $n => $txt): ?>
-                                    <option value="<?= $n ?>"><?= $n ?>/9 · <?= $txt ?></option>
-                                    <?php endforeach; ?>
-                                </select>
+                            <div class="col-6 col-md-2">
+                                <label class="form-label">F.R. (rpm)</label>
+                                <input type="number" class="form-control form-control-sm vital-input" name="frecuencia_respiratoria" id="h-frecuencia_respiratoria" step="1" min="2" max="200" data-rango="frecuencia_respiratoria">
+                                <div class="vital-hint" data-hint="frecuencia_respiratoria"></div>
                             </div>
-                            <div class="col-12">
-                                <textarea class="form-control form-control-sm" name="examen_fisico" id="h-examen_fisico" rows="2"
-                                          placeholder="Hallazgos del examen físico: piel y pelaje, ojos, oídos, cavidad oral, ganglios, auscultación, palpación abdominal, locomotor…"></textarea>
+                            <div class="col-6 col-md-2">
+                                <label class="form-label">Pulso</label>
+                                <input type="text" class="form-control form-control-sm" name="f[constantes][pulso]" maxlength="40" placeholder="Ej: 110, fuerte">
+                            </div>
+                            <div class="col-6 col-md-2">
+                                <label class="form-label">Temperatura (°C)</label>
+                                <input type="number" class="form-control form-control-sm vital-input" name="temperatura" id="h-temperatura" step="0.1" min="30" max="45" data-rango="temperatura">
+                                <div class="vital-hint" data-hint="temperatura"></div>
+                            </div>
+                            <div class="col-6 col-md-2">
+                                <label class="form-label">Peso (kg)</label>
+                                <input type="number" class="form-control form-control-sm" name="peso" id="h-peso" step="0.01" min="0.01" max="200">
+                                <?php if ($ultimoPeso): ?><div class="vital-hint">Último: <?= rtrim(rtrim(number_format($ultimoPeso['peso'], 2), '0'), '.') ?> kg</div><?php endif; ?>
                             </div>
                         </div>
                     </div>
 
-                    <!-- A -->
-                    <div class="soap-seccion">
-                        <div class="soap-seccion-titulo"><span class="soap-letra">A</span>Análisis <small>Diagnóstico presuntivo o definitivo</small></div>
-                        <textarea class="form-control" name="diagnostico" id="h-diagnostico" rows="2"
-                                  placeholder="Ej: Otitis externa bilateral. Diferenciales: …"></textarea>
+                    <!-- Examen clínico -->
+                    <div class="hc-sec">
+                        <div class="hc-sec-titulo">Examen clínico</div>
+                        <div class="hc-fila"><div class="hc-lbl">Actitud</div><div><?php $radios('f[examen][actitud]', $actitudes); ?></div></div>
+                        <div class="hc-fila"><div class="hc-lbl">Condición corporal</div><div><?php $radios('f[examen][condicion]', $condiciones); ?></div></div>
+                        <div class="hc-fila"><div class="hc-lbl">Estado de hidratación</div><div><?php $radios('hidratacion', $hidratacion); ?></div></div>
+
+                        <table class="table table-sm table-bordered align-middle mt-2 mb-0 hc-tabla">
+                            <thead><tr><th style="width:190px;">Mucosas / sistema</th><th class="text-center" style="width:44px;" title="Normal">N</th><th class="text-center" style="width:44px;" title="Anormal">A</th><th>Observaciones</th></tr></thead>
+                            <tbody>
+                                <?php foreach (['mucosas' => $zonasMucosas, 'sistemas' => $sistemas] as $grupo => $items): ?>
+                                <?php foreach ($items as $k => $lbl): ?>
+                                <tr class="<?= $grupo === 'sistemas' ? 'hc-sistema' : '' ?>">
+                                    <td class="fw-semibold small"><?= $grupo === 'mucosas' ? 'Mucosa ' . mb_strtolower($lbl) : $lbl ?></td>
+                                    <td class="text-center"><input class="form-check-input" type="radio" name="f[<?= $grupo ?>][<?= $k ?>][estado]" value="N" title="Normal"></td>
+                                    <td class="text-center"><input class="form-check-input hc-anormal" type="radio" name="f[<?= $grupo ?>][<?= $k ?>][estado]" value="A" title="Anormal"></td>
+                                    <td><input type="text" class="form-control form-control-sm border-0" name="f[<?= $grupo ?>][<?= $k ?>][obs]" maxlength="300"></td>
+                                </tr>
+                                <?php endforeach; ?>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                        <div class="d-flex justify-content-end mt-1">
+                            <button type="button" class="btn btn-xs" id="btnTodoNormal"><i class="bi bi-check2-all me-1"></i>Marcar sin marcar como normal</button>
+                        </div>
+                        <label class="form-label mt-2">Otros hallazgos del examen</label>
+                        <textarea class="form-control form-control-sm" name="examen_fisico" id="h-examen_fisico" rows="2"></textarea>
                     </div>
 
-                    <!-- P -->
-                    <div class="soap-seccion">
-                        <div class="soap-seccion-titulo"><span class="soap-letra">P</span>Plan <small>Tratamiento, indicaciones y seguimiento</small></div>
-                        <textarea class="form-control mb-2" name="tratamiento" id="h-tratamiento" rows="2"
+                    <!-- Lista de problemas -->
+                    <div class="hc-sec">
+                        <div class="hc-sec-titulo">Lista de problemas</div>
+                        <table class="table table-sm table-bordered mb-1 hc-tabla" id="tablaProblemas">
+                            <thead><tr><th>Lista de problemas</th><th>Lista maestra</th><th>Diagnóstico diferencial (DAMNVIT)</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-1">
+                            <div class="form-text m-0">D: Degenerativa · A: Anomalía congénita · M: Metabólica · N: Nutricional y neoplásica · V: Vascular · I: Infecciosa, inflamatoria o idiopática · T: Trauma</div>
+                            <button type="button" class="btn btn-xs" onclick="agregarFila('problemas')"><i class="bi bi-plus-lg me-1"></i>Fila</button>
+                        </div>
+                    </div>
+
+                    <!-- Plan diagnóstico -->
+                    <div class="hc-sec">
+                        <div class="hc-sec-titulo">Plan diagnóstico</div>
+                        <table class="table table-sm table-bordered mb-1 hc-tabla" id="tablaPlan">
+                            <thead><tr><th>Examen</th><th class="text-center" style="width:46px;">Sí</th><th class="text-center" style="width:86px;">Autorizado</th><th style="width:150px;">Fecha</th><th>Laboratorio</th><th>Resultados</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                        <div class="text-end"><button type="button" class="btn btn-xs" onclick="agregarFila('plan')"><i class="bi bi-plus-lg me-1"></i>Fila</button></div>
+                    </div>
+
+                    <!-- Diagnóstico y tratamiento -->
+                    <div class="hc-sec">
+                        <div class="hc-sec-titulo">Diagnóstico y tratamiento</div>
+                        <label class="form-label">Diagnóstico</label>
+                        <textarea class="form-control form-control-sm" name="diagnostico" id="h-diagnostico" rows="2" placeholder="Diagnóstico presuntivo o definitivo"></textarea>
+                        <label class="form-label mt-2">Tratamiento / plan terapéutico</label>
+                        <textarea class="form-control form-control-sm mb-2" name="tratamiento" id="h-tratamiento" rows="2"
                                   placeholder="Medicamento, dosis, vía, frecuencia y duración. Indicaciones para el dueño…"></textarea>
                         <div class="row g-2">
                             <div class="col-md-5 campo-producto">
-                                <label class="form-label small fw-semibold mb-1" id="lblProducto">Producto aplicado</label>
+                                <label class="form-label" id="lblProducto">Producto aplicado</label>
                                 <input type="text" class="form-control form-control-sm" name="producto_aplicado" id="h-producto_aplicado" maxlength="150">
                             </div>
                             <div class="col-md-3 campo-producto">
-                                <label class="form-label small fw-semibold mb-1">Lote</label>
+                                <label class="form-label">Lote</label>
                                 <input type="text" class="form-control form-control-sm" name="lote" id="h-lote" maxlength="60">
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label small fw-semibold mb-1">Próximo control / refuerzo</label>
+                                <label class="form-label">Próximo control / refuerzo</label>
                                 <input type="date" class="form-control form-control-sm" name="proximo_control" id="h-proximo_control">
                                 <div class="d-flex gap-1 mt-1 flex-wrap" id="atajosControl">
                                     <button type="button" class="btn btn-xs" data-dias="15">+15 d</button>
@@ -560,10 +693,7 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
                                 </div>
                             </div>
                         </div>
-                    </div>
-
-                    <div>
-                        <label class="form-label fw-semibold small mb-1">Observaciones</label>
+                        <label class="form-label mt-2">Observaciones</label>
                         <textarea class="form-control form-control-sm" name="observaciones" id="h-observaciones" rows="2" placeholder="Notas internas, comportamiento, recomendaciones…"></textarea>
                     </div>
                 </div>
@@ -603,8 +733,69 @@ const OLD      = <?= json_encode($old, $jsonFlags) ?>;
 const USUARIO  = <?= (int)$usuario['id'] ?>;
 const VET_IDS  = <?= json_encode(array_map('intval', array_column($veterinarios, 'id'))) ?>;
 const CAMPOS   = ['fecha', 'veterinario_id', 'motivo', 'anamnesis', 'peso', 'temperatura', 'frecuencia_cardiaca',
-                  'frecuencia_respiratoria', 'mucosas', 'tllc', 'hidratacion', 'condicion_corporal', 'examen_fisico',
+                  'frecuencia_respiratoria', 'tllc', 'examen_fisico',
                   'diagnostico', 'tratamiento', 'producto_aplicado', 'lote', 'proximo_control', 'observaciones'];
+// Formato de la última consulta: su historia, reseña, propietario y admisión se proponen en la nueva
+const PREVIO = <?php
+    $previo = null;
+    foreach ($registros as $_r) { if (!empty($_r['formato'])) { $previo = json_decode($_r['formato'], true); break; } }
+    $heredar = ['admision', 'resena', 'propietario', 'vacunacion', 'desparasitacion', 'alimentacion', 'reproductivo',
+                'alergias', 'enfermedades', 'cirugias', 'antecedentes', 'habitat'];
+    $previo = $previo ? array_intersect_key($previo, array_flip($heredar)) : null;
+    if ($previo && isset($previo['admision'])) unset($previo['admision']['hora']);
+    echo json_encode($previo, $jsonFlags);
+?>;
+
+// ── Formato: llenar y limpiar los campos f[...] ──
+const FILAS = {
+    problemas: { min: 4, campos: [['problema', 'text'], ['maestra', 'text'], ['diferencial', 'text']] },
+    plan:      { min: 3, campos: [['examen', 'text'], ['si', 'check'], ['autorizado', 'check'], ['fecha', 'date'], ['laboratorio', 'text'], ['resultados', 'text']] },
+};
+function agregarFila(tipo) {
+    const tbody = document.querySelector(tipo === 'problemas' ? '#tablaProblemas tbody' : '#tablaPlan tbody');
+    const i = tbody.rows.length, tr = tbody.insertRow();
+    FILAS[tipo].campos.forEach(([c, t]) => {
+        const td = tr.insertCell(), name = `f[${tipo}][${i}][${c}]`;
+        td.innerHTML = t === 'check'
+            ? `<div class="text-center"><input class="form-check-input" type="checkbox" name="${name}" value="1"></div>`
+            : `<input type="${t}" class="form-control form-control-sm border-0" name="${name}" maxlength="300">`;
+    });
+}
+function limpiarFormato() {
+    document.querySelectorAll('#formRegistro [name^="f["]').forEach(el => {
+        if (el.type === 'radio' || el.type === 'checkbox') el.checked = false; else el.value = '';
+    });
+    document.querySelectorAll('#formRegistro input[name="hidratacion"]').forEach(el => el.checked = false);
+    Object.keys(FILAS).forEach(t => {
+        const tbody = document.querySelector(t === 'problemas' ? '#tablaProblemas tbody' : '#tablaPlan tbody');
+        tbody.innerHTML = '';
+        for (let i = 0; i < FILAS[t].min; i++) agregarFila(t);
+    });
+}
+function llenarFormato(obj, prefijo = 'f') {
+    if (!obj || typeof obj !== 'object') return;
+    Object.keys(FILAS).forEach(t => {
+        const filas = prefijo === 'f' && obj[t] ? Object.keys(obj[t]).length : 0;
+        const tbody = document.querySelector(t === 'problemas' ? '#tablaProblemas tbody' : '#tablaPlan tbody');
+        while (tbody.rows.length < filas) agregarFila(t);
+    });
+    Object.entries(obj).forEach(([k, v]) => {
+        const name = `${prefijo}[${k}]`;
+        if (v && typeof v === 'object') { llenarFormato(v, name); return; }
+        document.querySelectorAll(`#formRegistro [name="${CSS.escape(name)}"]`).forEach(el => {
+            if (el.type === 'radio') el.checked = el.value === String(v);
+            else if (el.type === 'checkbox') el.checked = !!v && v !== '0';
+            else el.value = v;
+        });
+    });
+}
+// «Marcar como normal» las mucosas y sistemas que quedaron sin marcar
+document.getElementById('btnTodoNormal')?.addEventListener('click', () => {
+    document.querySelectorAll('#formRegistro .hc-tabla tbody tr').forEach(tr => {
+        const radios = tr.querySelectorAll('input[type="radio"]');
+        if (radios.length && ![...radios].some(r => r.checked)) radios[0].checked = true;
+    });
+});
 
 // Sugerencias de motivo y ajustes por tipo de registro
 const PLANTILLAS = {
@@ -670,6 +861,11 @@ document.querySelectorAll('.vital-input').forEach(i => i.addEventListener('input
 function llenar(d, tipo) {
     $('h-id').value = d.id || 0;
     CAMPOS.forEach(c => { const el = $('h-' + c); if (el) el.value = d[c] ?? ''; });
+    limpiarFormato();
+    document.querySelectorAll('#formRegistro input[name="hidratacion"]').forEach(el => el.checked = el.value === (d.hidratacion || ''));
+    let fmt = d.f || d.formato || null;
+    if (typeof fmt === 'string') { try { fmt = JSON.parse(fmt); } catch (e) { fmt = null; } }
+    llenarFormato(fmt);
     ($('tipo-' + tipo) || $('tipo-consulta')).checked = true;
     aplicarTipo();
     document.querySelectorAll('.vital-input').forEach(revisarVital);
@@ -679,7 +875,11 @@ function llenar(d, tipo) {
 }
 
 function nuevoRegistro() {
-    llenar({ fecha: HOY, veterinario_id: VET_IDS.includes(USUARIO) ? USUARIO : 0 }, 'consulta');
+    const ahora = new Date();
+    const hora = String(ahora.getHours()).padStart(2, '0') + ':' + String(ahora.getMinutes()).padStart(2, '0');
+    const fmt = JSON.parse(JSON.stringify(PREVIO || {}));
+    fmt.admision = Object.assign({}, fmt.admision || {}, { hora });
+    llenar({ fecha: HOY, veterinario_id: VET_IDS.includes(USUARIO) ? USUARIO : 0, f: fmt }, 'consulta');
     modal().show();
 }
 

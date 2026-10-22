@@ -39,6 +39,13 @@ class HistorialController {
             'mucosas'        => HistorialModel::MUCOSAS,
             'tllcOpciones'   => HistorialModel::TLLC,
             'hidratacion'    => HistorialModel::HIDRATACION,
+            'vacunas'        => HistorialModel::VACUNAS,
+            'actitudes'      => HistorialModel::ACTITUD,
+            'condiciones'    => HistorialModel::CONDICION,
+            'alimentaciones' => HistorialModel::ALIMENTACION,
+            'habitats'       => HistorialModel::HABITAT,
+            'zonasMucosas'   => HistorialModel::MUCOSAS_ZONAS,
+            'sistemas'       => HistorialModel::SISTEMAS,
             'rangos'         => HistorialModel::RANGOS,
             'old'            => $_SESSION['historial_old'] ?? null,
             'usuario'        => [
@@ -159,7 +166,7 @@ class HistorialController {
             'frecuencia_respiratoria' => $num('frecuencia_respiratoria', 2, 200, 'La frecuencia respiratoria'),
             'mucosas'                 => $opcion('mucosas', HistorialModel::MUCOSAS),
             'tllc'                    => $opcion('tllc', HistorialModel::TLLC),
-            'hidratacion'             => $opcion('hidratacion', HistorialModel::HIDRATACION),
+            'hidratacion'             => $opcion('hidratacion', array_merge(HistorialModel::HIDRATACION, HistorialModel::HIDRATACION_ANTERIOR)),
             'condicion_corporal'      => $num('condicion_corporal', 1, 9, 'La condición corporal'),
             'examen_fisico'           => $txt('examen_fisico'),
             'diagnostico'             => $txt('diagnostico'),
@@ -168,6 +175,7 @@ class HistorialController {
             'lote'                    => $txt('lote', 60),
             'proximo_control'         => $this->fechaValida($p['proximo_control'] ?? ''),
             'observaciones'           => $txt('observaciones'),
+            'formato'                 => $this->formatoDe($p['f'] ?? null),
         ];
 
         if ($error === '') {
@@ -187,6 +195,51 @@ class HistorialController {
         }
 
         return [$d, $error];
+    }
+
+    /** Respuestas del formato de historia clínica: textos recortados, sin vacíos; se guardan como JSON */
+    private function formatoDe($f): ?string {
+        $limpiar = function ($v, int $nivel) use (&$limpiar) {
+            if (is_array($v)) {
+                if ($nivel > 4) return null;
+                $out = [];
+                foreach (array_slice($v, 0, 60, true) as $k => $x) {
+                    $x = $limpiar($x, $nivel + 1);
+                    if ($x !== null && $x !== '' && $x !== []) $out[mb_substr((string)$k, 0, 40)] = $x;
+                }
+                return $out;
+            }
+            return mb_substr(trim((string)$v), 0, 1000);
+        };
+        $d = is_array($f) ? $limpiar($f, 0) : [];
+        // Filas de lista de problemas y plan diagnóstico: solo las que tienen algo escrito, en orden
+        foreach (['problemas', 'plan'] as $k) {
+            if (isset($d[$k])) $d[$k] = array_values($d[$k]);
+        }
+        return $d ? json_encode($d, JSON_UNESCAPED_UNICODE) : null;
+    }
+
+    /** GET: un registro impreso en el formato de historia clínica de pequeños animales */
+    public function formato(): void {
+        $r = $this->model->getRegistro((int)($_GET['id'] ?? 0));
+        if (!$r) {
+            http_response_code(404);
+            echo 'Registro no encontrado.';
+            exit;
+        }
+        require_once ROOT . '/app/models/FacturacionModel.php';
+        $empresa = (new FacturacionModel())->getSucursal((int)($r['veterinaria_id'] ?: ($_SESSION['veterinaria_id'] ?? 0)));
+        $this->render('historial/formato', [
+            'r'        => $r,
+            'f'        => json_decode((string)$r['formato'], true) ?: [],
+            'empresa'  => $empresa,
+            'numero'   => VeterinariaModel::serialServicio($empresa['nombre'], 'HC', (int)$r['id'], $r['created_at']),
+            'hc'       => 'HC-' . str_pad((string)$r['mascota_id'], 5, '0', STR_PAD_LEFT),
+            'vacunas'  => HistorialModel::VACUNAS,
+            'actitudes' => HistorialModel::ACTITUD, 'condiciones' => HistorialModel::CONDICION,
+            'hidratacion' => HistorialModel::HIDRATACION, 'alimentaciones' => HistorialModel::ALIMENTACION,
+            'habitats' => HistorialModel::HABITAT, 'zonasMucosas' => HistorialModel::MUCOSAS_ZONAS, 'sistemas' => HistorialModel::SISTEMAS,
+        ]);
     }
 
     private function fechaValida(string $f): ?string {

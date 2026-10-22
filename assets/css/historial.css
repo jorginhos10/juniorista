@@ -148,3 +148,22 @@
     .tl-item::before, .tl-marker { display: none; }
     .ficha-sparkline { margin-left: 0; }
 }
+
+/* ── Formato de historia clínica de pequeños animales ── */
+.hc-sec { border: 1px solid #dbe3ef; border-radius: .6rem; padding: .6rem .8rem .75rem; margin-bottom: .75rem; }
+.hc-sec-titulo { display: flex; align-items: center; gap: .5rem; margin: -.6rem -.8rem .6rem; padding: .35rem .8rem;
+                 background: #dbe5f6; border-radius: .6rem .6rem 0 0; font-size: .78rem; font-weight: 800;
+                 text-transform: uppercase; letter-spacing: .04em; color: #1e3a6e; font-style: italic; }
+.hc-sec-titulo small { text-transform: none; font-style: normal; font-weight: 500; color: #64748b; letter-spacing: 0; }
+.hc-sec .form-label { font-size: .75rem; font-weight: 600; color: #475569; margin-bottom: .15rem; }
+.hc-sec input[readonly] { background: #f1f5f9; }
+.hc-fila { display: flex; gap: .75rem; align-items: flex-start; padding: .35rem 0; border-top: 1px dashed #e2e8f0; }
+.hc-sec-titulo + .hc-fila { border-top: 0; }
+.hc-lbl { width: 170px; flex-shrink: 0; font-size: .78rem; font-weight: 700; color: #334155; padding-top: .2rem; }
+.hc-lbl small { display: block; font-weight: 500; color: #94a3b8; }
+.hc-sec .form-check-inline { font-size: .82rem; margin-right: .8rem; }
+.hc-tabla th { font-size: .72rem; background: #f1f5f9; color: #475569; }
+.hc-tabla td { padding: .15rem .35rem; }
+.hc-tabla .form-control { font-size: .8rem; }
+.hc-sistema td:first-child { background: #f8fbff; }
+@media (max-width: 767.98px) { .hc-fila { flex-direction: column; gap: .25rem; } .hc-lbl { width: auto; } }

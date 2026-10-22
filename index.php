@@ -268,6 +268,11 @@ switch ($uri) {
         (new DescargoController())->editar();
         break;
 
+    case 'descargos/acta':
+        require_once ROOT . '/app/controllers/DescargoController.php';
+        (new DescargoController())->acta();
+        break;
+
     case 'descargos/eliminar':
         require_once ROOT . '/app/controllers/DescargoController.php';
         (new DescargoController())->eliminar();
@@ -326,6 +331,11 @@ switch ($uri) {
     case 'historial/eliminar':
         require_once ROOT . '/app/controllers/HistorialController.php';
         (new HistorialController())->eliminar();
+        break;
+
+    case 'historial/formato':
+        require_once ROOT . '/app/controllers/HistorialController.php';
+        (new HistorialController())->formato();
         break;
 
     case 'historial/imprimir':

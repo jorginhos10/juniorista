@@ -1,4 +1,6 @@
 <?php
+$acta = $_SESSION['descargo_acta'] ?? 0;   // acta recién registrada: se abre para imprimir
+unset($_SESSION['descargo_acta']);
 $money = fn($n) => '$' . number_format((float)$n, 2);
 
 $unidades = array_sum(array_column($descargos, 'cantidad'));
@@ -103,52 +105,65 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
                         <div class="small mt-1">Registra mercadería en <a href="<?= BASE_URL ?>/ingresos">Ingresos</a> para poder descargarla.</div>
                     </div>
                     <?php else: ?>
-                    <form method="POST" action="<?= BASE_URL ?>/descargos/registrar" id="formDescargo" class="row g-3 align-items-start" autocomplete="off">
-                        <div class="col-lg-4">
-                            <label class="form-label fw-semibold">Producto <span class="text-danger">*</span></label>
-                            <div class="dsc-ac">
-                                <input type="text" class="form-control" id="d-producto-buscar" autocomplete="off" required
-                                       placeholder="Escribe el nombre o código del producto…">
-                                <div class="dsc-ac-lista" id="d-producto-lista"></div>
+                    <form method="POST" action="<?= BASE_URL ?>/descargos/registrar" id="formDescargo" autocomplete="off">
+                        <div class="row g-3 align-items-start">
+                            <div class="col-lg-6">
+                                <label class="form-label fw-semibold">Productos <span class="text-danger">*</span></label>
+                                <div class="dsc-ac">
+                                    <input type="text" class="form-control" id="d-producto-buscar" autocomplete="off"
+                                           placeholder="Busca por nombre o código y agrégalo a la lista (puedes agregar varios)…">
+                                    <div class="dsc-ac-lista" id="d-producto-lista"></div>
+                                </div>
+                                <select class="d-none" id="d-producto" tabindex="-1" aria-hidden="true">
+                                    <?php foreach ($productos as $p): ?>
+                                    <option value="<?= $p['id'] ?>" data-stock="<?= (int)$p['stock'] ?>" data-unidad="<?= htmlspecialchars($p['unidad'] ?: 'unidad') ?>"
+                                            data-nombre="<?= htmlspecialchars($p['nombre']) ?>" data-codigo="<?= htmlspecialchars($p['codigo'] ?? '') ?>"
+                                            data-costo="<?= (float)$p['precio_compra'] ?>"></option>
+                                    <?php endforeach; ?>
+                                </select>
                             </div>
-                            <select class="d-none" name="producto_id" id="d-producto" tabindex="-1" aria-hidden="true">
-                                <option value="">Selecciona un producto con stock…</option>
-                                <?php foreach ($productos as $p): ?>
-                                <option value="<?= $p['id'] ?>" data-stock="<?= (int)$p['stock'] ?>" data-unidad="<?= htmlspecialchars($p['unidad'] ?: 'unidad') ?>"
-                                        data-nombre="<?= htmlspecialchars($p['nombre']) ?>" data-codigo="<?= htmlspecialchars($p['codigo'] ?? '') ?>">
-                                    <?= htmlspecialchars($p['nombre']) ?><?= $p['codigo'] ? ' (' . htmlspecialchars($p['codigo']) . ')' : '' ?> — stock: <?= (int)$p['stock'] ?>
-                                </option>
-                                <?php endforeach; ?>
-                            </select>
-                            <div class="stock-info text-muted mt-1" id="d-stock-info">&nbsp;</div>
-                        </div>
-                        <div class="col-sm-4 col-lg-2">
-                            <label class="form-label fw-semibold">Fecha <span class="text-danger">*</span></label>
-                            <input type="date" class="form-control" name="fecha" id="d-fecha" value="<?= date('Y-m-d') ?>" max="<?= date('Y-m-d') ?>" required>
-                        </div>
-                        <div class="col-sm-4 col-lg-2">
-                            <label class="form-label fw-semibold">Cantidad <span class="text-danger">*</span></label>
-                            <input type="number" class="form-control" name="cantidad" id="d-cantidad" min="1" step="1" value="1" required>
-                        </div>
-                        <div class="col-sm-4 col-lg-2">
-                            <label class="form-label fw-semibold">Motivo <span class="text-danger">*</span></label>
-                            <select class="form-select" name="motivo" id="d-motivo" required>
-                                <option value="">Selecciona…</option>
-                                <?php foreach ($motivos as $k => $m): ?>
-                                <option value="<?= $k ?>"><?= $m['label'] ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="col-lg-2 d-grid">
-                            <label class="form-label d-none d-lg-block">&nbsp;</label>
-                            <button class="btn btn-primary-custom" style="padding:.45rem .75rem">
-                                <i class="bi bi-box-arrow-down me-1"></i>Descargar
-                            </button>
-                        </div>
-                        <div class="col-12 motivo-detalle-box" id="d-detalle-box">
-                            <label class="form-label fw-semibold">Explica el motivo <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" name="motivo_detalle" id="d-detalle" maxlength="255"
-                                   placeholder="Ej: producto dañado en el transporte, muestra para un cliente…">
+                            <div class="col-sm-4 col-lg-2">
+                                <label class="form-label fw-semibold">Fecha <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" name="fecha" id="d-fecha" value="<?= date('Y-m-d') ?>" max="<?= date('Y-m-d') ?>" required>
+                            </div>
+                            <div class="col-sm-4 col-lg-2">
+                                <label class="form-label fw-semibold">Motivo <span class="text-danger">*</span></label>
+                                <select class="form-select" name="motivo" id="d-motivo" required>
+                                    <option value="">Selecciona…</option>
+                                    <?php foreach ($motivos as $k => $m): ?>
+                                    <option value="<?= $k ?>"><?= $m['label'] ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="col-sm-4 col-lg-2 d-grid">
+                                <label class="form-label d-none d-sm-block">&nbsp;</label>
+                                <button class="btn btn-primary-custom" style="padding:.45rem .75rem" id="btnDescargar">
+                                    <i class="bi bi-box-arrow-down me-1"></i>Descargar
+                                </button>
+                            </div>
+                            <div class="col-12 motivo-detalle-box" id="d-detalle-box">
+                                <label class="form-label fw-semibold">Explica el motivo <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="motivo_detalle" id="d-detalle" maxlength="255"
+                                       placeholder="Ej: producto dañado en el transporte, muestra para un cliente…">
+                            </div>
+                            <div class="col-12">
+                                <div class="table-responsive">
+                                    <table class="table table-sm align-middle mb-0 dsc-items">
+                                        <thead class="table-light">
+                                            <tr><th>Producto</th><th class="text-center" style="width:110px;">Disponible</th>
+                                                <th class="text-center" style="width:130px;">Cantidad</th><th class="text-end" style="width:120px;">Costo</th><th style="width:44px;"></th></tr>
+                                        </thead>
+                                        <tbody id="dItems"></tbody>
+                                        <tfoot>
+                                            <tr id="dVacio"><td colspan="5" class="text-center text-muted small py-3">
+                                                <i class="bi bi-arrow-up me-1"></i>Busca los productos arriba: cada uno se agrega a esta lista con su cantidad.
+                                            </td></tr>
+                                            <tr id="dTotal" class="d-none fw-semibold"><td class="text-end" colspan="2">Total</td>
+                                                <td class="text-center" id="dTotalUnidades"></td><td class="text-end" id="dTotalCosto"></td><td></td></tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
                         </div>
                     </form>
                     <?php endif; ?>
@@ -269,6 +284,8 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
                                     <td class="small text-muted"><?= htmlspecialchars($d['usuario_nombre'] ?? '—') ?></td>
                                     <td class="text-end monto"><?= $money($d['subtotal']) ?></td>
                                     <td class="text-center text-nowrap">
+                                        <a href="<?= BASE_URL ?>/descargos/acta?grupo=<?= (int)($d['grupo'] ?: $d['id']) ?>" target="_blank"
+                                           class="btn btn-sm btn-outline-secondary btn-accion" title="Imprimir acta de descargo"><i class="bi bi-printer"></i></a>
                                         <button class="btn btn-sm btn-outline-primary btn-accion" title="Editar"
                                                 onclick='editarDescargo(<?= json_encode(['id' => (int)$d['id'], 'fecha' => $d['fecha'], 'producto' => $d['producto_nombre'], 'cantidad' => (int)$d['cantidad'], 'motivo' => $d['motivo'], 'detalle' => (string)$d['motivo_detalle'], 'unidad' => $d['unidad'] ?: 'unidad'], $jsonFlags) ?>)'>
                                             <i class="bi bi-pencil-fill"></i>
@@ -400,21 +417,11 @@ function anular(id, producto, cant) {
 const form = document.getElementById('formDescargo');
 if (form) {
     const prod    = document.getElementById('d-producto');
-    const cant    = document.getElementById('d-cantidad');
     const motivo  = document.getElementById('d-motivo');
     const box     = document.getElementById('d-detalle-box');
     const detalle = document.getElementById('d-detalle');
-    const info    = document.getElementById('d-stock-info');
-
-    function actualizarStock() {
-        const opt = prod.selectedOptions[0];
-        const stock = opt && opt.value ? parseInt(opt.dataset.stock, 10) : 0;
-        cant.max = stock || '';
-        info.innerHTML = stock
-            ? `<i class="bi bi-layers me-1"></i>Disponible: <strong>${stock}</strong> ${opt.dataset.unidad}`
-            : '&nbsp;';
-        if (stock && parseInt(cant.value, 10) > stock) cant.value = stock;
-    }
+    const tbody   = document.getElementById('dItems');
+    const dinero  = n => '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
     // «Otros» abre el campo para explicar el motivo
     function actualizarMotivo() {
@@ -423,29 +430,64 @@ if (form) {
         detalle.required = otros;
         if (otros) detalle.focus();
     }
-
-    prod.addEventListener('change', actualizarStock);
     motivo.addEventListener('change', actualizarMotivo);
 
-    // ── Buscador predictivo de producto (más rápido que recorrer la lista completa) ──
-    const buscar = document.getElementById('d-producto-buscar');
-    const lista  = document.getElementById('d-producto-lista');
-    const opciones = [...prod.options].filter(o => o.value).map(o => ({
-        id: o.value, nombre: o.dataset.nombre, codigo: o.dataset.codigo || '', stock: o.dataset.stock, unidad: o.dataset.unidad,
+    const opciones = [...prod.options].map(o => ({
+        id: o.value, nombre: o.dataset.nombre, codigo: o.dataset.codigo || '', stock: parseInt(o.dataset.stock, 10),
+        unidad: o.dataset.unidad, costo: parseFloat(o.dataset.costo) || 0,
     }));
     const escAc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-    let activo = -1;
 
-    function elegirProducto(id) {
+    // ── Lista de productos a descargar ──
+    function totales() {
+        const filas = [...tbody.rows];
+        document.getElementById('dVacio').classList.toggle('d-none', filas.length > 0);
+        document.getElementById('dTotal').classList.toggle('d-none', filas.length === 0);
+        let u = 0, c = 0;
+        filas.forEach(tr => {
+            const cant = parseInt(tr.querySelector('.d-cant').value, 10) || 0;
+            u += cant; c += cant * parseFloat(tr.dataset.costo);
+            tr.querySelector('.d-costo').textContent = dinero(cant * parseFloat(tr.dataset.costo));
+        });
+        document.getElementById('dTotalUnidades').textContent = u;
+        document.getElementById('dTotalCosto').textContent = dinero(c);
+        document.getElementById('btnDescargar').innerHTML = '<i class="bi bi-box-arrow-down me-1"></i>Descargar' + (filas.length > 1 ? ' (' + filas.length + ')' : '');
+    }
+    function agregar(id, cantidad = 1) {
         const p = opciones.find(o => o.id === String(id));
-        prod.value   = p ? p.id : '';
-        buscar.value = p ? p.nombre : '';
-        buscar.setCustomValidity('');
-        lista.style.display = 'none';
-        actualizarStock();
-        if (p) { cant.focus(); cant.select(); }
+        if (!p) return;
+        const existe = tbody.querySelector(`tr[data-id="${p.id}"]`);
+        if (existe) {
+            const inp = existe.querySelector('.d-cant');
+            inp.value = Math.min(p.stock, (parseInt(inp.value, 10) || 0) + cantidad);
+            inp.focus(); inp.select(); totales();
+            return;
+        }
+        const tr = document.createElement('tr');
+        tr.dataset.id = p.id; tr.dataset.costo = p.costo;
+        tr.innerHTML = `
+            <td><input type="hidden" name="producto_id[]" value="${p.id}">
+                <div class="fw-semibold">${escAc(p.nombre)}</div>${p.codigo ? `<div class="text-muted small">${escAc(p.codigo)}</div>` : ''}</td>
+            <td class="text-center small text-muted">${p.stock} ${escAc(p.unidad)}</td>
+            <td><input type="number" class="form-control form-control-sm text-center d-cant" name="cantidad[]" min="1" max="${p.stock}" step="1" value="${Math.min(cantidad, p.stock)}" required></td>
+            <td class="text-end small d-costo"></td>
+            <td class="text-end"><button type="button" class="btn btn-sm btn-link text-danger p-0" title="Quitar"><i class="bi bi-x-lg"></i></button></td>`;
+        tr.querySelector('button').addEventListener('click', () => { tr.remove(); totales(); });
+        tr.querySelector('.d-cant').addEventListener('input', totales);
+        tbody.appendChild(tr);
+        totales();
+        const inp = tr.querySelector('.d-cant'); inp.focus(); inp.select();
     }
 
+    // ── Buscador predictivo: cada producto elegido se agrega a la lista ──
+    const buscar = document.getElementById('d-producto-buscar');
+    const lista  = document.getElementById('d-producto-lista');
+    let activo = -1;
+    function elegirProducto(id) {
+        buscar.value = '';
+        lista.style.display = 'none';
+        agregar(id);
+    }
     function sugerir() {
         const q = buscar.value.trim().toLowerCase();
         activo = -1;
@@ -453,19 +495,13 @@ if (form) {
         lista.innerHTML = res.length
             ? res.map(o => `<div class="dsc-ac-op" data-id="${o.id}">
                     <span>${escAc(o.nombre)}${o.codigo ? `<small>${escAc(o.codigo)}</small>` : ''}</span>
-                    <span class="dsc-ac-stock">${o.stock} ${escAc(o.unidad)}</span>
+                    <span class="dsc-ac-stock">${tbody.querySelector(`tr[data-id="${o.id}"]`) ? '✓ en la lista · ' : ''}${o.stock} ${escAc(o.unidad)}</span>
                </div>`).join('')
             : '<div class="dsc-ac-vacio">Sin productos con stock que coincidan</div>';
         lista.style.display = 'block';
     }
-
-    buscar.addEventListener('input', () => {
-        // Al cambiar el texto deja de haber un producto elegido hasta que se seleccione uno de la lista
-        prod.value = '';
-        actualizarStock();
-        sugerir();
-    });
-    buscar.addEventListener('focus', () => { if (!prod.value) sugerir(); });
+    buscar.addEventListener('input', sugerir);
+    buscar.addEventListener('focus', sugerir);
     buscar.addEventListener('keydown', e => {
         const ops = [...lista.querySelectorAll('.dsc-ac-op')];
         if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
@@ -475,8 +511,9 @@ if (form) {
             activo = (activo + (e.key === 'ArrowDown' ? 1 : -1) + ops.length) % ops.length;
             ops.forEach((o, i) => o.classList.toggle('activa', i === activo));
             ops[activo].scrollIntoView({ block: 'nearest' });
-        } else if (e.key === 'Enter' && lista.style.display === 'block') {
+        } else if (e.key === 'Enter') {
             e.preventDefault();
+            if (lista.style.display !== 'block') return;
             const op = ops[activo] || ops[0];
             if (op) elegirProducto(op.dataset.id);
         } else if (e.key === 'Escape') {
@@ -490,33 +527,39 @@ if (form) {
     buscar.addEventListener('blur', () => setTimeout(() => { lista.style.display = 'none'; }, 120));
 
     form.addEventListener('submit', e => {
-        if (!prod.value) {
+        if (!tbody.rows.length) {
             e.preventDefault();
-            buscar.setCustomValidity('Elige un producto de la lista.');
-            buscar.reportValidity();
+            alert('Agrega al menos un producto a la lista.');
+            buscar.focus();
             return;
         }
-        const max = parseInt(cant.max, 10);
-        if (max && parseInt(cant.value, 10) > max) {
+        const pasado = [...tbody.rows].find(tr => {
+            const inp = tr.querySelector('.d-cant');
+            return (parseInt(inp.value, 10) || 0) > parseInt(inp.max, 10);
+        });
+        if (pasado) {
             e.preventDefault();
-            alert('La cantidad supera el stock disponible (' + max + ').');
-            cant.focus();
+            alert('La cantidad de «' + pasado.querySelector('.fw-semibold').textContent + '» supera el stock disponible.');
+            pasado.querySelector('.d-cant').focus();
         }
     });
 
     // Restaurar lo ingresado si el servidor rechazó el descargo
     if (OLD) {
-        prod.value    = OLD.producto_id || '';
-        buscar.value  = prod.selectedOptions[0]?.dataset.nombre || '';
-        cant.value    = OLD.cantidad || 1;
+        (OLD.producto_id || []).forEach((id, i) => agregar(id, parseInt((OLD.cantidad || [])[i], 10) || 1));
         if (OLD.fecha) document.getElementById('d-fecha').value = OLD.fecha;
         motivo.value  = OLD.motivo || '';
         detalle.value = OLD.motivo_detalle || '';
     }
-    actualizarStock();
+    totales();
     box.classList.toggle('visible', motivo.value === 'otros');
     detalle.required = motivo.value === 'otros';
 }
+
+<?php if ($acta): ?>
+// Recién registrado: se abre el acta de descargo para imprimir
+window.open('<?= BASE_URL ?>/descargos/acta?grupo=<?= (int)$acta ?>', '_blank');
+<?php endif; ?>
 </script>
 </body>
 </html>

@@ -47,51 +47,86 @@ class DescargoController {
         $this->render('descargos/index', $datos);
     }
 
+    /** POST: descarga uno o varios productos con la misma fecha y motivo; queda un acta de descargo */
     public function registrar(): void {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->redirect('descargos');
         }
 
         $veterinaria_id = $this->veterinariaActual($this->vetModel->getAll());
-        $d = [
+        $comun = [
             'veterinaria_id' => $veterinaria_id,
-            'producto_id'    => (int)($_POST['producto_id'] ?? 0),
             'fecha'          => $this->fechaValida($_POST['fecha'] ?? '') ?? '',
-            'cantidad'       => (int)($_POST['cantidad'] ?? 0),
             'motivo'         => $_POST['motivo'] ?? '',
             'motivo_detalle' => mb_substr(trim($_POST['motivo_detalle'] ?? ''), 0, 255),
             'usuario_id'     => (int)$_SESSION['usuario_id'],
         ];
 
+        // Productos: el mismo producto repetido se suma
+        $items = [];
+        $ids   = (array)($_POST['producto_id'] ?? []);
+        $cants = (array)($_POST['cantidad'] ?? []);
+        foreach ($ids as $i => $pid) {
+            $pid = (int)$pid;
+            $cant = (int)($cants[$i] ?? 0);
+            if ($pid <= 0) continue;
+            $items[$pid] = ($items[$pid] ?? 0) + $cant;
+        }
+
         $error = '';
-        if ($d['producto_id'] <= 0) {
-            $error = 'Selecciona un producto.';
-        } elseif ($d['fecha'] === '') {
+        if (!$items) {
+            $error = 'Agrega al menos un producto.';
+        } elseif (min($items) <= 0) {
+            $error = 'Todas las cantidades deben ser mayores a cero.';
+        } elseif ($comun['fecha'] === '') {
             $error = 'Indica una fecha válida para el descargo.';
-        } elseif ($d['fecha'] > date('Y-m-d')) {
+        } elseif ($comun['fecha'] > date('Y-m-d')) {
             $error = 'La fecha del descargo no puede ser futura.';
-        } elseif ($d['cantidad'] <= 0) {
-            $error = 'La cantidad debe ser mayor a cero.';
-        } elseif (!isset(DescargoModel::MOTIVOS[$d['motivo']])) {
+        } elseif (!isset(DescargoModel::MOTIVOS[$comun['motivo']])) {
             $error = 'Selecciona el motivo del descargo.';
-        } elseif ($d['motivo'] === 'otros' && $d['motivo_detalle'] === '') {
+        } elseif ($comun['motivo'] === 'otros' && $comun['motivo_detalle'] === '') {
             $error = 'Explica el motivo del descargo.';
         }
-        if ($d['motivo'] !== 'otros') {
-            $d['motivo_detalle'] = '';   // el detalle solo aplica a «Otros»
+        if ($comun['motivo'] !== 'otros') {
+            $comun['motivo_detalle'] = '';   // el detalle solo aplica a «Otros»
         }
 
         if ($error === '') {
-            $error = $this->model->crear($d);
+            $res   = $this->model->crearVarios($comun, array_map(null, array_keys($items), array_values($items)));
+            $error = $res['error'];
         }
 
         if ($error !== '') {
             $_SESSION['flash_error']  = $error;
             $_SESSION['descargo_old'] = $_POST;
         } else {
-            $_SESSION['flash_success'] = 'Descargo registrado. Se descontaron ' . $d['cantidad'] . ' unidad(es) del inventario.';
+            $n = count($items);
+            $_SESSION['flash_success']   = $n === 1
+                ? 'Descargo registrado. Se descontaron ' . array_sum($items) . ' unidad(es) del inventario.'
+                : "Descargo de $n productos registrado (" . array_sum($items) . ' unidades).';
+            $_SESSION['descargo_acta'] = $res['grupo'];   // el listado abre el acta para imprimir
         }
         $this->redirect('descargos');
+    }
+
+    /** GET: acta de descargo imprimible (todos los productos descargados juntos) */
+    public function acta(): void {
+        $veterinaria_id = $this->veterinariaActual($this->vetModel->getAll());
+        $grupo = (int)($_GET['grupo'] ?? 0);
+        $items = $this->model->getActa($grupo, $veterinaria_id);
+        if (!$items) {
+            http_response_code(404);
+            echo 'Acta de descargo no encontrada.';
+            exit;
+        }
+        require_once ROOT . '/app/models/FacturacionModel.php';
+        $empresa = (new FacturacionModel())->getSucursal($veterinaria_id);
+        $this->render('descargos/acta', [
+            'items'   => $items,
+            'empresa' => $empresa,
+            'motivos' => DescargoModel::MOTIVOS,
+            'numero'  => VeterinariaModel::serialServicio($empresa['nombre'], 'DES', $grupo, $items[0]['created_at']),
+        ]);
     }
 
     /** POST: cambia cantidad y motivo de un descargo; el stock se ajusta por la diferencia */
