@@ -49,7 +49,8 @@ class FacturacionModel {
                         t.valor, t.activo = 0, u.nombre, NULL, t.descripcion, 0
                    FROM laboratorios t LEFT JOIN usuarios u ON u.id = t.usuario_id
                   WHERE t.veterinaria_id = ? AND t.fecha BETWEEN ? AND ?",
-            // Tratamientos: cada abono es un cobro en su propia fecha (no el valor del tratamiento)
+            // Tratamientos: cada abono es un cobro en su propia fecha (no el valor del tratamiento).
+            // Un abono eliminado deja de aparecer en los listados y reportes (no se muestra como anulado).
             'tratamiento' =>
                 "SELECT 'tratamiento', a.id, a.fecha, a.created_at,
                         CONCAT(t.descripcion, ' · abono', IF(a.nota IS NULL, '', CONCAT(' (', a.nota, ')')),
@@ -59,7 +60,7 @@ class FacturacionModel {
                    FROM tratamiento_abonos a
                    JOIN tratamientos t ON t.id = a.tratamiento_id AND t.activo = 1
               LEFT JOIN usuarios u ON u.id = a.usuario_id
-                  WHERE a.veterinaria_id = ? AND a.fecha BETWEEN ? AND ?",
+                  WHERE a.activo = 1 AND a.veterinaria_id = ? AND a.fecha BETWEEN ? AND ?",
         ];
         if ($tipo !== '') {
             $partes = array_intersect_key($partes, [$tipo => true]);
