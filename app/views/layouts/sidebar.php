@@ -41,6 +41,7 @@ $_tema = $_SESSION['tema'] ?? 'original';
                     ['clientes',         'clientes',           'people-fill',           'Clientes'],
                     ['mascotas',         'mascotas',           'heart-fill',            'Mascotas'],
                     ['historial',        'historial',          'clipboard2-pulse-fill', 'Historial médico'],
+                    ['formulas',         'formulas',           'prescription2',         'Fórmula médica'],
                 ],
                 'Servicios'  => [
                     ['tratamiento',      'tratamiento',        'capsule',               'Tratamiento'],

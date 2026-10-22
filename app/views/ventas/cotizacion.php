@@ -41,7 +41,8 @@ $money = fn($n) => '$' . number_format((float)$n, 2);
 
         .notas { margin-top: 14px; font-size: 11px; background: #f9fafb; border-radius: 6px; padding: 8px 10px; }
         .condiciones { margin-top: 16px; font-size: 10px; color: #4b5563; line-height: 1.6; border-top: 1px dashed #d1d5db; padding-top: 10px; }
-        .firma { display: flex; justify-content: space-between; margin-top: 40px; gap: 20px; }
+        .firma { display: flex; justify-content: flex-end; margin-top: 48px; }
+        .firma div { max-width: 280px; }
         .firma div { flex: 1; border-top: 1px solid #9ca3af; text-align: center; padding-top: 5px; font-size: 10px; color: #6b7280; }
         .pie { margin-top: 18px; text-align: center; font-size: 9px; color: #9ca3af; }
 
@@ -110,7 +111,7 @@ $money = fn($n) => '$' . number_format((float)$n, 2);
                 <td class="c"><?= (int)$l['cantidad'] ?></td>
                 <td>
                     <?= $e($l['concepto']) ?><?php if ($l['detalle'] === 'Servicio'): ?><span class="tag-servicio">SERVICIO</span><?php endif; ?>
-                    <?php if ($l['detalle'] !== 'Servicio' && $l['detalle'] !== ''): ?><div class="det"><?= $e($l['detalle']) ?></div><?php endif; ?>
+                    <?php if ($l['detalle'] !== 'Servicio' && (string)$l['detalle'] !== ''): ?><div class="det"><?= $e($l['detalle']) ?></div><?php endif; ?>
                 </td>
                 <td class="r"><?= $money($l['precio']) ?></td>
                 <td class="r"><?= $money($l['subtotal']) ?></td>
@@ -122,7 +123,7 @@ $money = fn($n) => '$' . number_format((float)$n, 2);
     <table class="totales">
         <tr><td>Subtotal</td><td class="r"><?= $money($subtotal) ?></td></tr>
         <?php if ($descuento > 0): ?>
-        <tr><td>Descuento</td><td class="r">− <?= $money($descuento) ?></td></tr>
+        <tr><td>Descuento<?= !empty($descuentoPct) ? ' (' . rtrim(rtrim(number_format($descuentoPct, 2, '.', ''), '0'), '.') . '%)' : '' ?></td><td class="r">− <?= $money($descuento) ?></td></tr>
         <?php endif; ?>
         <tr class="total"><td>Total cotizado</td><td class="r"><?= $money($total) ?></td></tr>
     </table>
@@ -136,9 +137,9 @@ $money = fn($n) => '$' . number_format((float)$n, 2);
         a la disponibilidad del inventario al momento de la compra. Este documento no es una factura.
     </div>
 
+    <!-- Única firma: la del médico veterinario -->
     <div class="firma">
-        <div>Firma de quien cotiza</div>
-        <div>Aceptado por el cliente</div>
+        <div>Firma y sello del médico veterinario</div>
     </div>
 
     <div class="pie">Cotización generada por PetControl · <?= $e($numero) ?></div>

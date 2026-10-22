@@ -288,6 +288,31 @@ switch ($uri) {
         (new MascotaController())->eliminar();
         break;
 
+    case 'formulas':
+        require_once ROOT . '/app/controllers/FormulaController.php';
+        (new FormulaController())->index();
+        break;
+
+    case 'formulas/nueva':
+        require_once ROOT . '/app/controllers/FormulaController.php';
+        (new FormulaController())->formulario();
+        break;
+
+    case 'formulas/guardar':
+        require_once ROOT . '/app/controllers/FormulaController.php';
+        (new FormulaController())->guardar();
+        break;
+
+    case 'formulas/imprimir':
+        require_once ROOT . '/app/controllers/FormulaController.php';
+        (new FormulaController())->imprimir();
+        break;
+
+    case 'formulas/anular':
+        require_once ROOT . '/app/controllers/FormulaController.php';
+        (new FormulaController())->anular();
+        break;
+
     case 'historial':
         require_once ROOT . '/app/controllers/HistorialController.php';
         (new HistorialController())->index();
@@ -526,6 +551,11 @@ switch ($uri) {
     case 'ventas/historial':
         require_once ROOT . '/app/controllers/VentaController.php';
         (new VentaController())->historial();
+        break;
+
+    case 'ventas/cotizacion/ver':
+        require_once ROOT . '/app/controllers/VentaController.php';
+        (new VentaController())->verCotizacion();
         break;
 
     case 'ventas/cotizacion':

@@ -182,11 +182,26 @@ function renderCarrito() {
     actualizarTotales();
 }
 
+// Descuento escrito como valor fijo («5000», «5.000») o porcentaje («10%»): devuelve el monto en pesos
+function porcentajeDescuento() {
+    const t = String(document.getElementById('descuentoInput').value || '').replace(/\s/g, '');
+    return t.endsWith('%') ? Math.min(Math.max(parseFloat(t.replace(',', '.')) || 0, 0), 100) : null;
+}
+function descuentoDe(subtotal) {
+    const pct = porcentajeDescuento();
+    if (pct !== null) return Math.round(subtotal * pct) / 100;
+    let t = String(document.getElementById('descuentoInput').value || '').replace(/\s/g, '');
+    t = /^\d{1,3}(\.\d{3})+(,\d+)?$/.test(t) ? t.replace(/\./g, '').replace(',', '.') : t.replace(',', '.');
+    return Math.min(Math.max(parseFloat(t) || 0, 0), subtotal);
+}
+
 function actualizarTotales() {
     const subtotal  = Object.values(carrito).reduce((s, i) => s + i.precio * i.cantidad, 0);
-    const descuento = Math.min(parseFloat(document.getElementById('descuentoInput').value) || 0, subtotal);
+    const descuento = descuentoDe(subtotal);
     const total     = Math.max(0, subtotal - descuento);
+    const pct       = porcentajeDescuento();
 
+    document.getElementById('totalDescuentoPct').textContent = pct !== null && pct > 0 ? ' (' + pct + '%)' : '';
     document.getElementById('totalSubtotal').textContent = '$' + subtotal.toFixed(2);
     document.getElementById('totalDescuento').textContent = '-$' + descuento.toFixed(2);
     document.getElementById('totalFinal').textContent    = '$' + total.toFixed(2);
@@ -247,7 +262,7 @@ function confirmarVenta() {
     if (modoCotizacion) { cotizar(); return; }
 
     const subtotal  = Object.values(carrito).reduce((s, i) => s + i.precio * i.cantidad, 0);
-    const descuento = Math.min(parseFloat(document.getElementById('descuentoInput').value) || 0, subtotal);
+    const descuento = descuentoDe(subtotal);
     totalACobrar = Math.round(Math.max(0, subtotal - descuento) * 100) / 100;
     document.getElementById('pagoTotal').textContent = '$' + totalACobrar.toFixed(2);
 
@@ -340,7 +355,7 @@ function registrarVenta() {
     btn.disabled = true;
 
     const subtotal  = Object.values(carrito).reduce((s, i) => s + i.precio * i.cantidad, 0);
-    const descuento = parseFloat(document.getElementById('descuentoInput').value) || 0;
+    const descuento = descuentoDe(subtotal);
     const total     = Math.max(0, subtotal - descuento);
 
     document.getElementById('fMetodoPago').value  = metodoPago;
@@ -433,11 +448,13 @@ function cotizar() {
     if (!items.length) return;
     const subtotal  = items.reduce((s, [, i]) => s + i.precio * i.cantidad, 0);
     const inpDesc   = document.getElementById('descuentoInput');
-    const descuento = inpDesc.disabled ? 0 : Math.min(parseFloat(inpDesc.value) || 0, subtotal);
+    const descuento = inpDesc.disabled ? 0 : descuentoDe(subtotal);
+    const pct       = inpDesc.disabled ? null : porcentajeDescuento();
 
     document.getElementById('cClienteId').value = document.getElementById('fClienteId').value;
     document.getElementById('cNotas').value     = document.getElementById('notasVenta').value;
     document.getElementById('cDescuento').value = descuento;
+    document.getElementById('cDescuentoPct').value = pct !== null && pct > 0 ? pct : '';
     const lineas = document.getElementById('cLineas');
     lineas.innerHTML = '';
     items.forEach(([id, item]) => {

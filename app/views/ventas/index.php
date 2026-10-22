@@ -271,8 +271,9 @@
                         </label>
                         <div class="input-group input-group-sm" style="width:130px;">
                             <span class="input-group-text">$</span>
-                            <input type="number" class="form-control text-end" id="descuentoInput"
-                                min="0" step="0.01" value="<?= $editar ? (float)$editar['descuento'] : 0 ?>" oninput="actualizarTotales()">
+                            <input type="text" class="form-control text-end" id="descuentoInput" inputmode="decimal" autocomplete="off"
+                                title="Valor fijo (5000) o porcentaje (10%)" placeholder="0 ó 10%"
+                                value="<?= $editar ? (float)$editar['descuento'] : 0 ?>" oninput="actualizarTotales()">
                         </div>
                     </div>
                     <?php else: ?>
@@ -292,7 +293,7 @@
                             <span id="totalSubtotal">$0.00</span>
                         </div>
                         <div class="pos-total-row text-danger">
-                            <span>Descuento</span>
+                            <span>Descuento<span id="totalDescuentoPct"></span></span>
                             <span id="totalDescuento">-$0.00</span>
                         </div>
                         <div class="pos-total-row pos-total-final">
@@ -342,6 +343,7 @@
     <input type="hidden" name="cliente_id" id="cClienteId">
     <input type="hidden" name="notas"      id="cNotas">
     <input type="hidden" name="descuento"  id="cDescuento">
+    <input type="hidden" name="descuento_pct" id="cDescuentoPct">
     <div id="cLineas"></div>
 </form>
 

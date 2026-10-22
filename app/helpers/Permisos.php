@@ -15,6 +15,7 @@ class Permisos {
         'clientes'    => ['Clientes',         'people-fill',             'Atención'],
         'mascotas'    => ['Mascotas',         'heart-fill',              'Atención'],
         'historial'   => ['Historial médico', 'clipboard2-pulse-fill',   'Atención'],
+        'formulas'    => ['Fórmula médica',   'prescription2',           'Atención'],
         'tratamiento' => ['Tratamiento',      'capsule',                 'Servicios'],
         'peluqueria'  => ['Peluquería',       'scissors',                'Servicios'],
         'laboratorio' => ['Laboratorios',     'eyedropper',              'Servicios'],

@@ -426,6 +426,7 @@ class VentaController {
         $datos = [
             'activePage'     => 'historial-ventas',
             'ventas'         => $this->model->getAll($veterinaria_id),
+            'cotizaciones'   => (function () use ($veterinaria_id) { require_once ROOT . '/app/models/CotizacionModel.php'; return (new CotizacionModel())->getAll($veterinaria_id); })(),
             'totales'        => $this->model->getTotales($veterinaria_id),
             'veterinarias'   => $veterinarias,
             'veterinaria_id' => $veterinaria_id,
@@ -554,7 +555,7 @@ class VentaController {
     }
 
     /**
-     * POST (desde el modo cotización del punto de venta): arma e imprime la cotización.
+     * POST (desde el modo cotización del punto de venta): guarda la cotización y abre su formato para imprimir.
      * No registra venta ni toca el inventario. Los productos se cotizan con su precio de venta actual;
      * los servicios llevan la descripción y el precio escritos a mano.
      */
@@ -562,17 +563,16 @@ class VentaController {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->redirect('ventas');
         }
-        require_once ROOT . '/app/models/FacturacionModel.php';
-        require_once ROOT . '/app/models/VeterinariaModel.php';
+        require_once ROOT . '/app/models/CotizacionModel.php';
         require_once ROOT . '/app/models/ClienteModel.php';
 
         $veterinaria_id = (int)($_SESSION['veterinaria_id'] ?? 0);
-        $tipos     = (array)($_POST['tipo'] ?? []);
-        $ids       = (array)($_POST['producto_id'] ?? []);
-        $textos    = (array)($_POST['descripcion'] ?? []);
+        $tipos      = (array)($_POST['tipo'] ?? []);
+        $ids        = (array)($_POST['producto_id'] ?? []);
+        $textos     = (array)($_POST['descripcion'] ?? []);
         $cantidades = (array)($_POST['cantidad'] ?? []);
-        $precios   = (array)($_POST['precio'] ?? []);
-        $productos = $this->model->getProductosPorId($ids);
+        $precios    = (array)($_POST['precio'] ?? []);
+        $productos  = $this->model->getProductosPorId($ids);
 
         $lineas = [];
         foreach ($tipos as $i => $tipo) {
@@ -581,10 +581,11 @@ class VentaController {
                 $texto  = mb_substr(trim((string)($textos[$i] ?? '')), 0, 200);
                 $precio = round(max(0, (float)($precios[$i] ?? 0)), 2);
                 if ($texto === '') continue;
-                $lineas[] = ['cantidad' => $cant, 'concepto' => $texto, 'detalle' => 'Servicio', 'precio' => $precio];
+                $lineas[] = ['producto_id' => null, 'cantidad' => $cant, 'concepto' => $texto, 'detalle' => 'Servicio', 'precio' => $precio];
             } elseif (isset($productos[(int)($ids[$i] ?? 0)])) {
                 $p = $productos[(int)$ids[$i]];
-                $lineas[] = ['cantidad' => $cant, 'concepto' => $p['nombre'], 'detalle' => trim(($p['codigo'] ? 'Cód. ' . $p['codigo'] : '') . ' · ' . $p['unidad'], ' ·'),
+                $lineas[] = ['producto_id' => (int)$p['id'], 'cantidad' => $cant, 'concepto' => $p['nombre'],
+                             'detalle' => trim(($p['codigo'] ? 'Cód. ' . $p['codigo'] : '') . ' · ' . $p['unidad'], ' ·'),
                              'precio' => (float)$p['precio_venta']];
             }
         }
@@ -601,26 +602,59 @@ class VentaController {
         // El descuento sigue la misma regla que en las ventas (admin o autorizado), pero cotizar no consume la autorización
         $puedeDescontar = $this->esAdmin() || $this->auditoria()->descuentosHabilitados($veterinaria_id);
         $descuento = $puedeDescontar ? min($subtotal, max(0, round((float)($_POST['descuento'] ?? 0), 2))) : 0.0;
+        $pct = $descuento > 0 && is_numeric($_POST['descuento_pct'] ?? '') ? min(100, max(0, (float)$_POST['descuento_pct'])) : null;
 
-        $cliente = null;
-        if (($cid = (int)($_POST['cliente_id'] ?? 0)) > 0) {
-            $cliente = (new ClienteModel())->findById($cid);
+        $cid = (int)($_POST['cliente_id'] ?? 0);
+        $cliente_id = $cid > 0 && (new ClienteModel())->findById($cid) ? $cid : null;
+
+        $id = (new CotizacionModel())->guardar([
+            'veterinaria_id' => $veterinaria_id,
+            'cliente_id'     => $cliente_id,
+            'usuario_id'     => (int)$_SESSION['usuario_id'],
+            'subtotal'       => $subtotal,
+            'descuento'      => $descuento,
+            'descuento_pct'  => $pct,
+            'total'          => max(0, $subtotal - $descuento),
+            'notas'          => mb_substr(trim((string)($_POST['notas'] ?? '')), 0, 500) ?: null,
+        ], $lineas);
+
+        if (!$id) {
+            http_response_code(500);
+            echo 'No se pudo guardar la cotización.';
+            exit;
         }
+        // Se abre por GET: recargar la pestaña no crea otra cotización
+        $this->redirect('ventas/cotizacion/ver?id=' . $id);
+    }
 
-        $empresa = (new FacturacionModel())->getSucursal($veterinaria_id);
-        $ahora   = time();
+    /** GET: formato imprimible de una cotización guardada */
+    public function verCotizacion(): void {
+        require_once ROOT . '/app/models/CotizacionModel.php';
+        require_once ROOT . '/app/models/FacturacionModel.php';
+        require_once ROOT . '/app/models/VeterinariaModel.php';
+
+        $c = (new CotizacionModel())->getCotizacion((int)($_GET['id'] ?? 0));
+        if (!$c) {
+            http_response_code(404);
+            echo 'Cotización no encontrada.';
+            exit;
+        }
+        $empresa = (new FacturacionModel())->getSucursal((int)$c['veterinaria_id']);
+        $fecha   = strtotime($c['created_at']);
         $this->render('ventas/cotizacion', [
-            'empresa'  => $empresa,
-            'numero'   => VeterinariaModel::serialServicio($empresa['nombre'], 'COT', (int)date('Hi', $ahora) + 1, date('Y-m-d', $ahora)),
-            'fecha'    => $ahora,
-            'vence'    => strtotime('+15 days', $ahora),
-            'cliente'  => $cliente,
-            'lineas'   => $lineas,
-            'subtotal' => $subtotal,
-            'descuento' => $descuento,
-            'total'    => max(0, $subtotal - $descuento),
-            'notas'    => mb_substr(trim((string)($_POST['notas'] ?? '')), 0, 500),
-            'usuario'  => $_SESSION['usuario_nombre'] ?? '',
+            'empresa'      => $empresa,
+            'numero'       => VeterinariaModel::serialServicio($empresa['nombre'], 'COT', (int)$c['id'], $c['created_at']),
+            'fecha'        => $fecha,
+            'vence'        => strtotime('+15 days', $fecha),
+            'cliente'      => $c['cliente_id'] ? ['nombre' => $c['cliente_nombre'], 'apellido' => $c['cliente_apellido'],
+                                                  'dni' => $c['cliente_dni'], 'telefono' => $c['cliente_telefono']] : null,
+            'lineas'       => $c['lineas'],
+            'subtotal'     => (float)$c['subtotal'],
+            'descuento'    => (float)$c['descuento'],
+            'descuentoPct' => $c['descuento_pct'] !== null ? (float)$c['descuento_pct'] : null,
+            'total'        => (float)$c['total'],
+            'notas'        => (string)$c['notas'],
+            'usuario'      => (string)$c['usuario_nombre'],
         ]);
     }
 

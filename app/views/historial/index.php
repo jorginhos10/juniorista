@@ -223,6 +223,14 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
                                     <a href="<?= BASE_URL ?>/historial/imprimir?mascota=<?= $mascota['id'] ?>" target="_blank" class="btn btn-sm btn-outline-secondary">
                                         <i class="bi bi-printer me-1"></i>Imprimir historia
                                     </a>
+                                    <?php if (Permisos::puede('formulas')): ?>
+                                    <a href="<?= BASE_URL ?>/formulas/nueva?mascota=<?= $mascota['id'] ?>" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-prescription2 me-1"></i>Fórmula médica
+                                    </a>
+                                    <a href="<?= BASE_URL ?>/formulas?mascota=<?= $mascota['id'] ?>" class="btn btn-sm btn-light">
+                                        <i class="bi bi-files me-1"></i>Fórmulas anteriores
+                                    </a>
+                                    <?php endif; ?>
                                     <a href="<?= BASE_URL ?>/citas?nueva=1" class="btn btn-sm btn-light">
                                         <i class="bi bi-calendar-plus me-1"></i>Agendar cita
                                     </a>
