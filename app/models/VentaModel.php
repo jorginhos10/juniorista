@@ -396,6 +396,20 @@ class VentaModel {
         return $ok;
     }
 
+    /** Nombre, código, unidad y precio de venta de los productos indicados (para la cotización) */
+    public function getProductosPorId(array $ids): array {
+        $ids = array_values(array_unique(array_filter(array_map('intval', $ids))));
+        if (!$ids) return [];
+        $marcas = implode(',', array_fill(0, count($ids), '?'));
+        $stmt = $this->db->prepare("SELECT id, nombre, codigo, unidad, precio_venta FROM productos WHERE activo = 1 AND id IN ($marcas)");
+        $stmt->bind_param(str_repeat('i', count($ids)), ...$ids);
+        $stmt->execute();
+        $res = [];
+        foreach ($stmt->get_result()->fetch_all(MYSQLI_ASSOC) as $p) $res[(int)$p['id']] = $p;
+        $stmt->close();
+        return $res;
+    }
+
     public function getProductos(int $veterinaria_id = 0): array {
         if ($veterinaria_id > 0) {
             $stmt = $this->db->prepare(

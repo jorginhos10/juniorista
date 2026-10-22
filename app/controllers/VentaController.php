@@ -553,6 +553,77 @@ class VentaController {
         if (!isset($_SESSION['usuario_id'])) { header('Location: ' . BASE_URL . '/'); exit; }
     }
 
+    /**
+     * POST (desde el modo cotización del punto de venta): arma e imprime la cotización.
+     * No registra venta ni toca el inventario. Los productos se cotizan con su precio de venta actual;
+     * los servicios llevan la descripción y el precio escritos a mano.
+     */
+    public function cotizacion(): void {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect('ventas');
+        }
+        require_once ROOT . '/app/models/FacturacionModel.php';
+        require_once ROOT . '/app/models/VeterinariaModel.php';
+        require_once ROOT . '/app/models/ClienteModel.php';
+
+        $veterinaria_id = (int)($_SESSION['veterinaria_id'] ?? 0);
+        $tipos     = (array)($_POST['tipo'] ?? []);
+        $ids       = (array)($_POST['producto_id'] ?? []);
+        $textos    = (array)($_POST['descripcion'] ?? []);
+        $cantidades = (array)($_POST['cantidad'] ?? []);
+        $precios   = (array)($_POST['precio'] ?? []);
+        $productos = $this->model->getProductosPorId($ids);
+
+        $lineas = [];
+        foreach ($tipos as $i => $tipo) {
+            $cant = max(1, (int)($cantidades[$i] ?? 1));
+            if ($tipo === 'servicio') {
+                $texto  = mb_substr(trim((string)($textos[$i] ?? '')), 0, 200);
+                $precio = round(max(0, (float)($precios[$i] ?? 0)), 2);
+                if ($texto === '') continue;
+                $lineas[] = ['cantidad' => $cant, 'concepto' => $texto, 'detalle' => 'Servicio', 'precio' => $precio];
+            } elseif (isset($productos[(int)($ids[$i] ?? 0)])) {
+                $p = $productos[(int)$ids[$i]];
+                $lineas[] = ['cantidad' => $cant, 'concepto' => $p['nombre'], 'detalle' => trim(($p['codigo'] ? 'Cód. ' . $p['codigo'] : '') . ' · ' . $p['unidad'], ' ·'),
+                             'precio' => (float)$p['precio_venta']];
+            }
+        }
+        foreach ($lineas as &$l) $l['subtotal'] = round($l['cantidad'] * $l['precio'], 2);
+        unset($l);
+
+        if (!$lineas) {
+            http_response_code(422);
+            echo 'La cotización no tiene productos ni servicios.';
+            exit;
+        }
+
+        $subtotal = array_sum(array_column($lineas, 'subtotal'));
+        // El descuento sigue la misma regla que en las ventas (admin o autorizado), pero cotizar no consume la autorización
+        $puedeDescontar = $this->esAdmin() || $this->auditoria()->descuentosHabilitados($veterinaria_id);
+        $descuento = $puedeDescontar ? min($subtotal, max(0, round((float)($_POST['descuento'] ?? 0), 2))) : 0.0;
+
+        $cliente = null;
+        if (($cid = (int)($_POST['cliente_id'] ?? 0)) > 0) {
+            $cliente = (new ClienteModel())->findById($cid);
+        }
+
+        $empresa = (new FacturacionModel())->getSucursal($veterinaria_id);
+        $ahora   = time();
+        $this->render('ventas/cotizacion', [
+            'empresa'  => $empresa,
+            'numero'   => VeterinariaModel::serialServicio($empresa['nombre'], 'COT', (int)date('Hi', $ahora) + 1, date('Y-m-d', $ahora)),
+            'fecha'    => $ahora,
+            'vence'    => strtotime('+15 days', $ahora),
+            'cliente'  => $cliente,
+            'lineas'   => $lineas,
+            'subtotal' => $subtotal,
+            'descuento' => $descuento,
+            'total'    => max(0, $subtotal - $descuento),
+            'notas'    => mb_substr(trim((string)($_POST['notas'] ?? '')), 0, 500),
+            'usuario'  => $_SESSION['usuario_nombre'] ?? '',
+        ]);
+    }
+
     private function esAdmin(): bool {
         return ($_SESSION['usuario_rol'] ?? '') === 'admin';
     }

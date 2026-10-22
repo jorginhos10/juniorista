@@ -528,6 +528,11 @@ switch ($uri) {
         (new VentaController())->historial();
         break;
 
+    case 'ventas/cotizacion':
+        require_once ROOT . '/app/controllers/VentaController.php';
+        (new VentaController())->cotizacion();
+        break;
+
     case 'ventas/registrar':
         require_once ROOT . '/app/controllers/VentaController.php';
         (new VentaController())->registrar();

@@ -3,6 +3,12 @@ const carrito = {};
 
 let categoriaActiva = '';
 
+// Modo cotización: no vende ni descuenta inventario; permite servicios y productos sin stock
+let modoCotizacion = false;
+let contadorServicios = 0;
+// Cantidad máxima de una línea: sin límite en cotización y en servicios
+const maxCantidad = item => (modoCotizacion || item.servicio) ? Infinity : item.stock;
+
 // ── FILTROS ───────────────────────────────────────────
 
 function filtrarProductos() {
@@ -58,8 +64,12 @@ function agregarAlCarrito(card) {
     const precio = parseFloat(card.dataset.precio);
     const unidad = card.dataset.unidad;
 
+    if (!modoCotizacion && stock <= 0) {
+        mostrarToastError('Producto sin stock (en modo cotización sí se puede agregar)');
+        return;
+    }
     if (carrito[id]) {
-        if (carrito[id].cantidad >= carrito[id].stock) {
+        if (carrito[id].cantidad >= maxCantidad(carrito[id])) {
             mostrarToastError(`Stock máximo alcanzado (${stock} ${unidad})`);
             return;
         }
@@ -81,7 +91,7 @@ function cambiarCantidad(id, delta) {
         quitarDelCarrito(id);
         return;
     }
-    if (nueva > carrito[id].stock) {
+    if (nueva > maxCantidad(carrito[id])) {
         mostrarToastError(`Máximo disponible: ${carrito[id].stock} ${carrito[id].unidad}`);
         return;
     }
@@ -98,7 +108,7 @@ function fijarCantidad(id, input) {
     if (isNaN(nueva) || nueva < 1) {
         // Vacío, 0 o negativo: se conserva la cantidad anterior (para quitar el producto está la X)
         nueva = carrito[id].cantidad;
-    } else if (nueva > carrito[id].stock) {
+    } else if (nueva > maxCantidad(carrito[id])) {
         mostrarToastError(`Máximo disponible: ${carrito[id].stock} ${carrito[id].unidad}`);
         nueva = carrito[id].stock;
     }
@@ -143,20 +153,20 @@ function renderCarrito() {
     const html = items.map(([id, item]) => `
         <div class="pos-carrito-item">
             <div class="pos-ci-nombre">
-                <span class="fw-semibold">${escHtml(item.nombre)}</span>
+                <span class="fw-semibold">${escHtml(item.nombre)}${item.servicio ? '<span class="pos-ci-servicio">SERVICIO</span>' : ''}</span>
                 <span class="text-muted small">$${item.precio.toFixed(2)} / ${escHtml(item.unidad)}</span>
             </div>
             <div class="pos-ci-controles">
                 <button class="pos-ci-btn" onclick="cambiarCantidad('${id}', -1)">
                     <i class="bi bi-dash"></i>
                 </button>
-                <input type="number" class="pos-ci-cant" value="${item.cantidad}" min="1" max="${item.stock}" step="1"
+                <input type="number" class="pos-ci-cant" value="${item.cantidad}" min="1" ${isFinite(maxCantidad(item)) ? `max="${item.stock}"` : ''} step="1"
                        inputmode="numeric" aria-label="Cantidad" title="Escribe la cantidad"
                        onfocus="this.select()"
                        onkeydown="if (event.key === 'Enter') { event.preventDefault(); this.blur(); }"
                        onchange="fijarCantidad('${id}', this)">
                 <button class="pos-ci-btn" onclick="cambiarCantidad('${id}', 1)"
-                        ${item.cantidad >= item.stock ? 'disabled' : ''}>
+                        ${item.cantidad >= maxCantidad(item) ? 'disabled' : ''}>
                     <i class="bi bi-plus"></i>
                 </button>
             </div>
@@ -234,6 +244,7 @@ async function agregarFotoComprobante(origen) {
 
 function confirmarVenta() {
     if (!Object.keys(carrito).length) return;
+    if (modoCotizacion) { cotizar(); return; }
 
     const subtotal  = Object.values(carrito).reduce((s, i) => s + i.precio * i.cantidad, 0);
     const descuento = Math.min(parseFloat(document.getElementById('descuentoInput').value) || 0, subtotal);
@@ -366,6 +377,89 @@ function registrarVenta() {
     });
 
     document.getElementById('formVentaOculto').submit();
+}
+
+// ── MODO COTIZACIÓN ───────────────────────────────────
+
+function aplicarModoCotizacion(activo) {
+    modoCotizacion = activo;
+    document.body.classList.toggle('modo-cotizacion', activo);
+    document.getElementById('btnServicio').classList.toggle('d-none', !activo);
+    document.getElementById('btnConfirmarTexto').textContent = activo ? 'Cotizar' : 'Confirmar Venta';
+    document.getElementById('tituloFactura').textContent = activo ? 'Cotización' : 'Factura';
+    const btn = document.getElementById('btnConfirmar');
+    btn.classList.toggle('btn-success', !activo);
+    btn.classList.toggle('btn-primary', activo);
+    btn.querySelector('i').className = (activo ? 'bi bi-file-earmark-text-fill' : 'bi bi-bag-check-fill') + ' me-2';
+
+    if (!activo) {
+        // Al volver a vender: fuera los servicios y lo que no alcanza el stock
+        let quitados = 0;
+        Object.entries(carrito).forEach(([id, item]) => {
+            if (item.servicio || item.stock <= 0) { delete carrito[id]; quitados++; actualizarBadge(id); }
+            else if (item.cantidad > item.stock) { item.cantidad = item.stock; quitados++; actualizarBadge(id); }
+        });
+        if (quitados) mostrarToastError('Se quitaron del carrito los servicios y lo que no tiene stock suficiente');
+    }
+    renderCarrito();
+    try { localStorage.setItem('pc_modo_cotizacion', activo ? '1' : '0'); } catch (e) {}
+}
+
+function abrirServicio() {
+    document.getElementById('formServicio').reset();
+    document.getElementById('srvCantidad').value = 1;
+    const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('modalServicio'));
+    modal.show();
+    setTimeout(() => document.getElementById('srvTexto').focus(), 300);
+}
+
+const formServicio = document.getElementById('formServicio');
+if (formServicio) {
+    formServicio.addEventListener('submit', e => {
+        e.preventDefault();
+        const texto  = document.getElementById('srvTexto').value.trim();
+        const precio = Math.round((parseFloat(document.getElementById('srvPrecio').value) || 0) * 100) / 100;
+        const cant   = Math.max(1, parseInt(document.getElementById('srvCantidad').value, 10) || 1);
+        if (!texto) return;
+        carrito['srv-' + (++contadorServicios)] = { nombre: texto, precio, unidad: 'servicio', stock: Infinity, cantidad: cant, servicio: true };
+        renderCarrito();
+        bootstrap.Modal.getInstance(document.getElementById('modalServicio')).hide();
+    });
+}
+
+// «Cotizar»: imprime el formato de cotización en otra pestaña (no registra venta ni toca el inventario)
+function cotizar() {
+    const items = Object.entries(carrito);
+    if (!items.length) return;
+    const subtotal  = items.reduce((s, [, i]) => s + i.precio * i.cantidad, 0);
+    const inpDesc   = document.getElementById('descuentoInput');
+    const descuento = inpDesc.disabled ? 0 : Math.min(parseFloat(inpDesc.value) || 0, subtotal);
+
+    document.getElementById('cClienteId').value = document.getElementById('fClienteId').value;
+    document.getElementById('cNotas').value     = document.getElementById('notasVenta').value;
+    document.getElementById('cDescuento').value = descuento;
+    const lineas = document.getElementById('cLineas');
+    lineas.innerHTML = '';
+    items.forEach(([id, item]) => {
+        const campos = item.servicio
+            ? { tipo: 'servicio', producto_id: '', descripcion: item.nombre, precio: item.precio }
+            : { tipo: 'producto', producto_id: id, descripcion: '', precio: '' };
+        campos.cantidad = item.cantidad;
+        Object.entries(campos).forEach(([k, v]) => {
+            const inp = document.createElement('input');
+            inp.type = 'hidden'; inp.name = k + '[]'; inp.value = v;
+            lineas.appendChild(inp);
+        });
+    });
+    document.getElementById('formCotizacion').submit();
+}
+
+const switchCotizacion = document.getElementById('modoCotizacion');
+if (switchCotizacion) {
+    switchCotizacion.addEventListener('change', () => aplicarModoCotizacion(switchCotizacion.checked));
+    let guardado = '0';
+    try { guardado = localStorage.getItem('pc_modo_cotizacion') || '0'; } catch (e) {}
+    if (guardado === '1') { switchCotizacion.checked = true; aplicarModoCotizacion(true); }
 }
 
 // ── TOAST TEMPORAL ────────────────────────────────────

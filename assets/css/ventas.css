@@ -432,3 +432,25 @@
 .pos-pago-foto img { width: 100%; height: 100%; object-fit: cover; }
 .pos-pago-foto button { position: absolute; top: 2px; right: 2px; width: 20px; height: 20px; padding: 0; line-height: 1; border: 0;
                         border-radius: 50%; background: rgba(15, 23, 42, .75); color: #fff; font-size: .95rem; cursor: pointer; }
+
+/* ── MODO COTIZACIÓN ─────────────────────────────────── */
+/* Interruptor tipo iOS (verde al activarse) */
+.pos-switch { display: inline-flex; align-items: center; gap: .55rem; margin: 0; cursor: pointer; user-select: none; white-space: nowrap; }
+.pos-switch input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.pos-switch-pista { position: relative; width: 51px; height: 31px; border-radius: 999px; background: #e5e5ea;
+                    box-shadow: inset 0 0 0 1.5px #d1d1d6; transition: background .25s, box-shadow .25s; flex-shrink: 0; }
+.pos-switch-bola { position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 50%; background: #fff;
+                   box-shadow: 0 3px 8px rgba(0, 0, 0, .15), 0 1px 1px rgba(0, 0, 0, .16); transition: transform .25s cubic-bezier(.3, 1.4, .6, 1); }
+.pos-switch input:checked + .pos-switch-pista { background: #34c759; box-shadow: inset 0 0 0 1.5px #34c759; }
+.pos-switch input:checked + .pos-switch-pista .pos-switch-bola { transform: translateX(20px); }
+.pos-switch input:focus-visible + .pos-switch-pista { outline: 3px solid rgba(52, 199, 89, .35); outline-offset: 2px; }
+.pos-switch-texto { font-size: .85rem; font-weight: 600; color: #475569; }
+.pos-switch input:checked ~ .pos-switch-texto { color: #15803d; }
+
+.pos-servicio-btn { border-color: #86efac; color: #15803d; background: #f0fdf4; }
+.pos-servicio-btn:hover { border-color: #22c55e; color: #fff; background: #22c55e; }
+
+/* En cotización se ven también los productos sin stock (se pueden cotizar) */
+.modo-cotizacion .pos-card-sin-stock { opacity: 1; filter: none; cursor: pointer; }
+.modo-cotizacion .pos-factura-header { background: #f0fdf4; }
+.pos-ci-servicio { font-size: .65rem; font-weight: 700; color: #15803d; background: #dcfce7; border-radius: 4px; padding: 0 .3rem; margin-left: .25rem; }

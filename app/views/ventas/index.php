@@ -71,7 +71,7 @@
             <div class="pos-productos">
 
                 <!-- Barra de búsqueda y filtros -->
-                <div class="pos-search-bar">
+                <div class="pos-search-bar d-flex align-items-center gap-3">
                     <div class="input-group">
                         <span class="input-group-text bg-white border-end-0">
                             <i class="bi bi-search text-muted"></i>
@@ -80,10 +80,21 @@
                             placeholder="Buscar producto por nombre o código…"
                             oninput="filtrarProductos()">
                     </div>
+                    <?php if (!$editar): ?>
+                    <!-- Modo cotización: interruptor tipo iOS -->
+                    <label class="pos-switch" title="Cotizar sin vender: no descuenta inventario">
+                        <input type="checkbox" id="modoCotizacion" role="switch">
+                        <span class="pos-switch-pista"><span class="pos-switch-bola"></span></span>
+                        <span class="pos-switch-texto">Modo cotización</span>
+                    </label>
+                    <?php endif; ?>
                 </div>
 
                 <!-- Filtros por categoría -->
                 <div class="pos-categorias" id="categoriasContainer">
+                    <button type="button" class="pos-cat-btn pos-servicio-btn d-none" id="btnServicio" onclick="abrirServicio()">
+                        <i class="bi bi-plus-lg me-1"></i>Servicio
+                    </button>
                     <button class="pos-cat-btn active" data-cat="" onclick="filtrarCategoria(this, '')">
                         Todos
                     </button>
@@ -111,7 +122,7 @@
                          data-stock="<?= $p['stock'] ?>"
                          data-unidad="<?= htmlspecialchars($p['unidad']) ?>"
                          data-categoria="<?= htmlspecialchars($p['categoria'] ?? '') ?>"
-                         onclick="<?= $sinStock ? '' : 'agregarAlCarrito(this)' ?>">
+                         onclick="agregarAlCarrito(this)">
 
                         <div class="pos-card-stock <?= $sinStock ? 'sin-stock' : 'con-stock' ?>">
                             <?= $sinStock ? 'Sin stock' : $p['stock'] . ' ' . htmlspecialchars($p['unidad']) ?>
@@ -159,7 +170,7 @@
                 <!-- Encabezado factura -->
                 <div class="pos-factura-header">
                     <div class="d-flex align-items-center justify-content-between mb-3">
-                        <span class="fw-bold fs-6"><?= $editar ? 'Editando factura' : 'Factura' ?></span>
+                        <span class="fw-bold fs-6" id="tituloFactura"><?= $editar ? 'Editando factura' : 'Factura' ?></span>
                         <!-- Fecha de la venta: por defecto ahora; se puede poner una fecha pasada -->
                         <input type="datetime-local" class="form-control form-control-sm text-muted" id="fechaVenta"
                                style="width:auto;" title="Fecha de la venta"
@@ -296,7 +307,7 @@
 
                     <!-- Botones -->
                     <button class="btn btn-success w-100 fw-bold py-2" id="btnConfirmar" onclick="confirmarVenta()" disabled>
-                        <i class="bi bi-bag-check-fill me-2"></i> <?= $editar ? 'Guardar cambios' : 'Confirmar Venta' ?>
+                        <i class="bi bi-bag-check-fill me-2"></i> <span id="btnConfirmarTexto"><?= $editar ? 'Guardar cambios' : 'Confirmar Venta' ?></span>
                     </button>
                     <button class="btn btn-outline-danger btn-sm w-100 mt-2" onclick="limpiarCarrito()">
                         <i class="bi bi-trash me-1"></i> Limpiar carrito
@@ -325,6 +336,51 @@
     <div id="fLineas"></div>
 </form>
 
+
+<!-- ── FORM DE LA COTIZACIÓN (se imprime en otra pestaña) ── -->
+<form method="POST" action="<?= BASE_URL ?>/ventas/cotizacion" id="formCotizacion" target="_blank">
+    <input type="hidden" name="cliente_id" id="cClienteId">
+    <input type="hidden" name="notas"      id="cNotas">
+    <input type="hidden" name="descuento"  id="cDescuento">
+    <div id="cLineas"></div>
+</form>
+
+<!-- ── MODAL SERVICIO (modo cotización) ───────────────── -->
+<div class="modal fade" id="modalServicio" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content border-0 shadow" id="formServicio" autocomplete="off">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold"><i class="bi bi-tools text-success me-2"></i>Agregar servicio</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold" for="srvTexto">Descripción <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="srvTexto" maxlength="200" required
+                           placeholder="Ej: Consulta general, baño y corte, cirugía de esterilización…">
+                </div>
+                <div class="row g-3">
+                    <div class="col-7">
+                        <label class="form-label fw-semibold" for="srvPrecio">Precio <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number" class="form-control text-end" id="srvPrecio" min="0" step="0.01" required inputmode="decimal">
+                        </div>
+                    </div>
+                    <div class="col-5">
+                        <label class="form-label fw-semibold" for="srvCantidad">Cantidad</label>
+                        <input type="number" class="form-control text-center" id="srvCantidad" min="1" step="1" value="1">
+                    </div>
+                </div>
+                <div class="form-text mt-2">Los servicios no tienen stock; solo aparecen en la cotización.</div>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-success fw-bold"><i class="bi bi-plus-lg me-1"></i>Agregar</button>
+            </div>
+        </form>
+    </div>
+</div>
 
 <!-- ── MODAL MÉTODO DE PAGO (al confirmar la venta) ──── -->
 <div class="modal fade" id="modalMetodoPago" tabindex="-1" aria-labelledby="modalMetodoPagoTitulo" aria-hidden="true">
