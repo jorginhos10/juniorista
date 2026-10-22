@@ -599,9 +599,8 @@ class VentaController {
         }
 
         $subtotal = array_sum(array_column($lineas, 'subtotal'));
-        // El descuento sigue la misma regla que en las ventas (admin o autorizado), pero cotizar no consume la autorización
-        $puedeDescontar = $this->esAdmin() || $this->auditoria()->descuentosHabilitados($veterinaria_id);
-        $descuento = $puedeDescontar ? min($subtotal, max(0, round((float)($_POST['descuento'] ?? 0), 2))) : 0.0;
+        // En la cotización el descuento siempre se permite (no mueve dinero ni consume la autorización de descuentos de ventas)
+        $descuento = min($subtotal, max(0, round((float)($_POST['descuento'] ?? 0), 2)));
         $pct = $descuento > 0 && is_numeric($_POST['descuento_pct'] ?? '') ? min(100, max(0, (float)$_POST['descuento_pct'])) : null;
 
         $cid = (int)($_POST['cliente_id'] ?? 0);

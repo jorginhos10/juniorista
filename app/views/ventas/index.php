@@ -282,7 +282,8 @@
                         <label class="small text-muted mb-0">Descuento ($)</label>
                         <div class="input-group input-group-sm" style="width:130px;">
                             <span class="input-group-text">$</span>
-                            <input type="number" class="form-control text-end" id="descuentoInput" value="<?= $editar ? (float)$editar['descuento'] : 0 ?>" disabled>
+                            <input type="text" class="form-control text-end" id="descuentoInput" inputmode="decimal" autocomplete="off" data-bloqueado="1"
+                                   placeholder="0 ó 10%" oninput="actualizarTotales()" value="<?= $editar ? (float)$editar['descuento'] : 0 ?>" disabled>
                         </div>
                     </div>
                     <?php endif; ?>

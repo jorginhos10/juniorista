@@ -122,9 +122,7 @@ $money = fn($n) => '$' . number_format((float)$n, 2);
 
     <table class="totales">
         <tr><td>Subtotal</td><td class="r"><?= $money($subtotal) ?></td></tr>
-        <?php if ($descuento > 0): ?>
         <tr><td>Descuento<?= !empty($descuentoPct) ? ' (' . rtrim(rtrim(number_format($descuentoPct, 2, '.', ''), '0'), '.') . '%)' : '' ?></td><td class="r">− <?= $money($descuento) ?></td></tr>
-        <?php endif; ?>
         <tr class="total"><td>Total cotizado</td><td class="r"><?= $money($total) ?></td></tr>
     </table>
 

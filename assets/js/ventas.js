@@ -400,6 +400,12 @@ function aplicarModoCotizacion(activo) {
     modoCotizacion = activo;
     document.body.classList.toggle('modo-cotizacion', activo);
     document.getElementById('btnServicio').classList.toggle('d-none', !activo);
+    // En cotización el descuento siempre se puede escribir; al volver a vender, si estaba bloqueado, se bloquea y queda en 0
+    const inpDesc = document.getElementById('descuentoInput');
+    if (inpDesc.dataset.bloqueado) {
+        inpDesc.disabled = !activo;
+        if (!activo) inpDesc.value = 0;
+    }
     document.getElementById('btnConfirmarTexto').textContent = activo ? 'Cotizar' : 'Confirmar Venta';
     document.getElementById('tituloFactura').textContent = activo ? 'Cotización' : 'Factura';
     const btn = document.getElementById('btnConfirmar');
@@ -447,9 +453,8 @@ function cotizar() {
     const items = Object.entries(carrito);
     if (!items.length) return;
     const subtotal  = items.reduce((s, [, i]) => s + i.precio * i.cantidad, 0);
-    const inpDesc   = document.getElementById('descuentoInput');
-    const descuento = inpDesc.disabled ? 0 : descuentoDe(subtotal);
-    const pct       = inpDesc.disabled ? null : porcentajeDescuento();
+    const descuento = descuentoDe(subtotal);
+    const pct       = porcentajeDescuento();
 
     document.getElementById('cClienteId').value = document.getElementById('fClienteId').value;
     document.getElementById('cNotas').value     = document.getElementById('notasVenta').value;
