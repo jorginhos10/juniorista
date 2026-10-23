@@ -12,7 +12,7 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <link href="<?= BASE_URL ?>/assets/css/style.css" rel="stylesheet">
     <style>
-        .lab-card { max-width: 860px; }
+        .lab-card { width: 100%; }
         .monto { font-variant-numeric: tabular-nums; font-weight: 700; white-space: nowrap; }
         .sigla { font-family: ui-monospace, Consolas, monospace; font-weight: 700; color: #7c3aed; background: #f5f3ff; padding: .1rem .5rem; border-radius: 6px; }
     </style>
