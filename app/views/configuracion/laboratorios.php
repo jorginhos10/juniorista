@@ -78,33 +78,45 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
                     <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap mb-1">
                         <h6 class="fw-bold mb-0">Exámenes de laboratorio</h6>
                         <?php if ($esAdmin): ?>
-                        <button type="button" class="btn btn-primary-custom btn-sm" onclick="nuevoExamen()">
-                            <i class="bi bi-plus-lg me-1"></i>Agregar examen
-                        </button>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-primary-custom btn-sm" onclick="nuevoExamen(false)">
+                                <i class="bi bi-plus-lg me-1"></i>Agregar examen
+                            </button>
+                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="nuevoExamen(true)">
+                                <i class="bi bi-collection me-1"></i>Agregar combo
+                            </button>
+                        </div>
                         <?php endif; ?>
                     </div>
                     <p class="text-muted small mb-3">
                         Sucursal: <strong><?= htmlspecialchars($sucursal['nombre'] ?? '') ?></strong>.
                         El <strong>costo</strong> es lo que te cobra el laboratorio por cada examen. Al registrar un laboratorio,
                         el doctor elige los exámenes y fija el valor libremente, pero <strong>nunca por debajo de la suma de sus costos</strong>;
-                        la diferencia es la ganancia.
+                        la diferencia es la ganancia. Un <strong>combo (perfil)</strong> tiene su propio costo, que puede ser menor que la suma de sus exámenes.
                     </p>
 
                     <div class="table-responsive">
                         <table class="table table-hover align-middle mb-0">
                             <thead class="table-light">
                                 <tr>
-                                    <th style="width:130px">Sigla</th>
                                     <th>Examen</th>
-                                    <th class="text-end" style="width:140px">Costo</th>
+                                    <th style="width:110px">Sigla</th>
+                                    <th>Tipo de muestra</th>
+                                    <th style="width:140px">Tiempo de entrega</th>
+                                    <th class="text-end" style="width:120px">Valor</th>
                                     <?php if ($esAdmin): ?><th class="text-center" style="width:100px">Acciones</th><?php endif; ?>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php foreach ($examenes as $x): ?>
                                 <tr>
+                                    <td class="text-uppercase">
+                                        <?= htmlspecialchars($x['nombre']) ?><?php if ($x['es_combo']): ?> <span class="badge bg-primary-subtle text-primary">Combo</span><?php endif; ?>
+                                        <?php if ($x['incluye_texto']): ?><div class="small text-muted text-capitalize">Incluye: <?= htmlspecialchars($x['incluye_texto']) ?></div><?php endif; ?>
+                                    </td>
                                     <td><span class="sigla"><?= htmlspecialchars($x['codigo']) ?></span></td>
-                                    <td><?= htmlspecialchars($x['nombre']) ?></td>
+                                    <td class="small"><?= htmlspecialchars($x['tipo_muestra'] ?? '') ?: '<span class="text-muted">—</span>' ?></td>
+                                    <td class="small"><?= htmlspecialchars($x['tiempo_entrega'] ?? '') ?></td>
                                     <td class="text-end monto"><?= $money($x['costo']) ?></td>
                                     <?php if ($esAdmin): ?>
                                     <td class="text-center">
@@ -120,7 +132,7 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
                                 <?php endforeach; ?>
                                 <?php if (!$examenes): ?>
                                 <tr>
-                                    <td colspan="<?= $esAdmin ? 4 : 3 ?>" class="text-center text-muted py-5">
+                                    <td colspan="<?= $esAdmin ? 6 : 5 ?>" class="text-center text-muted py-5">
                                         <i class="bi bi-eyedropper fs-2 d-block mb-2 opacity-25"></i>
                                         Aún no hay exámenes en el catálogo<?= $esAdmin ? '. Agrega el primero con su costo.' : '.' ?>
                                     </td>
@@ -170,13 +182,45 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
                             <label class="form-label fw-semibold" for="x-nombre">Examen <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" name="nombre" id="x-nombre" maxlength="100" required placeholder="Hemograma">
                         </div>
+                        <div class="col-12" id="x-combo-box">
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" name="es_combo" value="1" id="x-es-combo">
+                                <label class="form-check-label fw-semibold" for="x-es-combo">Es un combo (perfil)</label>
+                            </div>
+                            <div id="x-incluye" class="border rounded-3 p-2" style="max-height:170px;overflow-y:auto">
+                                <div class="small text-muted mb-1">Exámenes del catálogo que incluye:</div>
+                                <?php foreach ($examenes as $x): if ($x['es_combo']) continue; ?>
+                                <label class="d-block small"><input type="checkbox" class="form-check-input me-2 js-incluye" name="incluye[]" value="<?= (int)$x['id'] ?>">
+                                    <strong><?= htmlspecialchars($x['codigo']) ?></strong> · <?= htmlspecialchars($x['nombre']) ?></label>
+                                <?php endforeach; ?>
+                                <?php if (!array_filter($examenes, fn($x) => !$x['es_combo'])): ?>
+                                <div class="small text-muted">Aún no hay exámenes sueltos en el catálogo.</div>
+                                <?php endif; ?>
+                            </div>
+                            <label class="form-label small fw-semibold mt-2 mb-1" for="x-incluye_extra">Otros exámenes que incluye <span class="text-muted fw-normal">(escritos, separados por coma)</span></label>
+                            <input type="text" class="form-control form-control-sm" name="incluye_extra" id="x-incluye_extra" maxlength="255" placeholder="Urea, BUN, Creatinina, ALT, AST">
+                            <div class="form-text">Mínimo dos exámenes entre el catálogo y los escritos.</div>
+                        </div>
+                        <div class="col-7">
+                            <label class="form-label fw-semibold" for="x-tipo_muestra">Tipo de muestra</label>
+                            <input type="text" class="form-control" name="tipo_muestra" id="x-tipo_muestra" maxlength="100" list="muestras" placeholder="Tubo tapa lila (EDTA)">
+                            <datalist id="muestras">
+                                <option value="Tubo tapa lila (EDTA)"><option value="Tubo tapa azul (citrato)"><option value="Tubo seco">
+                                <option value="Heces"><option value="Orina"><option value="Pelos, costras y piel"><option value="Hisopado de oído">
+                                <option value="Lisopado vaginal, recipiente estéril">
+                            </datalist>
+                        </div>
+                        <div class="col-5">
+                            <label class="form-label fw-semibold" for="x-tiempo_entrega">Tiempo de entrega</label>
+                            <input type="text" class="form-control" name="tiempo_entrega" id="x-tiempo_entrega" maxlength="50" value="Mismo día" placeholder="Mismo día">
+                        </div>
                         <div class="col-12">
-                            <label class="form-label fw-semibold" for="x-costo">Costo <span class="text-danger">*</span></label>
+                            <label class="form-label fw-semibold" for="x-costo">Valor (costo) <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <span class="input-group-text">$</span>
                                 <input type="number" class="form-control" name="costo" id="x-costo" step="0.01" min="0" required placeholder="0.00">
                             </div>
-                            <div class="form-text">Lo que te cobra el laboratorio. El doctor no podrá cobrar menos que la suma de los costos.</div>
+                            <div class="form-text" id="x-costo-ayuda">Lo que te cobra el laboratorio. El doctor no podrá cobrar menos que la suma de los costos.</div>
                         </div>
                     </div>
                 </div>
@@ -200,18 +244,33 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
 const $id = id => document.getElementById(id);
 const modalExamen = () => bootstrap.Modal.getOrCreateInstance($id('modalExamen'));
 
-function nuevoExamen() {
+function ponerCombo(si, incluye) {
+    $id('x-es-combo').checked = si;
+    $id('x-incluye').style.display = si ? '' : 'none';
+    document.querySelectorAll('.js-incluye').forEach(c => c.checked = si && incluye.includes(Number(c.value)));
+    if (!si) $id('x-incluye_extra').value = '';
+    $id('x-costo-ayuda').textContent = si ? 'Costo propio del combo (puede ser menor que la suma de sus exámenes).'
+        : 'Lo que te cobra el laboratorio. El doctor no podrá cobrar menos que la suma de los costos.';
+}
+$id('x-es-combo').addEventListener('change', e => ponerCombo(e.target.checked, []));
+
+function nuevoExamen(combo) {
     $id('x-id').value = 0;
-    ['codigo', 'nombre', 'costo'].forEach(c => $id('x-' + c).value = '');
-    $id('x-titulo').textContent = 'Agregar examen';
+    ['codigo', 'nombre', 'costo', 'tipo_muestra'].forEach(c => $id('x-' + c).value = '');
+    $id('x-tiempo_entrega').value = 'Mismo día';
+    $id('x-incluye_extra').value = '';
+    ponerCombo(!!combo, []);
+    $id('x-titulo').textContent = combo ? 'Agregar combo' : 'Agregar examen';
     modalExamen().show();
     setTimeout(() => $id('x-codigo').focus(), 300);
 }
 
 function editarExamen(x) {
     $id('x-id').value = x.id;
-    ['codigo', 'nombre', 'costo'].forEach(c => $id('x-' + c).value = x[c] ?? '');
-    $id('x-titulo').textContent = 'Editar examen';
+    ['codigo', 'nombre', 'costo', 'tipo_muestra', 'tiempo_entrega'].forEach(c => $id('x-' + c).value = x[c] ?? '');
+    ponerCombo(!!x.es_combo, x.incluye_ids || []);
+    $id('x-incluye_extra').value = x.incluye_extra || '';
+    $id('x-titulo').textContent = x.es_combo ? 'Editar combo' : 'Editar examen';
     modalExamen().show();
 }
 

@@ -146,14 +146,31 @@ class ConfiguracionController {
         $nombre = mb_substr(trim($_POST['nombre'] ?? ''), 0, 100);
         $costo  = round((float)str_replace(',', '.', (string)($_POST['costo'] ?? '0')), 2);
 
+        $tipoMuestra   = mb_substr(trim($_POST['tipo_muestra'] ?? ''), 0, 100);
+        $tiempoEntrega = mb_substr(trim($_POST['tiempo_entrega'] ?? ''), 0, 50) ?: 'Mismo día';
+
+        // Combo (perfil): exámenes sueltos del catálogo de esta sucursal y/o exámenes escritos a mano
+        $incluyeExtra = '';
+        $incluye = [];
+        $modelo  = new LaboratorioModel();
+        if (!empty($_POST['es_combo'])) {
+            $incluyeExtra = mb_substr(trim(preg_replace('/\s*,\s*/', ', ', (string)($_POST['incluye_extra'] ?? '')), " ,"), 0, 255);
+            $pedidos = array_map('intval', (array)($_POST['incluye'] ?? []));
+            foreach ($modelo->getExamenes($veterinaria_id) as $x) {
+                if (!$x['es_combo'] && in_array((int)$x['id'], $pedidos, true) && (int)$x['id'] !== $id) $incluye[] = (int)$x['id'];
+            }
+        }
+
         if ($codigo === '' || $nombre === '') {
             $_SESSION['flash_error'] = 'Indica la sigla y el nombre del examen.';
+        } elseif (!empty($_POST['es_combo']) && count($incluye) + ($incluyeExtra === '' ? 0 : count(explode(',', $incluyeExtra))) < 2) {
+            $_SESSION['flash_error'] = 'Un combo debe incluir al menos dos exámenes (del catálogo o escritos en «Otros exámenes»).';
         } elseif (str_contains($codigo, '+')) {
             $_SESSION['flash_error'] = 'La sigla no puede llevar el signo «+» (se usa para unir exámenes).';
         } elseif ($costo < 0 || $costo > 99999999) {
             $_SESSION['flash_error'] = 'El costo no es válido.';
-        } elseif ((new LaboratorioModel())->guardarExamen($id, $veterinaria_id, $codigo, $nombre, $costo)) {
-            $_SESSION['flash_success'] = 'Examen ' . $codigo . ' guardado con costo de $' . number_format($costo, 2) . '. Se aplica a los exámenes que se registren desde ahora.';
+        } elseif ($modelo->guardarExamen($id, $veterinaria_id, $codigo, $nombre, $costo, $incluye, $tipoMuestra, $tiempoEntrega, $incluyeExtra)) {
+            $_SESSION['flash_success'] = ($incluye ? 'Combo ' : 'Examen ') . $codigo . ' guardado con costo de $' . number_format($costo, 2) . '. Se aplica a los exámenes que se registren desde ahora.';
         } else {
             $_SESSION['flash_error'] = 'No se pudo guardar el examen.';
         }

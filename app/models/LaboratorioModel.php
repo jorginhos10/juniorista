@@ -68,6 +68,20 @@ class LaboratorioModel extends TratamientoModel {
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci"
         );
 
+        // Combos (perfiles): un elemento del catálogo con su propio costo y la lista de exámenes que incluye (ids separados por coma)
+        $extras = [
+            'es_combo'       => 'TINYINT(1) NOT NULL DEFAULT 0',
+            'incluye'        => 'VARCHAR(255) DEFAULT NULL',
+            'incluye_extra'  => 'VARCHAR(255) DEFAULT NULL',                // exámenes del combo que no están en el catálogo (texto)
+            'tipo_muestra'   => 'VARCHAR(100) DEFAULT NULL',                // ej: Tubo tapa lila (EDTA), Heces, Orina
+            'tiempo_entrega' => "VARCHAR(50) NOT NULL DEFAULT 'Mismo día'",
+        ];
+        foreach ($extras as $col => $def) {
+            if ($this->db->query("SHOW COLUMNS FROM laboratorio_examenes LIKE '$col'")->num_rows === 0) {
+                $this->db->query("ALTER TABLE laboratorio_examenes ADD COLUMN $col $def");
+            }
+        }
+
         // Los exámenes que ya estaban registrados se cobraron completos el mismo día: pasan a ser un abono por todo su valor
         if ($abonosNuevos) {
             $this->db->query(
@@ -126,15 +140,27 @@ class LaboratorioModel extends TratamientoModel {
 
     // ── Catálogo de exámenes (costos fijos por sucursal) ──
 
+    /** Catálogo de la sucursal; cada combo trae 'incluye_ids' y 'incluye_texto' (siglas de los exámenes que lo forman) */
     public function getExamenes(int $veterinaria_id): array {
         $stmt = $this->db->prepare(
-            'SELECT id, codigo, nombre, costo FROM laboratorio_examenes
-              WHERE activo = 1 AND veterinaria_id = ? ORDER BY codigo, nombre'
+            'SELECT id, codigo, nombre, costo, es_combo, incluye, incluye_extra, tipo_muestra, tiempo_entrega FROM laboratorio_examenes
+              WHERE activo = 1 AND veterinaria_id = ? ORDER BY es_combo, codigo, nombre'
         );
         $stmt->bind_param('i', $veterinaria_id);
         $stmt->execute();
         $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
         $stmt->close();
+
+        $siglas = array_column($rows, 'codigo', 'id');
+        foreach ($rows as &$r) {
+            $r['es_combo']      = (int)$r['es_combo'];
+            $r['incluye_ids']   = array_values(array_filter(array_map('intval', explode(',', (string)$r['incluye']))));
+            $r['incluye_texto'] = implode(', ', array_filter([
+                implode(', ', array_map(fn($i) => $siglas[$i] ?? '?', $r['incluye_ids'])),
+                trim((string)$r['incluye_extra']),
+            ]));
+        }
+        unset($r);
         return $rows;
     }
 
@@ -154,17 +180,24 @@ class LaboratorioModel extends TratamientoModel {
         return $rows;
     }
 
-    public function guardarExamen(int $id, int $veterinaria_id, string $codigo, string $nombre, float $costo): bool {
+    /** Guarda un examen o un combo ($incluye = ids de los exámenes del combo, vacío si es un examen suelto) */
+    public function guardarExamen(int $id, int $veterinaria_id, string $codigo, string $nombre, float $costo, array $incluye = [],
+                                  string $tipoMuestra = '', string $tiempoEntrega = 'Mismo día', string $incluyeExtra = ''): bool {
+        $esCombo = ($incluye || $incluyeExtra !== '') ? 1 : 0;
+        $lista   = implode(',', array_map('intval', $incluye));
         if ($id > 0) {
             $stmt = $this->db->prepare(
-                'UPDATE laboratorio_examenes SET codigo = ?, nombre = ?, costo = ? WHERE id = ? AND veterinaria_id = ? AND activo = 1'
+                "UPDATE laboratorio_examenes SET codigo = ?, nombre = ?, costo = ?, es_combo = ?, incluye = NULLIF(?, ''),
+                        tipo_muestra = NULLIF(?, ''), tiempo_entrega = ?, incluye_extra = NULLIF(?, '')
+                  WHERE id = ? AND veterinaria_id = ? AND activo = 1"
             );
-            $stmt->bind_param('ssdii', $codigo, $nombre, $costo, $id, $veterinaria_id);
+            $stmt->bind_param('ssdissssii', $codigo, $nombre, $costo, $esCombo, $lista, $tipoMuestra, $tiempoEntrega, $incluyeExtra, $id, $veterinaria_id);
         } else {
             $stmt = $this->db->prepare(
-                'INSERT INTO laboratorio_examenes (veterinaria_id, codigo, nombre, costo) VALUES (?, ?, ?, ?)'
+                "INSERT INTO laboratorio_examenes (veterinaria_id, codigo, nombre, costo, es_combo, incluye, tipo_muestra, tiempo_entrega, incluye_extra)
+                 VALUES (?, ?, ?, ?, ?, NULLIF(?, ''), NULLIF(?, ''), ?, NULLIF(?, ''))"
             );
-            $stmt->bind_param('issd', $veterinaria_id, $codigo, $nombre, $costo);
+            $stmt->bind_param('issdissss', $veterinaria_id, $codigo, $nombre, $costo, $esCombo, $lista, $tipoMuestra, $tiempoEntrega, $incluyeExtra);
         }
         $ok = $stmt->execute();
         $stmt->close();
