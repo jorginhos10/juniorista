@@ -280,7 +280,7 @@
                             <span class="input-group-text">$</span>
                             <input type="text" class="form-control text-end" id="descuentoInput" inputmode="decimal" autocomplete="off"
                                 title="Valor fijo (5000) o porcentaje (10%)" placeholder="0 ó 10%"
-                                value="<?= $editar ? (float)$editar['descuento'] : 0 ?>" oninput="actualizarTotales()">
+                                value="<?= $editar ? (float)$editar['descuento'] : 0 ?>" oninput="descuentoGlobalCambio()">
                         </div>
                     </div>
                     <?php else: ?>
@@ -290,7 +290,7 @@
                         <div class="input-group input-group-sm" style="width:130px;">
                             <span class="input-group-text">$</span>
                             <input type="text" class="form-control text-end" id="descuentoInput" inputmode="decimal" autocomplete="off" data-bloqueado="1"
-                                   placeholder="0 ó 10%" oninput="actualizarTotales()" value="<?= $editar ? (float)$editar['descuento'] : 0 ?>" disabled>
+                                   placeholder="0 ó 10%" oninput="descuentoGlobalCambio()" value="<?= $editar ? (float)$editar['descuento'] : 0 ?>" disabled>
                         </div>
                     </div>
                     <?php endif; ?>

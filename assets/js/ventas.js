@@ -150,6 +150,9 @@ function renderCarrito() {
         return;
     }
 
+    // Con descuento aplicado, cada producto muestra (y deja editar) cuánto se le descuenta
+    const reparto   = repartoDescuento();
+    const conDesc   = hayDescuentoManual() || Object.values(reparto).some(d => d > 0);
     const html = items.map(([id, item]) => `
         <div class="pos-carrito-item">
             <div class="pos-ci-nombre">
@@ -170,10 +173,21 @@ function renderCarrito() {
                     <i class="bi bi-plus"></i>
                 </button>
             </div>
-            <div class="pos-ci-subtotal">$${(item.precio * item.cantidad).toFixed(2)}</div>
+            <div class="pos-ci-subtotal">${reparto[id] > 0
+                ? `<s class="pos-ci-bruto">$${(item.precio * item.cantidad).toFixed(2)}</s> $${(item.precio * item.cantidad - reparto[id]).toFixed(2)}`
+                : '$' + (item.precio * item.cantidad).toFixed(2)}</div>
             <button class="pos-ci-del" onclick="quitarDelCarrito('${id}')">
                 <i class="bi bi-x-lg"></i>
             </button>
+            ${conDesc ? `
+            <div class="pos-ci-desc" title="Descuento de este producto (puedes editarlo)">
+                <span>Descuento</span>
+                <span class="pos-ci-desc-signo">-$</span>
+                <input type="text" class="pos-ci-desc-in" value="${reparto[id].toFixed(2)}" inputmode="decimal" aria-label="Descuento del producto"
+                       onfocus="this.select()"
+                       onkeydown="if (event.key === 'Enter') { event.preventDefault(); this.blur(); }"
+                       onchange="fijarDescuentoLinea('${id}', this)">
+            </div>` : ''}
         </div>
     `).join('');
 
@@ -195,11 +209,69 @@ function descuentoDe(subtotal) {
     return Math.min(Math.max(parseFloat(t) || 0, 0), subtotal);
 }
 
+// ── Descuento por producto ────────────────────────────
+// El campo «Descuento» (valor o %) se reparte entre los productos en proporción a lo que vale cada uno.
+// Si se edita el descuento de un producto, el reparto pasa a ser por producto (descManual) y el campo
+// «Descuento» muestra la suma. Volver a escribir en el campo reinicia el reparto proporcional.
+const r2 = n => Math.round(n * 100) / 100;
+function hayDescuentoManual() { return Object.values(carrito).some(i => i.descManual !== undefined); }
+
+// Número escrito a la colombiana («5.000», «5000,50») o con punto decimal
+function numeroEscrito(txt) {
+    let t = String(txt || '').replace(/[\s$]/g, '');
+    t = /^\d{1,3}(\.\d{3})+(,\d+)?$/.test(t) ? t.replace(/\./g, '').replace(',', '.') : t.replace(',', '.');
+    return Math.max(parseFloat(t) || 0, 0);
+}
+
+// {id: descuento en pesos} de cada producto del carrito
+function repartoDescuento() {
+    const items = Object.entries(carrito), res = {};
+    if (!items.length) return res;
+    const bruto = i => i.precio * i.cantidad;
+    if (hayDescuentoManual()) {
+        items.forEach(([id, i]) => { res[id] = Math.min(bruto(i), r2(i.descManual ?? 0)); });
+        return res;
+    }
+    const subtotal = items.reduce((s, [, i]) => s + bruto(i), 0);
+    const total = descuentoDe(subtotal);
+    let restante = total;
+    items.forEach(([id, i], k) => {
+        const parte = k === items.length - 1 ? restante : r2(subtotal > 0 ? total * bruto(i) / subtotal : 0);
+        res[id] = Math.min(bruto(i), Math.max(0, r2(parte)));
+        restante = r2(restante - res[id]);
+    });
+    return res;
+}
+
+// Descuento total del carrito = suma de lo descontado a cada producto
+function descuentoCarrito() {
+    return r2(Object.values(repartoDescuento()).reduce((s, d) => s + d, 0));
+}
+
+// El campo «Descuento» general cambió: se descarta lo editado por producto y se reparte de nuevo
+function descuentoGlobalCambio() {
+    Object.values(carrito).forEach(i => { delete i.descManual; });
+    renderCarrito();
+}
+
+// Descuento editado en un producto: los demás conservan el que tenían y el total pasa a ser la suma
+function fijarDescuentoLinea(id, input) {
+    if (!carrito[id]) return;
+    const actual = repartoDescuento();
+    Object.entries(carrito).forEach(([k, i]) => { i.descManual = actual[k] ?? 0; });
+    const maximo = r2(carrito[id].precio * carrito[id].cantidad);
+    carrito[id].descManual = Math.min(maximo, r2(numeroEscrito(input.value)));
+    renderCarrito();
+}
+
 function actualizarTotales() {
     const subtotal  = Object.values(carrito).reduce((s, i) => s + i.precio * i.cantidad, 0);
-    const descuento = descuentoDe(subtotal);
+    const descuento = descuentoCarrito();
     const total     = Math.max(0, subtotal - descuento);
-    const pct       = porcentajeDescuento();
+    const manual    = hayDescuentoManual();
+    // Con descuento por producto, el campo general muestra la suma
+    if (manual) document.getElementById('descuentoInput').value = descuento;
+    const pct       = manual ? null : porcentajeDescuento();
 
     document.getElementById('totalDescuentoPct').textContent = pct !== null && pct > 0 ? ' (' + pct + '%)' : '';
     document.getElementById('totalSubtotal').textContent = '$' + subtotal.toFixed(2);
@@ -262,7 +334,7 @@ function confirmarVenta() {
     if (modoCotizacion) { cotizar(); return; }
 
     const subtotal  = Object.values(carrito).reduce((s, i) => s + i.precio * i.cantidad, 0);
-    const descuento = descuentoDe(subtotal);
+    const descuento = descuentoCarrito();
     totalACobrar = Math.round(Math.max(0, subtotal - descuento) * 100) / 100;
     document.getElementById('pagoTotal').textContent = '$' + totalACobrar.toFixed(2);
 
@@ -355,7 +427,7 @@ function registrarVenta() {
     btn.disabled = true;
 
     const subtotal  = Object.values(carrito).reduce((s, i) => s + i.precio * i.cantidad, 0);
-    const descuento = descuentoDe(subtotal);
+    const descuento = descuentoCarrito();
     const total     = Math.max(0, subtotal - descuento);
 
     document.getElementById('fMetodoPago').value  = metodoPago;
@@ -404,7 +476,7 @@ function aplicarModoCotizacion(activo) {
     const inpDesc = document.getElementById('descuentoInput');
     if (inpDesc.dataset.bloqueado) {
         inpDesc.disabled = !activo;
-        if (!activo) inpDesc.value = 0;
+        if (!activo) { inpDesc.value = 0; Object.values(carrito).forEach(i => { delete i.descManual; }); }
     }
     document.getElementById('tituloFactura').textContent = activo ? (COT_EDITANDO ? 'Editando ' + COT_EDITANDO.numero : 'Cotización') : 'Factura';
     const hist = document.getElementById('btnHistorial');
@@ -455,8 +527,8 @@ function cotizar() {
     const items = Object.entries(carrito);
     if (!items.length) return;
     const subtotal  = items.reduce((s, [, i]) => s + i.precio * i.cantidad, 0);
-    const descuento = descuentoDe(subtotal);
-    const pct       = porcentajeDescuento();
+    const descuento = descuentoCarrito();
+    const pct       = hayDescuentoManual() ? null : porcentajeDescuento();
 
     document.getElementById('cClienteId').value = document.getElementById('fClienteId').value;
     document.getElementById('cNotas').value     = document.getElementById('notasVenta').value;
