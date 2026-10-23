@@ -133,9 +133,13 @@ $e = fn($v) => htmlspecialchars((string)$v);
 <?php
 // Todo lo adjuntado a los registros sale impreso a continuación, en el orden del historial
 $adjuntosImprimir = [];
+foreach ($generales ?? [] as $a) {   // documentos generales de la mascota, primero
+    $adjuntosImprimir[] = ['id' => $a['id'], 'nombre' => $a['nombre'], 'titulo' => 'Documento adjunto' . ($a['descripcion'] ? ' · ' . $a['descripcion'] : '')];
+}
 foreach ($registros as $r) {
     foreach ($r['adjuntos'] ?? [] as $a) {
-        $adjuntosImprimir[] = ['id' => $a['id'], 'nombre' => $a['nombre'], 'titulo' => 'Adjunto · ' . $fecha($r['fecha']) . ' · ' . $r['motivo']];
+        $adjuntosImprimir[] = ['id' => $a['id'], 'nombre' => $a['nombre'],
+            'titulo' => 'Adjunto · ' . $fecha($r['fecha']) . ' · ' . $r['motivo'] . ($a['descripcion'] ? ' · ' . $a['descripcion'] : '')];
     }
 }
 require __DIR__ . '/_adjuntos_impresion.php';

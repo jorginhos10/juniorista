@@ -34,6 +34,7 @@ class HistorialController {
             'mascotas'       => $mascotas,
             'mascota'        => $mascota,
             'registros'      => $mascota ? $this->model->getRegistros($mascota_id) : [],
+            'adjuntosGenerales' => $mascota ? $this->model->getAdjuntosGenerales($mascota_id) : [],
             'proximos'       => $this->model->getProximos(date('Y-m-d')),
             'veterinarios'   => $this->model->getVeterinarios(),
             'tipos'          => HistorialModel::TIPOS,
@@ -75,6 +76,7 @@ class HistorialController {
         $this->render('historial/imprimir', [
             'mascota'   => $mascota,
             'registros' => $this->model->getRegistros($mascota_id),
+            'generales' => $this->model->getAdjuntosGenerales($mascota_id),
             'tipos'     => HistorialModel::TIPOS,
             'usuario'   => ['nombre' => $_SESSION['usuario_nombre']],
         ]);
@@ -119,7 +121,7 @@ class HistorialController {
 
         // PDF adjuntos: el registro ya quedó guardado; si algún archivo falla se avisa sin perder el resto
         if ($ok && $registro_id > 0 && !empty($_FILES['adjuntos'])) {
-            $this->guardarAdjuntos($registro_id, $mascota_id);
+            $this->guardarAdjuntos($registro_id, $mascota_id, mb_substr(trim((string)($_POST['adjuntos_descripcion'] ?? '')), 0, 255));
         }
 
         if (!$ok) {
@@ -129,20 +131,58 @@ class HistorialController {
     }
 
     /** Guarda los PDF subidos con el formulario y deja el aviso en la sesión */
-    private function guardarAdjuntos(int $registro_id, int $mascota_id): void {
+    private function guardarAdjuntos(int $registro_id, int $mascota_id, string $descripcion = ''): void {
         $sucursal = $this->vetModel->findById($this->veterinariaActual($this->vetModel->getAll()))['nombre'] ?? '';
         [$guardados, $errores] = AdjuntosHistorial::guardarSubidos($_FILES['adjuntos'], $sucursal, $mascota_id);
         foreach ($guardados as $g) {
-            if (!$this->model->crearAdjunto($registro_id, $mascota_id, $g['nombre'], $g['archivo'], $g['tamano'], (int)$_SESSION['usuario_id'])) {
+            if (!$this->model->crearAdjunto($registro_id, $mascota_id, $g['nombre'], $g['archivo'], $g['tamano'], (int)$_SESSION['usuario_id'], $descripcion)) {
                 $errores[] = "«{$g['nombre']}» no se pudo registrar.";
             }
         }
         if ($guardados) {
-            $_SESSION['flash_success'] .= ' ' . count($guardados) . ' PDF adjunto' . (count($guardados) === 1 ? '' : 's') . '.';
+            $_SESSION['flash_success'] = ($_SESSION['flash_success'] ?? '') . ($_SESSION['flash_success'] ?? '' ? ' ' : '')
+                . count($guardados) . ' PDF adjunto' . (count($guardados) === 1 ? '' : 's') . '.';
         }
         if ($errores) {
             $_SESSION['flash_error'] = 'El registro se guardó, pero: ' . implode(' ', $errores);
         }
+    }
+
+    /** POST: adjunta PDF a la historia de la mascota con su descripción (a un registro o en general) */
+    public function adjuntar(): void {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect('historial');
+        }
+        $mascota_id   = (int)($_POST['mascota_id'] ?? 0);
+        $registro_id  = (int)($_POST['historial_id'] ?? 0);
+        $descripcion  = mb_substr(trim((string)($_POST['descripcion'] ?? '')), 0, 255);
+        $volver       = 'historial?mascota=' . $mascota_id;
+
+        if (!$this->model->mascotaExiste($mascota_id)) {
+            $_SESSION['flash_error'] = 'La mascota no existe.';
+            $this->redirect('historial');
+        }
+        if ($registro_id > 0 && !$this->model->registroExiste($registro_id, $mascota_id)) {
+            $_SESSION['flash_error'] = 'El registro elegido no existe en el historial de esta mascota.';
+            $this->redirect($volver);
+        }
+        if ($descripcion === '') {
+            $_SESSION['flash_error'] = 'Escribe una descripción del documento.';
+            $this->redirect($volver);
+        }
+        if (empty($_FILES['adjuntos']['name'][0] ?? '')) {
+            $_SESSION['flash_error'] = 'Elige al menos un archivo PDF (revisa que no supere el límite de subida del servidor).';
+            $this->redirect($volver);
+        }
+
+        $_SESSION['flash_success'] = '';
+        $this->guardarAdjuntos($registro_id, $mascota_id, $descripcion);
+        if (empty($_SESSION['flash_error']) && $_SESSION['flash_success'] === '') {
+            $_SESSION['flash_error'] = 'No se adjuntó ningún archivo.';
+        }
+        $_SESSION['flash_success'] = trim($_SESSION['flash_success']);
+        if ($_SESSION['flash_success'] === '') unset($_SESSION['flash_success']);
+        $this->redirect($volver);
     }
 
     /** GET: entrega un PDF adjunto (para verlo y para que la impresión lo dibuje); solo con sesión y de la sucursal actual */

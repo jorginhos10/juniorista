@@ -231,6 +231,9 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
                                         <i class="bi bi-files me-1"></i>Fórmulas anteriores
                                     </a>
                                     <?php endif; ?>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="abrirAdjuntar()" title="Adjuntar un PDF con su descripción">
+                                        <i class="bi bi-paperclip me-1"></i>Adjuntar PDF
+                                    </button>
                                     <a href="<?= BASE_URL ?>/citas?nueva=1" class="btn btn-sm btn-light">
                                         <i class="bi bi-calendar-plus me-1"></i>Agendar cita
                                     </a>
@@ -259,6 +262,29 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
                             </div>
                         </div>
                     </div>
+
+                    <!-- Documentos adjuntos generales (no ligados a un registro) -->
+                    <?php if (!empty($adjuntosGenerales)): ?>
+                    <div class="card border-0 shadow-sm mb-3">
+                        <div class="card-body py-3">
+                            <div class="fw-semibold mb-2"><i class="bi bi-paperclip me-1"></i>Documentos adjuntos
+                                <span class="badge bg-danger-subtle text-danger-emphasis ms-1"><?= count($adjuntosGenerales) ?></span></div>
+                            <?php foreach ($adjuntosGenerales as $a): ?>
+                            <div class="d-flex align-items-center gap-2 py-1 border-top">
+                                <i class="bi bi-file-earmark-pdf-fill text-danger fs-5"></i>
+                                <div class="flex-grow-1 min-w-0">
+                                    <a href="<?= BASE_URL ?>/historial/adjunto?id=<?= (int)$a['id'] ?>" target="_blank" class="fw-semibold text-decoration-none"><?= htmlspecialchars($a['descripcion'] ?: $a['nombre']) ?></a>
+                                    <div class="small text-muted"><?= htmlspecialchars($a['nombre']) ?> · <?= $fechaCorta(substr($a['created_at'], 0, 10)) ?><?= $a['usuario_nombre'] ? ' · ' . htmlspecialchars($a['usuario_nombre']) : '' ?></div>
+                                </div>
+                                <?php if ($esAdmin): ?>
+                                <button type="button" class="btn btn-sm btn-outline-danger btn-accion" title="Quitar adjunto"
+                                        onclick='quitarAdjunto(<?= (int)$a['id'] ?>, <?= json_encode($a['nombre'], $jsonFlags) ?>)'><i class="bi bi-trash-fill"></i></button>
+                                <?php endif; ?>
+                            </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                    <?php endif; ?>
 
                     <!-- Filtro por tipo -->
                     <?php if ($registros): ?>
@@ -378,8 +404,9 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
                                         <span class="small text-muted"><i class="bi bi-paperclip me-1"></i>Adjuntos:</span>
                                         <?php foreach ($r['adjuntos'] as $a): ?>
                                         <span class="badge bg-danger-subtle text-danger-emphasis fw-semibold d-inline-flex align-items-center gap-1" style="font-size:.75rem">
-                                            <a href="<?= BASE_URL ?>/historial/adjunto?id=<?= (int)$a['id'] ?>" target="_blank" class="text-decoration-none text-reset" title="Abrir PDF">
-                                                <i class="bi bi-file-earmark-pdf-fill me-1"></i><?= htmlspecialchars($a['nombre']) ?>
+                                            <a href="<?= BASE_URL ?>/historial/adjunto?id=<?= (int)$a['id'] ?>" target="_blank" class="text-decoration-none text-reset"
+                                               title="<?= htmlspecialchars($a['descripcion'] ? $a['descripcion'] . ' — ' . $a['nombre'] : 'Abrir PDF') ?>">
+                                                <i class="bi bi-file-earmark-pdf-fill me-1"></i><?= htmlspecialchars($a['descripcion'] ?: $a['nombre']) ?>
                                             </a>
                                             <?php if ($esAdmin): ?>
                                             <button type="button" class="btn btn-link p-0 text-danger lh-1" title="Quitar adjunto"
@@ -715,7 +742,9 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
 
                         <label class="form-label mt-3" for="h-adjuntos"><i class="bi bi-paperclip me-1"></i>Adjuntar PDF <span class="text-muted fw-normal">(resultados, radiografías, informes…)</span></label>
                         <input type="file" class="form-control form-control-sm" name="adjuntos[]" id="h-adjuntos" accept="application/pdf,.pdf" multiple>
-                        <div class="form-text">Hasta 10 archivos PDF de 15 MB cada uno. Al imprimir la historia clínica se imprimen también los adjuntos. Los ya adjuntos se ven en la tarjeta del registro.</div>
+                        <input type="text" class="form-control form-control-sm mt-2" name="adjuntos_descripcion" maxlength="255" placeholder="Descripción de los adjuntos (ej: Hemograma del 22/10)">
+                        <div id="h-adjuntos-lista" class="mt-2"></div>
+                        <div class="form-text">Puedes elegir varios a la vez o ir añadiendo más: se suman a la lista. Hasta 10 PDF de 15 MB cada uno. Al imprimir la historia clínica se imprimen también los adjuntos. Los ya adjuntos se ven en la tarjeta del registro.</div>
                     </div>
                 </div>
 
@@ -724,6 +753,48 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
                     <button type="submit" class="btn btn-primary-custom">
                         <i class="bi bi-save me-1"></i> <span id="registroBtnTexto">Guardar en el historial</span>
                     </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ── MODAL: ADJUNTAR PDF A LA HISTORIA ─────────────── -->
+<div class="modal fade" id="modalAdjuntar" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <form method="POST" action="<?= BASE_URL ?>/historial/adjuntar" enctype="multipart/form-data" autocomplete="off" id="formAdjuntar">
+                <input type="hidden" name="mascota_id" value="<?= $mascota['id'] ?>">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-paperclip text-danger me-2"></i>Adjuntar PDF a la historia</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold" for="a-archivos">Archivo PDF <span class="text-danger">*</span></label>
+                        <input type="file" class="form-control" name="adjuntos[]" id="a-archivos" accept="application/pdf,.pdf" multiple required>
+                        <div id="a-archivos-lista" class="mt-2"></div>
+                        <div class="form-text">Elige varios a la vez o añade más: se suman a la lista. Hasta 10 PDF de 15 MB cada uno.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold" for="a-descripcion">Descripción <span class="text-danger">*</span></label>
+                        <textarea class="form-control" name="descripcion" id="a-descripcion" rows="2" maxlength="255" required
+                                  placeholder="Ej: Resultado de hemograma y perfil renal del 22/10"></textarea>
+                    </div>
+                    <div class="mb-1">
+                        <label class="form-label fw-semibold" for="a-registro">Asociar a un registro <span class="text-muted fw-normal">(opcional)</span></label>
+                        <select class="form-select" name="historial_id" id="a-registro">
+                            <option value="0">General de la mascota (sin registro)</option>
+                            <?php foreach ($registros as $r): ?>
+                            <option value="<?= (int)$r['id'] ?>"><?= $fechaCorta($r['fecha']) ?> · <?= htmlspecialchars($tipos[$r['tipo']]['label']) ?> · <?= htmlspecialchars(mb_strimwidth($r['motivo'], 0, 50, '…')) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <div class="form-text">Al imprimir la historia clínica se imprimen todos los adjuntos, con su descripción.</div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger"><i class="bi bi-paperclip me-1"></i>Adjuntar</button>
                 </div>
             </form>
         </div>
@@ -900,6 +971,7 @@ function llenar(d, tipo) {
 }
 
 function nuevoRegistro() {
+    archivosRegistro.limpiar();
     const ahora = new Date();
     const hora = String(ahora.getHours()).padStart(2, '0') + ':' + String(ahora.getMinutes()).padStart(2, '0');
     const fmt = JSON.parse(JSON.stringify(PREVIO || {}));
@@ -909,8 +981,58 @@ function nuevoRegistro() {
 }
 
 function editarRegistro(r) {
+    archivosRegistro.limpiar();
     llenar(r, r.tipo);
     modal().show();
+}
+
+// Varios archivos: el selector nativo reemplaza la selección anterior; aquí cada elección se SUMA a la lista
+// (se pueden quitar uno a uno) y se envían todos juntos. Devuelve {limpiar()} para vaciar la lista.
+function acumularArchivos(input, lista, max = 10, maxBytes = 15 * 1024 * 1024) {
+    let dt = new DataTransfer();
+    const clave = f => f.name + '|' + f.size + '|' + f.lastModified;
+    const h = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const pintar = () => {
+        lista.innerHTML = [...dt.files].map((f, i) => `
+            <div class="d-flex align-items-center gap-2 small py-1 border-bottom">
+                <i class="bi bi-file-earmark-pdf-fill text-danger"></i>
+                <span class="flex-grow-1 text-truncate" title="${h(f.name)}">${h(f.name)}</span>
+                <span class="text-muted text-nowrap">${(f.size / 1048576).toFixed(1)} MB</span>
+                <button type="button" class="btn btn-link btn-sm text-danger p-0" data-i="${i}" title="Quitar" aria-label="Quitar ${h(f.name)}"><i class="bi bi-x-circle-fill"></i></button>
+            </div>`).join('');
+    };
+    input.addEventListener('change', () => {
+        const avisos = [];
+        for (const f of input.files) {
+            if ([...dt.files].some(x => clave(x) === clave(f))) continue;   // ya estaba en la lista
+            if (!/\.pdf$/i.test(f.name) && f.type !== 'application/pdf') avisos.push('«' + f.name + '» no es un PDF.');
+            else if (f.size > maxBytes) avisos.push('«' + f.name + '» supera los 15 MB.');
+            else if (dt.files.length >= max) avisos.push('Máximo ' + max + ' archivos: «' + f.name + '» no se agregó.');
+            else dt.items.add(f);
+        }
+        input.files = dt.files;
+        pintar();
+        if (avisos.length) alert(avisos.join('\n'));
+    });
+    lista.addEventListener('click', e => {
+        const b = e.target.closest('button[data-i]');
+        if (!b) return;
+        const nuevo = new DataTransfer();
+        [...dt.files].forEach((f, i) => { if (i !== Number(b.dataset.i)) nuevo.items.add(f); });
+        dt = nuevo;
+        input.files = dt.files;
+        pintar();
+    });
+    const limpiar = () => { dt = new DataTransfer(); input.files = dt.files; pintar(); };
+    input.form?.addEventListener('reset', () => setTimeout(limpiar, 0));
+    return { limpiar };
+}
+const archivosRegistro = acumularArchivos($('h-adjuntos'), $('h-adjuntos-lista'));
+const archivosAdjuntar = acumularArchivos($('a-archivos'), $('a-archivos-lista'));
+
+function abrirAdjuntar() {
+    $('formAdjuntar').reset();
+    bootstrap.Modal.getOrCreateInstance($('modalAdjuntar')).show();
 }
 
 function quitarAdjunto(id, nombre) {

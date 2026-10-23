@@ -71,9 +71,13 @@ class HistorialModel {
                 usuario_id     INT DEFAULT NULL,
                 activo         TINYINT(1) NOT NULL DEFAULT 1,
                 created_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                descripcion    VARCHAR(255) DEFAULT NULL,
                 KEY idx_historial_adjuntos (historial_id, activo)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci"
         );
+        if (!$this->db->query("SHOW COLUMNS FROM historial_adjuntos LIKE 'descripcion'")->num_rows) {
+            $this->db->query('ALTER TABLE historial_adjuntos ADD COLUMN descripcion VARCHAR(255) DEFAULT NULL');
+        }
         // Respuestas del formato de historia clínica (JSON); se crea sola en una base que no la tenga
         if (!$this->db->query("SHOW COLUMNS FROM historial_medico LIKE 'formato'")->num_rows) {
             $this->db->query('ALTER TABLE historial_medico ADD COLUMN formato MEDIUMTEXT DEFAULT NULL AFTER observaciones');
@@ -111,7 +115,7 @@ class HistorialModel {
         if (!$ids) return [];
         $marcas = implode(',', array_fill(0, count($ids), '?'));
         $stmt = $this->db->prepare(
-            "SELECT id, historial_id, nombre, tamano, created_at FROM historial_adjuntos
+            "SELECT id, historial_id, nombre, descripcion, tamano, created_at FROM historial_adjuntos
               WHERE activo = 1 AND historial_id IN ($marcas) ORDER BY id"
         );
         $stmt->bind_param(str_repeat('i', count($ids)), ...$ids);
@@ -122,12 +126,29 @@ class HistorialModel {
         return $res;
     }
 
-    /** Un adjunto, solo si su registro es de una mascota de la sucursal actual */
+    /** PDF de la mascota que no pertenecen a un registro concreto (historial_id = 0), más recientes primero */
+    public function getAdjuntosGenerales(int $mascota_id): array {
+        $stmt = $this->db->prepare(
+            'SELECT a.id, a.historial_id, a.nombre, a.descripcion, a.tamano, a.created_at, u.nombre AS usuario_nombre
+               FROM historial_adjuntos a
+               JOIN mascotas m ON m.id = a.mascota_id AND m.veterinaria_id = ?
+          LEFT JOIN usuarios u ON u.id = a.usuario_id
+              WHERE a.mascota_id = ? AND a.historial_id = 0 AND a.activo = 1
+           ORDER BY a.id DESC'
+        );
+        $vet = Seguridad::sucursalActual();
+        $stmt->bind_param('ii', $vet, $mascota_id);
+        $stmt->execute();
+        $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
+        return $rows;
+    }
+
+    /** Un adjunto, solo si es de una mascota de la sucursal actual */
     public function getAdjunto(int $id): ?array {
         $stmt = $this->db->prepare(
             'SELECT a.* FROM historial_adjuntos a
-               JOIN historial_medico h ON h.id = a.historial_id AND h.activo = 1
-               JOIN mascotas m ON m.id = h.mascota_id AND m.veterinaria_id = ?
+               JOIN mascotas m ON m.id = a.mascota_id AND m.veterinaria_id = ?
               WHERE a.id = ? AND a.activo = 1'
         );
         $vet = Seguridad::sucursalActual();
@@ -138,11 +159,12 @@ class HistorialModel {
         return $a ?: null;
     }
 
-    public function crearAdjunto(int $historial_id, int $mascota_id, string $nombre, string $archivo, int $tamano, int $usuario_id): bool {
+    /** $historial_id = 0: adjunto general de la mascota (sin registro) */
+    public function crearAdjunto(int $historial_id, int $mascota_id, string $nombre, string $archivo, int $tamano, int $usuario_id, string $descripcion = ''): bool {
         $stmt = $this->db->prepare(
-            'INSERT INTO historial_adjuntos (historial_id, mascota_id, nombre, archivo, tamano, usuario_id) VALUES (?, ?, ?, ?, ?, ?)'
+            "INSERT INTO historial_adjuntos (historial_id, mascota_id, nombre, archivo, tamano, usuario_id, descripcion) VALUES (?, ?, ?, ?, ?, ?, NULLIF(?, ''))"
         );
-        $stmt->bind_param('iissii', $historial_id, $mascota_id, $nombre, $archivo, $tamano, $usuario_id);
+        $stmt->bind_param('iissiis', $historial_id, $mascota_id, $nombre, $archivo, $tamano, $usuario_id, $descripcion);
         $ok = $stmt->execute();
         $stmt->close();
         return $ok;

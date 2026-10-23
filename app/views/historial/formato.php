@@ -257,7 +257,7 @@ $filas = fn(string $k) => array_values(array_filter((array)($f[$k] ?? []), 'is_a
 
 <?php
 // Los PDF adjuntos a este registro salen impresos a continuación del formato
-$adjuntosImprimir = array_map(fn($a) => ['id' => $a['id'], 'nombre' => $a['nombre'], 'titulo' => 'Adjunto · ' . $fec($r['fecha'])], $r['adjuntos'] ?? []);
+$adjuntosImprimir = array_map(fn($a) => ['id' => $a['id'], 'nombre' => $a['nombre'], 'titulo' => 'Adjunto · ' . $fec($r['fecha']) . ($a['descripcion'] ? ' · ' . $a['descripcion'] : '')], $r['adjuntos'] ?? []);
 require __DIR__ . '/_adjuntos_impresion.php';
 ?>
 <script>window.addEventListener('load', () => (window.adjuntosListos || Promise.resolve()).then(() => setTimeout(() => window.print(), 300)));</script>
