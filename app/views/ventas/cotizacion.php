@@ -101,9 +101,16 @@ $money = fn($n) => '$' . number_format((float)$n, 2);
         </div>
     </div>
 
+    <?php
+        // Si algún producto lleva descuento, se imprime la columna con lo que se descuenta a cada uno
+        $conDescLinea = (bool)array_filter($lineas, fn($l) => (float)($l['descuento'] ?? 0) > 0);
+        $pctLinea = fn($l) => (float)$l['subtotal'] > 0 ? rtrim(rtrim(number_format((float)$l['descuento'] / (float)$l['subtotal'] * 100, 1, '.', ''), '0'), '.') : '0';
+    ?>
     <table>
         <thead>
-            <tr><th class="c" style="width:50px">Cant.</th><th>Descripción</th><th class="r">P. unit.</th><th class="r">Importe</th></tr>
+            <tr><th class="c" style="width:50px">Cant.</th><th>Descripción</th><th class="r">P. unit.</th>
+                <?php if ($conDescLinea): ?><th class="r">Subtotal</th><th class="r">Descuento</th><?php endif; ?>
+                <th class="r">Importe</th></tr>
         </thead>
         <tbody>
             <?php foreach ($lineas as $l): ?>
@@ -114,7 +121,13 @@ $money = fn($n) => '$' . number_format((float)$n, 2);
                     <?php if ($l['detalle'] !== 'Servicio' && (string)$l['detalle'] !== ''): ?><div class="det"><?= $e($l['detalle']) ?></div><?php endif; ?>
                 </td>
                 <td class="r"><?= $money($l['precio']) ?></td>
+                <?php if ($conDescLinea): $d = (float)($l['descuento'] ?? 0); ?>
                 <td class="r"><?= $money($l['subtotal']) ?></td>
+                <td class="r"><?= $d > 0 ? '− ' . $money($d) . '<div class="det">(' . $pctLinea($l) . ' %)</div>' : '—' ?></td>
+                <td class="r"><?= $money((float)$l['subtotal'] - $d) ?></td>
+                <?php else: ?>
+                <td class="r"><?= $money($l['subtotal']) ?></td>
+                <?php endif; ?>
             </tr>
             <?php endforeach; ?>
         </tbody>

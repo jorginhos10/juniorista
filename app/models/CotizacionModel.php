@@ -15,7 +15,13 @@ class CotizacionModel {
 
     /** Crea las tablas la primera vez (así basta con subir los archivos al servidor) */
     private function asegurarTablas(): void {
-        if ($this->db->query("SHOW TABLES LIKE 'cotizaciones'")->num_rows) return;
+        if ($this->db->query("SHOW TABLES LIKE 'cotizaciones'")->num_rows) {
+            // Cotizaciones anteriores al descuento por producto: la columna se agrega una vez (esas líneas quedan en 0)
+            if ($this->db->query("SHOW COLUMNS FROM cotizacion_items LIKE 'descuento'")->num_rows === 0) {
+                $this->db->query('ALTER TABLE cotizacion_items ADD COLUMN descuento DECIMAL(12,2) NOT NULL DEFAULT 0');
+            }
+            return;
+        }
         $this->db->query(
             "CREATE TABLE cotizaciones (
                 id             INT AUTO_INCREMENT PRIMARY KEY,
@@ -42,6 +48,7 @@ class CotizacionModel {
                 cantidad       INT NOT NULL DEFAULT 1,
                 precio         DECIMAL(12,2) NOT NULL DEFAULT 0,
                 subtotal       DECIMAL(12,2) NOT NULL DEFAULT 0,
+                descuento      DECIMAL(12,2) NOT NULL DEFAULT 0,
                 KEY idx_cotizacion_items (cotizacion_id),
                 CONSTRAINT fk_cotizacion_items FOREIGN KEY (cotizacion_id) REFERENCES cotizaciones (id) ON DELETE CASCADE
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci"
@@ -78,11 +85,12 @@ class CotizacionModel {
             }
 
             $ins = $this->db->prepare(
-                'INSERT INTO cotizacion_items (cotizacion_id, orden, producto_id, concepto, detalle, cantidad, precio, subtotal)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+                'INSERT INTO cotizacion_items (cotizacion_id, orden, producto_id, concepto, detalle, cantidad, precio, subtotal, descuento)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
             );
             foreach ($lineas as $n => $l) {
-                $ins->bind_param('iiissidd', $id, $n, $l['producto_id'], $l['concepto'], $l['detalle'], $l['cantidad'], $l['precio'], $l['subtotal']);
+                $desc = (float)($l['descuento'] ?? 0);
+                $ins->bind_param('iiissiddd', $id, $n, $l['producto_id'], $l['concepto'], $l['detalle'], $l['cantidad'], $l['precio'], $l['subtotal'], $desc);
                 $ins->execute();
             }
             $ins->close();

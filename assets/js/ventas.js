@@ -538,11 +538,13 @@ function cotizar() {
     document.getElementById('cDescuentoPct').value = pct !== null && pct > 0 ? pct : '';
     const lineas = document.getElementById('cLineas');
     lineas.innerHTML = '';
+    const reparto = repartoDescuento();
     items.forEach(([id, item]) => {
         const campos = item.servicio
             ? { tipo: 'servicio', producto_id: '', descripcion: item.nombre, precio: item.precio }
             : { tipo: 'producto', producto_id: id, descripcion: '', precio: '' };
         campos.cantidad = item.cantidad;
+        campos.desc_linea = reparto[id] || 0;   // descuento individual: sale impreso en la cotización
         Object.entries(campos).forEach(([k, v]) => {
             const inp = document.createElement('input');
             inp.type = 'hidden'; inp.name = k + '[]'; inp.value = v;
@@ -561,15 +563,19 @@ if (switchCotizacion && COT_EDITANDO) {
     switchCotizacion.checked = true;
     switchCotizacion.disabled = true;
     aplicarModoCotizacion(true);
+    // Si el descuento no era un porcentaje parejo (se editó por producto), se recupera el de cada línea
+    const COT_MANUAL = !String(COT_EDITANDO.descuento).endsWith('%') && COT_EDITANDO.lineas.some(l => l.descuento > 0);
     COT_EDITANDO.lineas.forEach(l => {
         if (l.producto_id) {
             const card = document.querySelector(`.pos-card[data-id="${l.producto_id}"]`);
             if (!card) return;   // producto que ya no está en el catálogo
             carrito[String(l.producto_id)] = { nombre: card.dataset.nombre, precio: parseFloat(card.dataset.precio),
                 unidad: card.dataset.unidad, stock: parseInt(card.dataset.stock), cantidad: l.cantidad };
+            if (COT_MANUAL) carrito[String(l.producto_id)].descManual = l.descuento || 0;
             actualizarBadge(String(l.producto_id));
         } else {
             carrito['srv-' + (++contadorServicios)] = { nombre: l.concepto, precio: l.precio, unidad: 'servicio', stock: Infinity, cantidad: l.cantidad, servicio: true };
+            if (COT_MANUAL) carrito['srv-' + contadorServicios].descManual = l.descuento || 0;
         }
     });
     document.getElementById('descuentoInput').value = COT_EDITANDO.descuento || 0;

@@ -2,6 +2,7 @@
 
 require_once ROOT . '/app/models/HistorialModel.php';
 require_once ROOT . '/app/models/VeterinariaModel.php';
+require_once ROOT . '/app/helpers/AdjuntosHistorial.php';
 
 class HistorialController {
 
@@ -102,6 +103,7 @@ class HistorialController {
         $datos['mascota_id'] = $mascota_id;
         $id = (int)($_POST['id'] ?? 0);
 
+        $registro_id = $id;
         if ($id > 0) {
             $ok = $this->model->actualizar($id, $datos);
             $_SESSION[$ok ? 'flash_success' : 'flash_error'] = $ok ? 'Registro actualizado.' : 'Error al actualizar el registro.';
@@ -112,10 +114,58 @@ class HistorialController {
             $_SESSION[$ok ? 'flash_success' : 'flash_error'] = $ok
                 ? HistorialModel::TIPOS[$datos['tipo']]['label'] . ' agregada al historial.'
                 : 'Error al guardar el registro.';
+            $registro_id = $ok ? $this->model->ultimoId : 0;
+        }
+
+        // PDF adjuntos: el registro ya quedó guardado; si algún archivo falla se avisa sin perder el resto
+        if ($ok && $registro_id > 0 && !empty($_FILES['adjuntos'])) {
+            $this->guardarAdjuntos($registro_id, $mascota_id);
         }
 
         if (!$ok) {
             $_SESSION['historial_old'] = $_POST;
+        }
+        $this->redirect($volver);
+    }
+
+    /** Guarda los PDF subidos con el formulario y deja el aviso en la sesión */
+    private function guardarAdjuntos(int $registro_id, int $mascota_id): void {
+        $sucursal = $this->vetModel->findById($this->veterinariaActual($this->vetModel->getAll()))['nombre'] ?? '';
+        [$guardados, $errores] = AdjuntosHistorial::guardarSubidos($_FILES['adjuntos'], $sucursal, $mascota_id);
+        foreach ($guardados as $g) {
+            if (!$this->model->crearAdjunto($registro_id, $mascota_id, $g['nombre'], $g['archivo'], $g['tamano'], (int)$_SESSION['usuario_id'])) {
+                $errores[] = "«{$g['nombre']}» no se pudo registrar.";
+            }
+        }
+        if ($guardados) {
+            $_SESSION['flash_success'] .= ' ' . count($guardados) . ' PDF adjunto' . (count($guardados) === 1 ? '' : 's') . '.';
+        }
+        if ($errores) {
+            $_SESSION['flash_error'] = 'El registro se guardó, pero: ' . implode(' ', $errores);
+        }
+    }
+
+    /** GET: entrega un PDF adjunto (para verlo y para que la impresión lo dibuje); solo con sesión y de la sucursal actual */
+    public function adjunto(): void {
+        $a = $this->model->getAdjunto((int)($_GET['id'] ?? 0));
+        if (!$a) {
+            http_response_code(404);
+            exit;
+        }
+        AdjuntosHistorial::enviar($a['archivo'], $a['nombre']);
+    }
+
+    /** POST: quita un PDF adjunto (solo administrador, igual que eliminar registros) */
+    public function eliminarAdjunto(): void {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect('historial');
+        }
+        $volver = 'historial?mascota=' . (int)($_POST['mascota_id'] ?? 0);
+        if (($_SESSION['usuario_rol'] ?? '') !== 'admin') {
+            $_SESSION['flash_error'] = 'Solo un administrador puede quitar adjuntos del historial.';
+        } else {
+            $ok = $this->model->eliminarAdjunto((int)($_POST['id'] ?? 0));
+            $_SESSION[$ok ? 'flash_success' : 'flash_error'] = $ok ? 'Adjunto quitado del historial.' : 'No se pudo quitar el adjunto.';
         }
         $this->redirect($volver);
     }

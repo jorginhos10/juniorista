@@ -496,7 +496,7 @@ const COTIZACION_EDITAR = <?= json_encode($cotizacion ? [
     'descuento'      => $cotizacion['descuento_pct'] !== null ? rtrim(rtrim(number_format((float)$cotizacion['descuento_pct'], 2, '.', ''), '0'), '.') . '%' : (float)$cotizacion['descuento'],
     'notas'          => (string)$cotizacion['notas'],
     'lineas'         => array_map(fn($l) => ['producto_id' => $l['producto_id'] !== null ? (int)$l['producto_id'] : null, 'concepto' => $l['concepto'],
-                                             'cantidad' => (int)$l['cantidad'], 'precio' => (float)$l['precio']], $cotizacion['lineas']),
+                                             'cantidad' => (int)$l['cantidad'], 'precio' => (float)$l['precio'], 'descuento' => (float)($l['descuento'] ?? 0)], $cotizacion['lineas']),
 ] : null, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE) ?>;
 // Venta que se está editando (null = venta nueva): ventas.js la carga en el carrito
 const VENTA_EDITAR = <?= json_encode($editar ? [

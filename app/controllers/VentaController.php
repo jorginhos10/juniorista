@@ -587,6 +587,7 @@ class VentaController {
         $textos     = (array)($_POST['descripcion'] ?? []);
         $cantidades = (array)($_POST['cantidad'] ?? []);
         $precios    = (array)($_POST['precio'] ?? []);
+        $descLinea  = (array)($_POST['desc_linea'] ?? []);   // descuento de cada producto (mismo orden que las líneas)
         $productos  = $this->model->getProductosPorId($ids);
 
         $lineas = [];
@@ -596,15 +597,19 @@ class VentaController {
                 $texto  = mb_substr(trim((string)($textos[$i] ?? '')), 0, 200);
                 $precio = round(max(0, (float)($precios[$i] ?? 0)), 2);
                 if ($texto === '') continue;
-                $lineas[] = ['producto_id' => null, 'cantidad' => $cant, 'concepto' => $texto, 'detalle' => 'Servicio', 'precio' => $precio];
+                $lineas[] = ['producto_id' => null, 'cantidad' => $cant, 'concepto' => $texto, 'detalle' => 'Servicio', 'precio' => $precio,
+                             'descuento' => (float)($descLinea[$i] ?? 0)];
             } elseif (isset($productos[(int)($ids[$i] ?? 0)])) {
                 $p = $productos[(int)$ids[$i]];
                 $lineas[] = ['producto_id' => (int)$p['id'], 'cantidad' => $cant, 'concepto' => $p['nombre'],
                              'detalle' => trim(($p['codigo'] ? 'Cód. ' . $p['codigo'] : '') . ' · ' . $p['unidad'], ' ·'),
-                             'precio' => (float)$p['precio_venta']];
+                             'precio' => (float)$p['precio_venta'], 'descuento' => (float)($descLinea[$i] ?? 0)];
             }
         }
-        foreach ($lineas as &$l) $l['subtotal'] = round($l['cantidad'] * $l['precio'], 2);
+        foreach ($lineas as &$l) {
+            $l['subtotal']  = round($l['cantidad'] * $l['precio'], 2);
+            $l['descuento'] = min($l['subtotal'], max(0, round($l['descuento'], 2)));   // nunca más de lo que vale la línea
+        }
         unset($l);
 
         if (!$lineas) {
@@ -615,7 +620,11 @@ class VentaController {
 
         $subtotal = array_sum(array_column($lineas, 'subtotal'));
         // En la cotización el descuento siempre se permite (no mueve dinero ni consume la autorización de descuentos de ventas)
-        $descuento = min($subtotal, max(0, round((float)($_POST['descuento'] ?? 0), 2)));
+        // El descuento total es la suma del de cada producto; si el formulario no los trae, se usa el total enviado
+        $descuentoLineas = round(array_sum(array_column($lineas, 'descuento')), 2);
+        $descuento = $descuentoLineas > 0
+            ? $descuentoLineas
+            : min($subtotal, max(0, round((float)($_POST['descuento'] ?? 0), 2)));
         $pct = $descuento > 0 && is_numeric($_POST['descuento_pct'] ?? '') ? min(100, max(0, (float)$_POST['descuento_pct'])) : null;
 
         $cid = (int)($_POST['cliente_id'] ?? 0);

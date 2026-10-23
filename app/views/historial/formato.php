@@ -59,7 +59,8 @@ $filas = fn(string $k) => array_values(array_filter((array)($f[$k] ?? []), 'is_a
 </head>
 <body>
 <div class="no-print">
-    <button onclick="window.print()" style="background:#1e3a6e;color:#fff">Imprimir</button>
+    <span class="adjuntos-estado" id="adjuntosEstado"></span>
+    <button onclick="window.print()" data-imprimir style="background:#1e3a6e;color:#fff">Imprimir</button>
     <button onclick="window.close()" style="background:#d1d5db">Cerrar</button>
 </div>
 
@@ -254,6 +255,11 @@ $filas = fn(string $k) => array_values(array_filter((array)($f[$k] ?? []), 'is_a
     </div>
 </div>
 
-<script>window.addEventListener('load', () => window.print());</script>
+<?php
+// Los PDF adjuntos a este registro salen impresos a continuación del formato
+$adjuntosImprimir = array_map(fn($a) => ['id' => $a['id'], 'nombre' => $a['nombre'], 'titulo' => 'Adjunto · ' . $fec($r['fecha'])], $r['adjuntos'] ?? []);
+require __DIR__ . '/_adjuntos_impresion.php';
+?>
+<script>window.addEventListener('load', () => (window.adjuntosListos || Promise.resolve()).then(() => setTimeout(() => window.print(), 300)));</script>
 </body>
 </html>

@@ -55,7 +55,8 @@ $e = fn($v) => htmlspecialchars((string)$v);
 <body>
 
 <div class="no-print">
-    <button onclick="window.print()" style="background:#4f46e5;color:#fff">Imprimir</button>
+    <span class="adjuntos-estado" id="adjuntosEstado"></span>
+    <button onclick="window.print()" data-imprimir style="background:#4f46e5;color:#fff">Imprimir</button>
     <button onclick="window.close()" style="background:#e5e7eb">Cerrar</button>
 </div>
 
@@ -129,5 +130,16 @@ $e = fn($v) => htmlspecialchars((string)$v);
 
 <div class="firma"><div>Firma y sello del médico veterinario</div></div>
 
+<?php
+// Todo lo adjuntado a los registros sale impreso a continuación, en el orden del historial
+$adjuntosImprimir = [];
+foreach ($registros as $r) {
+    foreach ($r['adjuntos'] ?? [] as $a) {
+        $adjuntosImprimir[] = ['id' => $a['id'], 'nombre' => $a['nombre'], 'titulo' => 'Adjunto · ' . $fecha($r['fecha']) . ' · ' . $r['motivo']];
+    }
+}
+require __DIR__ . '/_adjuntos_impresion.php';
+?>
+<script>(window.adjuntosListos || Promise.resolve()).then(() => setTimeout(() => window.print(), 300));</script>
 </body>
 </html>

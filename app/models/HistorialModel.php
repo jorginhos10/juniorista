@@ -54,8 +54,26 @@ class HistorialModel {
 
     private mysqli $db;
 
+    /** Id del último registro creado con crear() */
+    public int $ultimoId = 0;
+
     public function __construct() {
         $this->db = Database::getInstance()->getConnection();
+        // PDF adjuntos a los registros (se crea sola en una base que no la tenga)
+        $this->db->query(
+            "CREATE TABLE IF NOT EXISTS historial_adjuntos (
+                id             INT AUTO_INCREMENT PRIMARY KEY,
+                historial_id   INT NOT NULL,
+                mascota_id     INT NOT NULL,
+                nombre         VARCHAR(150) NOT NULL,
+                archivo        VARCHAR(255) NOT NULL,
+                tamano         INT NOT NULL DEFAULT 0,
+                usuario_id     INT DEFAULT NULL,
+                activo         TINYINT(1) NOT NULL DEFAULT 1,
+                created_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                KEY idx_historial_adjuntos (historial_id, activo)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci"
+        );
         // Respuestas del formato de historia clínica (JSON); se crea sola en una base que no la tenga
         if (!$this->db->query("SHOW COLUMNS FROM historial_medico LIKE 'formato'")->num_rows) {
             $this->db->query('ALTER TABLE historial_medico ADD COLUMN formato MEDIUMTEXT DEFAULT NULL AFTER observaciones');
@@ -80,7 +98,79 @@ class HistorialModel {
         $stmt->execute();
         $r = $stmt->get_result()->fetch_assoc();
         $stmt->close();
-        return $r ?: null;
+        if (!$r) return null;
+        $r['adjuntos'] = $this->getAdjuntos([(int)$r['id']])[(int)$r['id']] ?? [];
+        return $r;
+    }
+
+    // ── PDF adjuntos ──────────────────────────────────────
+
+    /** Adjuntos activos agrupados por registro: [historial_id => [[id, nombre, tamano, created_at], …]] */
+    public function getAdjuntos(array $historialIds): array {
+        $ids = array_values(array_unique(array_filter(array_map('intval', $historialIds))));
+        if (!$ids) return [];
+        $marcas = implode(',', array_fill(0, count($ids), '?'));
+        $stmt = $this->db->prepare(
+            "SELECT id, historial_id, nombre, tamano, created_at FROM historial_adjuntos
+              WHERE activo = 1 AND historial_id IN ($marcas) ORDER BY id"
+        );
+        $stmt->bind_param(str_repeat('i', count($ids)), ...$ids);
+        $stmt->execute();
+        $res = [];
+        foreach ($stmt->get_result()->fetch_all(MYSQLI_ASSOC) as $a) $res[(int)$a['historial_id']][] = $a;
+        $stmt->close();
+        return $res;
+    }
+
+    /** Un adjunto, solo si su registro es de una mascota de la sucursal actual */
+    public function getAdjunto(int $id): ?array {
+        $stmt = $this->db->prepare(
+            'SELECT a.* FROM historial_adjuntos a
+               JOIN historial_medico h ON h.id = a.historial_id AND h.activo = 1
+               JOIN mascotas m ON m.id = h.mascota_id AND m.veterinaria_id = ?
+              WHERE a.id = ? AND a.activo = 1'
+        );
+        $vet = Seguridad::sucursalActual();
+        $stmt->bind_param('ii', $vet, $id);
+        $stmt->execute();
+        $a = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+        return $a ?: null;
+    }
+
+    public function crearAdjunto(int $historial_id, int $mascota_id, string $nombre, string $archivo, int $tamano, int $usuario_id): bool {
+        $stmt = $this->db->prepare(
+            'INSERT INTO historial_adjuntos (historial_id, mascota_id, nombre, archivo, tamano, usuario_id) VALUES (?, ?, ?, ?, ?, ?)'
+        );
+        $stmt->bind_param('iissii', $historial_id, $mascota_id, $nombre, $archivo, $tamano, $usuario_id);
+        $ok = $stmt->execute();
+        $stmt->close();
+        return $ok;
+    }
+
+    /** Quita el adjunto del registro (el archivo queda guardado en el servidor) */
+    public function eliminarAdjunto(int $id): bool {
+        if (!$this->getAdjunto($id)) return false;
+        $stmt = $this->db->prepare('UPDATE historial_adjuntos SET activo = 0 WHERE id = ?');
+        $stmt->bind_param('i', $id);
+        $stmt->execute();
+        $ok = $stmt->affected_rows > 0;
+        $stmt->close();
+        return $ok;
+    }
+
+    /** ¿El registro es de una mascota de la sucursal actual? */
+    public function registroExiste(int $id, int $mascota_id): bool {
+        $stmt = $this->db->prepare(
+            'SELECT 1 FROM historial_medico h JOIN mascotas m ON m.id = h.mascota_id AND m.veterinaria_id = ?
+              WHERE h.id = ? AND h.mascota_id = ? AND h.activo = 1'
+        );
+        $vet = Seguridad::sucursalActual();
+        $stmt->bind_param('iii', $vet, $id, $mascota_id);
+        $stmt->execute();
+        $ok = (bool)$stmt->get_result()->fetch_row();
+        $stmt->close();
+        return $ok;
     }
 
     /** Mascotas con datos del dueño y resumen de su historial */
@@ -115,6 +205,9 @@ class HistorialModel {
         $stmt->execute();
         $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
         $stmt->close();
+        $adjuntos = $this->getAdjuntos(array_column($rows, 'id'));
+        foreach ($rows as &$r) $r['adjuntos'] = $adjuntos[(int)$r['id']] ?? [];
+        unset($r);
         return $rows;
     }
 
@@ -169,6 +262,7 @@ class HistorialModel {
         $vals = array_map(fn($c) => $d[$c], $cols);
         $stmt->bind_param(str_repeat('s', count($vals)), ...$vals);
         $ok = $stmt->execute();
+        $this->ultimoId = $ok ? (int)$stmt->insert_id : 0;
         $stmt->close();
         return $ok;
     }

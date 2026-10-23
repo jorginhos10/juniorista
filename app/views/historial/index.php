@@ -303,7 +303,7 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
                                         </div>
                                         <div class="d-flex gap-1 align-items-start">
                                             <a href="<?= BASE_URL ?>/historial/formato?id=<?= (int)$r['id'] ?>" target="_blank"
-                                               class="btn btn-sm btn-outline-secondary btn-accion" title="Imprimir formato de historia clínica"><i class="bi bi-printer"></i></a>
+                                               class="btn btn-sm btn-outline-secondary btn-accion" title="Imprimir formato de historia clínica (incluye los PDF adjuntos)"><i class="bi bi-printer"></i></a>
                                             <button class="btn btn-sm btn-outline-primary btn-accion" title="Editar"
                                                     onclick='editarRegistro(<?= json_encode($r, $jsonFlags) ?>)'><i class="bi bi-pencil-fill"></i></button>
                                             <?php if ($esAdmin): ?>
@@ -372,6 +372,23 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
                                         <?php endif; ?>
                                     </div>
                                     <?php endif; ?>
+
+                                    <?php if (!empty($r['adjuntos'])): ?>
+                                    <div class="d-flex flex-wrap gap-2 mt-3 align-items-center">
+                                        <span class="small text-muted"><i class="bi bi-paperclip me-1"></i>Adjuntos:</span>
+                                        <?php foreach ($r['adjuntos'] as $a): ?>
+                                        <span class="badge bg-danger-subtle text-danger-emphasis fw-semibold d-inline-flex align-items-center gap-1" style="font-size:.75rem">
+                                            <a href="<?= BASE_URL ?>/historial/adjunto?id=<?= (int)$a['id'] ?>" target="_blank" class="text-decoration-none text-reset" title="Abrir PDF">
+                                                <i class="bi bi-file-earmark-pdf-fill me-1"></i><?= htmlspecialchars($a['nombre']) ?>
+                                            </a>
+                                            <?php if ($esAdmin): ?>
+                                            <button type="button" class="btn btn-link p-0 text-danger lh-1" title="Quitar adjunto"
+                                                    onclick='quitarAdjunto(<?= (int)$a['id'] ?>, <?= json_encode($a['nombre'], $jsonFlags) ?>)'><i class="bi bi-x-circle-fill"></i></button>
+                                            <?php endif; ?>
+                                        </span>
+                                        <?php endforeach; ?>
+                                    </div>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         </div>
@@ -390,7 +407,7 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
 <div class="modal fade" id="modalRegistro" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content border-0 shadow">
-            <form method="POST" action="<?= BASE_URL ?>/historial/guardar" id="formRegistro" autocomplete="off">
+            <form method="POST" action="<?= BASE_URL ?>/historial/guardar" id="formRegistro" autocomplete="off" enctype="multipart/form-data">
                 <input type="hidden" name="id" id="h-id" value="0">
                 <input type="hidden" name="mascota_id" value="<?= $mascota['id'] ?>">
 
@@ -695,6 +712,10 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
                         </div>
                         <label class="form-label mt-2">Observaciones</label>
                         <textarea class="form-control form-control-sm" name="observaciones" id="h-observaciones" rows="2" placeholder="Notas internas, comportamiento, recomendaciones…"></textarea>
+
+                        <label class="form-label mt-3" for="h-adjuntos"><i class="bi bi-paperclip me-1"></i>Adjuntar PDF <span class="text-muted fw-normal">(resultados, radiografías, informes…)</span></label>
+                        <input type="file" class="form-control form-control-sm" name="adjuntos[]" id="h-adjuntos" accept="application/pdf,.pdf" multiple>
+                        <div class="form-text">Hasta 10 archivos PDF de 15 MB cada uno. Al imprimir la historia clínica se imprimen también los adjuntos. Los ya adjuntos se ven en la tarjeta del registro.</div>
                     </div>
                 </div>
 
@@ -709,6 +730,10 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
     </div>
 </div>
 
+<form method="POST" action="<?= BASE_URL ?>/historial/adjunto/eliminar" id="formQuitarAdjunto" class="d-none">
+    <input type="hidden" name="id">
+    <input type="hidden" name="mascota_id" value="<?= $mascota['id'] ?>">
+</form>
 <form method="POST" action="<?= BASE_URL ?>/historial/eliminar" id="formEliminar" class="d-none">
     <input type="hidden" name="id">
     <input type="hidden" name="mascota_id" value="<?= $mascota['id'] ?>">
@@ -886,6 +911,13 @@ function nuevoRegistro() {
 function editarRegistro(r) {
     llenar(r, r.tipo);
     modal().show();
+}
+
+function quitarAdjunto(id, nombre) {
+    if (!confirm('¿Quitar el adjunto «' + nombre + '» del historial?')) return;
+    const f = $('formQuitarAdjunto');
+    f.id.value = id;
+    f.submit();
 }
 
 function eliminarRegistro(id) {

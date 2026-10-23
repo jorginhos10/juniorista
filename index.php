@@ -378,6 +378,16 @@ switch ($uri) {
         (new HistorialController())->guardar();
         break;
 
+    case 'historial/adjunto':
+        require_once ROOT . '/app/controllers/HistorialController.php';
+        (new HistorialController())->adjunto();
+        break;
+
+    case 'historial/adjunto/eliminar':
+        require_once ROOT . '/app/controllers/HistorialController.php';
+        (new HistorialController())->eliminarAdjunto();
+        break;
+
     case 'historial/eliminar':
         require_once ROOT . '/app/controllers/HistorialController.php';
         (new HistorialController())->eliminar();
