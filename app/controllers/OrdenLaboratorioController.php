@@ -5,7 +5,7 @@ require_once ROOT . '/app/models/VeterinariaModel.php';
 
 /**
  * Órdenes de laboratorio (módulo del doctor): solo informativo.
- * El doctor elige los exámenes del catálogo y manda un valor a cobrar; no ve costos, abonos ni dinero.
+ * El doctor solo elige los exámenes del catálogo; no escribe ni ve valores, costos, abonos ni dinero. Caja fija el valor al registrar la orden.
  * La orden es solo informativa: no es un cobro ni entra en reportes. Caja la ve en Laboratorios como «orden por registrar»
  * y es quien la registra (con sus abonos) o la descarta.
  */
@@ -76,7 +76,6 @@ class OrdenLaboratorioController {
         $veterinaria_id = $this->veterinariaActual($this->vetModel->getAll());
         $nombre = mb_substr(trim($_POST['nombre'] ?? ''), 0, 100);
         $especie = $_POST['especie'] ?? '';
-        $valor  = round((float)str_replace(',', '.', (string)($_POST['valor'] ?? '0')), 2);
         $ids    = array_map('intval', (array)($_POST['examenes'] ?? []));
         $examenes = $this->model->getExamenesPorIds($veterinaria_id, $ids);
 
@@ -88,34 +87,28 @@ class OrdenLaboratorioController {
             $_SESSION['flash_error'] = 'Elige al menos un examen.';
         } elseif ($errorSeleccion = $this->model->validarSeleccion($examenes)) {
             $_SESSION['flash_error'] = $errorSeleccion;
-        } elseif ($valor <= 0 || $valor > 99999999) {
-            $_SESSION['flash_error'] = 'Indica el valor a cobrar.';
         } else {
-            // El costo se calcula aquí; al doctor no se le muestra. Si el valor queda por debajo, se rechaza sin revelar la cifra.
+            // El costo se calcula aquí solo para caja (valor mínimo a cobrar); al doctor no se le muestra nada. La orden no lleva valor.
             $costo = round(array_sum(array_map(fn($e) => (float)$e['costo'], $examenes)), 2);
-            if ($valor + 0.001 < $costo) {
-                $_SESSION['flash_error'] = 'El valor a cobrar es inferior al mínimo permitido para estos exámenes. Súbelo o consulta con administración.';
-            } else {
-                [$cliente_id, $mascota_id] = $this->model->validarVinculos($veterinaria_id, (int)($_POST['cliente_id'] ?? 0), (int)($_POST['mascota_id'] ?? 0));
-                $descripcion = mb_substr(implode('+', array_column($examenes, 'codigo')), 0, 255);
-                $nota = mb_substr(trim($_POST['nota'] ?? ''), 0, 255 - mb_strlen($descripcion) - 3);
-                $id = $this->model->crearOrden([
-                    'veterinaria_id' => $veterinaria_id,
-                    'fecha'          => date('Y-m-d'),
-                    'nombre'         => $nombre,
-                    'especie'        => $especie,
-                    'examenes'       => array_column($examenes, 'id'),
-                    'descripcion'    => $nota !== '' ? $descripcion . ' · ' . $nota : $descripcion,
-                    'valor'          => $valor,
-                    'costo'          => $costo,
-                    'usuario_id'     => (int)$_SESSION['usuario_id'],
-                    'cliente_id'     => $cliente_id,
-                    'mascota_id'     => $mascota_id,
-                ]);
-                $_SESSION[$id > 0 ? 'flash_success' : 'flash_error'] = $id > 0
-                    ? 'Orden de ' . $nombre . ' enviada a caja (' . $descripcion . ').'
-                    : 'No se pudo enviar la orden.';
-            }
+            [$cliente_id, $mascota_id] = $this->model->validarVinculos($veterinaria_id, (int)($_POST['cliente_id'] ?? 0), (int)($_POST['mascota_id'] ?? 0));
+            $descripcion = mb_substr(implode('+', array_column($examenes, 'codigo')), 0, 255);
+            $nota = mb_substr(trim($_POST['nota'] ?? ''), 0, 255 - mb_strlen($descripcion) - 3);
+            $id = $this->model->crearOrden([
+                'veterinaria_id' => $veterinaria_id,
+                'fecha'          => date('Y-m-d'),
+                'nombre'         => $nombre,
+                'especie'        => $especie,
+                'examenes'       => array_column($examenes, 'id'),
+                'descripcion'    => $nota !== '' ? $descripcion . ' · ' . $nota : $descripcion,
+                'valor'          => 0,
+                'costo'          => $costo,
+                'usuario_id'     => (int)$_SESSION['usuario_id'],
+                'cliente_id'     => $cliente_id,
+                'mascota_id'     => $mascota_id,
+            ]);
+            $_SESSION[$id > 0 ? 'flash_success' : 'flash_error'] = $id > 0
+                ? 'Orden de ' . $nombre . ' enviada a caja (' . $descripcion . ').'
+                : 'No se pudo enviar la orden.';
         }
         $this->redirect('ordenes-laboratorio');
     }

@@ -44,7 +44,7 @@ $estados = [
         <header class="topbar">
             <div class="topbar-left">
                 <h5 class="topbar-title mb-0">Órdenes de laboratorio</h5>
-                <p class="topbar-date mb-0">Informativo: envía los exámenes y el valor a cobrar; caja registra el cobro</p>
+                <p class="topbar-date mb-0">Informativo: envía los exámenes; caja define el valor y registra el cobro</p>
             </div>
             <div class="topbar-right">
                 <?php require ROOT . '/app/views/layouts/vet_selector.php'; ?>
@@ -185,14 +185,7 @@ $estados = [
                             <div id="o-hidden"></div>
                             <div class="form-text" id="o-ayuda"><?= $examenes ? 'Puedes elegir varios exámenes o perfiles.' : 'Aún no hay exámenes en el catálogo; pide a administración que los configure.' ?></div>
                         </div>
-                        <div class="col-6">
-                            <label class="form-label fw-semibold" for="o-valor">Valor a cobrar <span class="text-danger">*</span></label>
-                            <div class="input-group">
-                                <span class="input-group-text">$</span>
-                                <input type="number" class="form-control" name="valor" id="o-valor" step="0.01" min="0.01" required placeholder="0.00">
-                            </div>
-                        </div>
-                        <div class="col-6">
+                        <div class="col-12">
                             <label class="form-label fw-semibold" for="o-nota">Nota <span class="text-muted fw-normal">(opcional)</span></label>
                             <input type="text" class="form-control" name="nota" id="o-nota" maxlength="120" placeholder="Ej: urgente">
                         </div>

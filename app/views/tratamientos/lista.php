@@ -146,11 +146,11 @@ $Su = ucfirst($S);
                                     <td class="fw-semibold"><?= $o['especie'] === 'gato' ? '🐱' : '🐶' ?> <?= htmlspecialchars($o['nombre']) ?></td>
                                     <td><?= htmlspecialchars($o['descripcion']) ?></td>
                                     <td class="small text-muted"><i class="bi bi-person-badge me-1"></i><?= htmlspecialchars($o['doctor_nombre'] ?? '') ?></td>
-                                    <td class="text-end monto"><?= $money($o['valor']) ?></td>
+                                    <td class="text-end small text-muted text-nowrap" title="Valor mínimo a cobrar (costo de los exámenes)">Mínimo <?= $money($o['costo']) ?></td>
                                     <td class="text-end text-nowrap">
                                         <button class="btn btn-sm btn-success py-0" onclick='registrarOrden(<?= json_encode([
                                             'id' => (int)$o['id'], 'nombre' => $o['nombre'], 'especie' => $o['especie'], 'cliente_id' => (int)$o['cliente_id'],
-                                            'mascota_id' => (int)$o['mascota_id'], 'examenes' => $o['examenes_ids'], 'descripcion' => $o['descripcion'], 'valor' => (float)$o['valor'],
+                                            'mascota_id' => (int)$o['mascota_id'], 'examenes' => $o['examenes_ids'], 'descripcion' => $o['descripcion'],
                                         ], $jsonFlags) ?>)'><i class="bi bi-check2 me-1"></i>Registrar</button>
                                         <button class="btn btn-sm btn-outline-danger py-0" title="Descartar orden"
                                                 onclick='descartarOrden(<?= (int)$o['id'] ?>, <?= json_encode($o['nombre'] . ' · ' . $o['descripcion'], $jsonFlags) ?>)'><i class="bi bi-x-lg"></i></button>
@@ -830,10 +830,11 @@ function prepararExamenes(p) {
             abonado = Number(yaAbonado) || 0;
             pintar();
         },
-        // Exámenes de una orden del doctor: se eligen solos y el valor queda como lo mandó
+        // Exámenes de una orden del doctor: se eligen solos; el valor arranca en el costo (mínimo) y caja lo ajusta
         precargar(ids, descripcion) {
             elegidos = EXAMENES.filter(x => ids.includes(x.id));
             if (descripcion) desc.value = descripcion;
+            if (!(parseFloat(valor.value) > 0)) valor.value = costo().toFixed(2);
             pintar();
         },
     };
@@ -861,8 +862,7 @@ function registrarOrden(o) {
     $id('n-nombre').value = o.nombre;
     $id('n-especie').value = o.especie;
     vincNuevo.cargar(o.mascota_id, o.cliente_id);
-    $id('n-valor').value = Number(o.valor).toFixed(2);
-    examenesNuevo.precargar(o.examenes, o.descripcion);
+    examenesNuevo.precargar(o.examenes, o.descripcion);   // propone el costo como valor mínimo; caja lo fija
     $id('n-valor').dispatchEvent(new Event('input'));
 }
 
