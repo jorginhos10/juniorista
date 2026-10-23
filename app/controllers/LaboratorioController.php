@@ -38,7 +38,9 @@ class LaboratorioController extends TratamientoController {
     protected function ajustarDatos(array &$datos, int $veterinaria_id, int $id): string {
         $ids = array_map('intval', (array)($_POST['examenes'] ?? []));
         if ($ids) {
-            $costo = round(array_sum(array_map(fn($e) => (float)$e['costo'], $this->model->getExamenesPorIds($veterinaria_id, $ids))), 2);
+            $seleccion = $this->model->getExamenesPorIds($veterinaria_id, $ids);
+            if ($error = $this->model->validarSeleccion($seleccion)) return $error;
+            $costo = round(array_sum(array_map(fn($e) => (float)$e['costo'], $seleccion)), 2);
         } else {
             $costo = $id > 0 ? $this->model->getCosto($id, $veterinaria_id) : 0.0;
         }

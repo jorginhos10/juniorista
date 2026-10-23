@@ -170,7 +170,7 @@ class LaboratorioModel extends TratamientoModel {
         if (!$ids) return [];
         $marcas = implode(',', array_fill(0, count($ids), '?'));
         $stmt = $this->db->prepare(
-            "SELECT id, codigo, nombre, costo FROM laboratorio_examenes
+            "SELECT id, codigo, nombre, costo, es_combo, incluye FROM laboratorio_examenes
               WHERE activo = 1 AND veterinaria_id = ? AND id IN ($marcas)"
         );
         $stmt->bind_param('i' . str_repeat('i', count($ids)), $veterinaria_id, ...$ids);
@@ -181,6 +181,26 @@ class LaboratorioModel extends TratamientoModel {
     }
 
     /** Guarda un examen o un combo ($incluye = ids de los exámenes del combo, vacío si es un examen suelto) */
+    /**
+     * Reglas de la selección: un combo no se mezcla con otros combos ni con exámenes que ya incluye (se contarían doble).
+     * Devuelve el mensaje de error o ''.
+     */
+    public function validarSeleccion(array $seleccion): string {
+        $combos = array_values(array_filter($seleccion, fn($x) => (int)$x['es_combo'] === 1));
+        if (count($combos) > 1) {
+            return 'Un combo no se puede combinar con otro combo. Elige solo uno.';
+        }
+        foreach ($combos as $c) {
+            $incluidos = array_map('intval', explode(',', (string)$c['incluye']));
+            foreach ($seleccion as $x) {
+                if ((int)$x['es_combo'] === 0 && in_array((int)$x['id'], $incluidos, true)) {
+                    return 'El combo ' . $c['codigo'] . ' ya incluye ' . $x['codigo'] . '; quita ese examen para no cobrarlo dos veces.';
+                }
+            }
+        }
+        return '';
+    }
+
     public function guardarExamen(int $id, int $veterinaria_id, string $codigo, string $nombre, float $costo, array $incluye = [],
                                   string $tipoMuestra = '', string $tiempoEntrega = 'Mismo día', string $incluyeExtra = ''): bool {
         $esCombo = ($incluye || $incluyeExtra !== '') ? 1 : 0;

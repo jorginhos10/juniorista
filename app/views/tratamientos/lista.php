@@ -731,7 +731,7 @@ function prepararVinculos(p) {
 const vincNuevo = prepararVinculos('n'), vincEditar = prepararVinculos('e');
 
 // ── Exámenes del catálogo: el costo es la suma de los elegidos y fija el valor mínimo a cobrar ──
-const EXAMENES = <?= json_encode(array_map(fn($x) => ['id' => (int)$x['id'], 'codigo' => $x['codigo'], 'nombre' => $x['nombre'], 'costo' => (float)$x['costo'], 'combo' => (int)$x['es_combo'], 'incluye' => $x['incluye_texto'], 'muestra' => (string)($x['tipo_muestra'] ?? '')], $examenes ?? []), $jsonFlags | JSON_UNESCAPED_UNICODE) ?>;
+const EXAMENES = <?= json_encode(array_map(fn($x) => ['id' => (int)$x['id'], 'codigo' => $x['codigo'], 'nombre' => $x['nombre'], 'costo' => (float)$x['costo'], 'combo' => (int)$x['es_combo'], 'incluye' => $x['incluye_texto'], 'incluye_ids' => $x['incluye_ids'], 'muestra' => (string)($x['tipo_muestra'] ?? '')], $examenes ?? []), $jsonFlags | JSON_UNESCAPED_UNICODE) ?>;
 const CON_CATALOGO = <?= $conCatalogo ? 'true' : 'false' ?>;
 
 // p = 'n' (nuevo) o 'e' (editar). Sin catálogo (tratamiento) no hace nada.
@@ -767,7 +767,10 @@ function prepararExamenes(p) {
     }
 
     const sel = listaPredictiva({
-        input: buscar, lista: $id(p + '-examen-lista'), items: () => EXAMENES.filter(x => !elegidos.some(e => e.id === x.id)),
+        input: buscar, lista: $id(p + '-examen-lista'),
+        // Un combo no se mezcla con otros combos ni con exámenes que ya incluye (se cobrarían dos veces)
+        items: () => EXAMENES.filter(x => !elegidos.some(e => e.id === x.id)
+            && (x.combo ? !elegidos.some(e => e.combo || x.incluye_ids.includes(e.id)) : !elegidos.some(e => e.combo && e.incluye_ids.includes(x.id)))),
         texto: x => x.codigo + ' · ' + x.nombre + (x.combo ? ' (combo)' : ''), detalle: x => (x.combo ? 'Incluye ' + x.incluye + ' · ' : '') + (x.muestra ? x.muestra + ' · ' : '') + 'Costo ' + money(x.costo),
         vacio: EXAMENES.length ? 'No hay más exámenes que coincidan' : 'El catálogo está vacío (Configuración → Laboratorios)',
         alElegir: elegir,

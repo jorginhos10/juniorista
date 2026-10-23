@@ -47,7 +47,7 @@ class OrdenLaboratorioController {
 
         // Catálogo sin costos: el doctor solo elige exámenes
         $examenes = array_map(fn($x) => [
-            'id' => (int)$x['id'], 'codigo' => $x['codigo'], 'nombre' => $x['nombre'], 'combo' => (int)$x['es_combo'],
+            'id' => (int)$x['id'], 'codigo' => $x['codigo'], 'nombre' => $x['nombre'], 'combo' => (int)$x['es_combo'], 'incluye_ids' => $x['incluye_ids'],
             'incluye' => $x['incluye_texto'], 'muestra' => (string)($x['tipo_muestra'] ?? ''),
         ], $this->model->getExamenes($veterinaria_id));
 
@@ -91,6 +91,8 @@ class OrdenLaboratorioController {
             $_SESSION['flash_error'] = 'Selecciona la especie (perro o gato).';
         } elseif (!$examenes) {
             $_SESSION['flash_error'] = 'Elige al menos un examen.';
+        } elseif ($errorSeleccion = $this->model->validarSeleccion($examenes)) {
+            $_SESSION['flash_error'] = $errorSeleccion;
         } elseif ($valor <= 0 || $valor > 99999999) {
             $_SESSION['flash_error'] = 'Indica el valor a cobrar.';
         } else {

@@ -241,9 +241,16 @@ function pintar() {
     $id('o-hidden').innerHTML = elegidos.map(x => `<input type="hidden" name="examenes[]" value="${x.id}">`).join('');
 }
 
+// Un combo no se mezcla con otros combos ni con exámenes que ya incluye (se cobrarían dos veces)
+function ofrecer(x) {
+    if (elegidos.some(e => e.id === x.id)) return false;
+    if (x.combo) return !elegidos.some(e => e.combo || x.incluye_ids.includes(e.id));
+    return !elegidos.some(e => e.combo && e.incluye_ids.includes(x.id));
+}
+
 function abrir() {
     const q = $id('o-buscar').value.trim().toLowerCase();
-    const res = EXAMENES.filter(x => !elegidos.some(e => e.id === x.id) && (!q || (x.codigo + ' ' + x.nombre).toLowerCase().includes(q))).slice(0, 15);
+    const res = EXAMENES.filter(x => ofrecer(x) && (!q || (x.codigo + ' ' + x.nombre).toLowerCase().includes(q))).slice(0, 15);
     $id('o-lista').innerHTML = res.length
         ? res.map(x => `<div class="ex-op" data-id="${x.id}">${esc(x.codigo)} · ${esc(x.nombre)}${x.combo ? ' <span class="badge bg-primary-subtle text-primary">Perfil</span>' : ''}
             ${(x.combo && x.incluye) || x.muestra ? `<small>${esc([x.combo && x.incluye ? 'Incluye ' + x.incluye : '', x.muestra].filter(Boolean).join(' · '))}</small>` : ''}</div>`).join('')
