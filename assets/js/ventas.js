@@ -154,7 +154,7 @@ function renderCarrito() {
     const reparto   = repartoDescuento();
     const conDesc   = hayDescuentoManual() || Object.values(reparto).some(d => d > 0);
     const html = items.map(([id, item]) => `
-        <div class="pos-carrito-item">
+        <div class="pos-carrito-item${conDesc ? ' pos-ci-con-desc' : ''}">
             <div class="pos-ci-nombre">
                 <span class="fw-semibold">${escHtml(item.nombre)}${item.servicio ? '<span class="pos-ci-servicio">SERVICIO</span>' : ''}</span>
                 <span class="text-muted small">$${item.precio.toFixed(2)} / ${escHtml(item.unidad)}</span>
@@ -173,21 +173,20 @@ function renderCarrito() {
                     <i class="bi bi-plus"></i>
                 </button>
             </div>
-            <div class="pos-ci-subtotal">${reparto[id] > 0
-                ? `<s class="pos-ci-bruto">$${(item.precio * item.cantidad).toFixed(2)}</s> $${(item.precio * item.cantidad - reparto[id]).toFixed(2)}`
-                : '$' + (item.precio * item.cantidad).toFixed(2)}</div>
-            <button class="pos-ci-del" onclick="quitarDelCarrito('${id}')">
-                <i class="bi bi-x-lg"></i>
-            </button>
             ${conDesc ? `
             <div class="pos-ci-desc" title="Descuento de este producto (puedes editarlo)">
-                <span>Descuento</span>
                 <span class="pos-ci-desc-signo">-$</span>
                 <input type="text" class="pos-ci-desc-in" value="${reparto[id].toFixed(2)}" inputmode="decimal" aria-label="Descuento del producto"
                        onfocus="this.select()"
                        onkeydown="if (event.key === 'Enter') { event.preventDefault(); this.blur(); }"
                        onchange="fijarDescuentoLinea('${id}', this)">
             </div>` : ''}
+            <div class="pos-ci-subtotal">${reparto[id] > 0
+                ? `<s class="pos-ci-bruto">$${(item.precio * item.cantidad).toFixed(2)}</s> $${(item.precio * item.cantidad - reparto[id]).toFixed(2)}`
+                : '$' + (item.precio * item.cantidad).toFixed(2)}</div>
+            <button class="pos-ci-del" onclick="quitarDelCarrito('${id}')">
+                <i class="bi bi-x-lg"></i>
+            </button>
         </div>
     `).join('');
 

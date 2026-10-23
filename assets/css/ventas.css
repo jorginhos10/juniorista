@@ -203,7 +203,7 @@
 
 /* ── DERECHA: panel de factura ──────────────────────── */
 .pos-factura {
-    width: 320px;
+    width: clamp(380px, 34vw, 540px);
     flex-shrink: 0;
     background: #fff;
     border-left: 1px solid #e2e8f0;
@@ -252,6 +252,7 @@
 }
 
 .pos-carrito-item:last-child { border-bottom: none; }
+.pos-carrito-item.pos-ci-con-desc { grid-template-columns: 1fr auto auto auto auto; }
 
 .pos-ci-nombre {
     display: flex;
@@ -265,6 +266,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
 }
+.pos-ci-nombre .text-muted { white-space: nowrap; }
 
 .pos-ci-controles {
     display: flex;
@@ -329,21 +331,19 @@
 
 .pos-ci-del:hover { color: #ef4444; }
 
-/* Descuento de cada producto (aparece cuando hay descuento): fila propia bajo la línea */
-.pos-ci-bruto { color: #94a3b8; font-weight: 500; font-size: .72rem; margin-right: .15rem; }
+/* Descuento de cada producto (aparece cuando hay descuento): columna al lado de las cantidades */
+.pos-ci-bruto { display: block; color: #94a3b8; font-weight: 500; font-size: .7rem; line-height: 1; text-align: right; }
+.pos-ci-subtotal { text-align: right; }
 .pos-ci-desc {
-    grid-column: 1 / -1;
     display: flex;
     align-items: center;
-    justify-content: flex-end;
-    gap: .3rem;
-    margin-top: -.15rem;
+    gap: .2rem;
     font-size: .72rem;
     color: #b91c1c;
 }
 .pos-ci-desc-signo { font-weight: 700; }
 .pos-ci-desc-in {
-    width: 86px;
+    width: 78px;
     height: 24px;
     padding: 0 6px;
     text-align: right;
