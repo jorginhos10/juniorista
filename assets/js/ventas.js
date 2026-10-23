@@ -176,7 +176,7 @@ function renderCarrito() {
             ${conDesc ? `
             <div class="pos-ci-desc" title="Descuento de este producto (puedes editarlo)">
                 <span class="pos-ci-desc-signo">-$</span>
-                <input type="text" class="pos-ci-desc-in" value="${reparto[id].toFixed(2)}" inputmode="decimal" aria-label="Descuento del producto"
+                <input type="text" class="pos-ci-desc-in" value="${reparto[id].toFixed(2)}" inputmode="decimal" aria-label="Descuento del producto" title="Valor (3000) o porcentaje (10%)"
                        onfocus="this.select()"
                        onkeydown="if (event.key === 'Enter') { event.preventDefault(); this.blur(); }"
                        onchange="fijarDescuentoLinea('${id}', this)">
@@ -259,7 +259,10 @@ function fijarDescuentoLinea(id, input) {
     const actual = repartoDescuento();
     Object.entries(carrito).forEach(([k, i]) => { i.descManual = actual[k] ?? 0; });
     const maximo = r2(carrito[id].precio * carrito[id].cantidad);
-    carrito[id].descManual = Math.min(maximo, r2(numeroEscrito(input.value)));
+    // Valor en pesos («3000») o porcentaje de esa línea («10%»)
+    const txt = String(input.value || '').trim();
+    const monto = txt.endsWith('%') ? r2(maximo * Math.min(numeroEscrito(txt.replace('%', '')), 100) / 100) : numeroEscrito(txt);
+    carrito[id].descManual = Math.min(maximo, r2(monto));
     renderCarrito();
 }
 
