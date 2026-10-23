@@ -2,6 +2,18 @@
 // Cotización imprimible (modo cotización del punto de venta). No es factura ni descuenta inventario.
 $e     = fn($v) => htmlspecialchars((string)$v);
 $money = fn($n) => '$' . number_format((float)$n, 2);
+
+// Cotización guardada antes del descuento por producto (solo tiene el descuento total): se reparte en proporción al valor de cada línea
+if ((float)$descuento > 0 && (float)$subtotal > 0 && !array_filter($lineas, fn($l) => (float)($l['descuento'] ?? 0) > 0)) {
+    $resto = round((float)$descuento, 2);
+    $ultima = count($lineas) - 1;
+    foreach ($lineas as $i => &$l) {
+        $d = $i === $ultima ? $resto : round((float)$descuento * (float)$l['subtotal'] / (float)$subtotal, 2);
+        $l['descuento'] = min((float)$l['subtotal'], max(0, $d));
+        $resto = round($resto - $l['descuento'], 2);
+    }
+    unset($l);
+}
 ?>
 <!DOCTYPE html>
 <html lang="es">
