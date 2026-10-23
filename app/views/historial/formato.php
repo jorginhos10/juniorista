@@ -230,9 +230,9 @@ $filas = fn(string $k) => array_values(array_filter((array)($f[$k] ?? []), 'is_a
 
     <table class="sec">
         <tr><th colspan="6">Plan diagnóstico</th></tr>
-        <tr class="sub"><td class="lbl">Examen</td><td class="lbl na">Sí</td><td class="lbl" style="width:70px">Autorizado</td><td class="lbl" style="width:70px">Fecha</td><td class="lbl">Laboratorio</td><td class="lbl">Resultados</td></tr>
+        <tr class="sub"><td class="lbl">Examen</td><td class="lbl na" style="width:70px">Autorizado</td><td class="lbl na" style="width:70px">No autorizado</td><td class="lbl" style="width:70px">Fecha</td><td class="lbl">Laboratorio</td><td class="lbl">Resultados</td></tr>
         <?php $plan = $filas('plan'); for ($i = 0; $i < max(3, count($plan)); $i++): $p = $plan[$i] ?? []; ?>
-        <tr style="height:20px"><td><?= $e($p['examen'] ?? '') ?></td><td class="na"><?= !empty($p['si']) ? '✕' : '' ?></td><td class="na"><?= !empty($p['autorizado']) ? '✕' : '' ?></td>
+        <tr style="height:20px"><td><?= $e($p['examen'] ?? '') ?></td><td class="na"><?= !empty($p['autorizado']) ? '✕' : '' ?></td><td class="na"><?= !empty($p['no_autorizado']) ? '✕' : '' ?></td>
             <td><?= $e(isset($p['fecha']) ? $fec($p['fecha']) : '') ?></td><td><?= $e($p['laboratorio'] ?? '') ?></td><td><?= $e($p['resultados'] ?? '') ?></td></tr>
         <?php endfor; ?>
     </table>

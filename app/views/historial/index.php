@@ -659,7 +659,7 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
                     <div class="hc-sec">
                         <div class="hc-sec-titulo">Plan diagnóstico</div>
                         <table class="table table-sm table-bordered mb-1 hc-tabla" id="tablaPlan">
-                            <thead><tr><th>Examen</th><th class="text-center" style="width:46px;">Sí</th><th class="text-center" style="width:86px;">Autorizado</th><th style="width:150px;">Fecha</th><th>Laboratorio</th><th>Resultados</th></tr></thead>
+                            <thead><tr><th>Examen</th><th class="text-center" style="width:86px;">Autorizado</th><th class="text-center" style="width:106px;">No autorizado</th><th style="width:150px;">Fecha</th><th>Laboratorio</th><th>Resultados</th></tr></thead>
                             <tbody></tbody>
                         </table>
                         <div class="text-end"><button type="button" class="btn btn-xs" onclick="agregarFila('plan')"><i class="bi bi-plus-lg me-1"></i>Fila</button></div>
@@ -749,7 +749,7 @@ const PREVIO = <?php
 // ── Formato: llenar y limpiar los campos f[...] ──
 const FILAS = {
     problemas: { min: 4, campos: [['problema', 'text'], ['maestra', 'text'], ['diferencial', 'text']] },
-    plan:      { min: 3, campos: [['examen', 'text'], ['si', 'check'], ['autorizado', 'check'], ['fecha', 'date'], ['laboratorio', 'text'], ['resultados', 'text']] },
+    plan:      { min: 3, campos: [['examen', 'text'], ['autorizado', 'check'], ['no_autorizado', 'check'], ['fecha', 'date'], ['laboratorio', 'text'], ['resultados', 'text']] },
 };
 function agregarFila(tipo) {
     const tbody = document.querySelector(tipo === 'problemas' ? '#tablaProblemas tbody' : '#tablaPlan tbody');
