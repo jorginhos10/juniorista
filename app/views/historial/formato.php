@@ -201,7 +201,7 @@ $filas = fn(string $k) => array_values(array_filter((array)($f[$k] ?? []), 'is_a
 <div class="hoja salto">
     <table class="sec">
         <tr><th colspan="4">Examen clínico</th></tr>
-        <tr><td class="lbl" style="width:24%">Actitud</td><td colspan="3"><?php foreach ($actitudes as $o): ?><span class="op"><?= $o ?><?= $box($g('examen', 'actitud') === $o) ?></span><?php endforeach; ?></td></tr>
+        <tr><td class="lbl" style="width:24%">Actitud</td><td colspan="3"><?php foreach ($actitudes as $o): ?><span class="op"><?= $o ?><?= $box($g('examen', 'actitud') === $o || !empty($f['examen']['actitud'][$o])) ?></span><?php endforeach; ?></td></tr>
         <tr><td class="lbl">Condición corporal</td><td colspan="3"><?php foreach ($condiciones as $o): ?><span class="op"><?= $o ?><?= $box($g('examen', 'condicion') === $o) ?></span><?php endforeach; ?></td></tr>
         <tr><td class="lbl">Estado hidratación</td><td colspan="3">
             <span class="op">Normal<?= $box($r['hidratacion'] === 'Normal') ?></span> Deshidratación:

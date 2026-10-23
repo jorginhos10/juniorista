@@ -616,7 +616,7 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
                     <!-- Examen clínico -->
                     <div class="hc-sec">
                         <div class="hc-sec-titulo">Examen clínico</div>
-                        <div class="hc-fila"><div class="hc-lbl">Actitud</div><div><?php $radios('f[examen][actitud]', $actitudes); ?></div></div>
+                        <div class="hc-fila"><div class="hc-lbl">Actitud</div><div><?php foreach ($actitudes as $o) $check('f[examen][actitud][' . $o . ']', $o); ?></div></div>
                         <div class="hc-fila"><div class="hc-lbl">Condición corporal</div><div><?php $radios('f[examen][condicion]', $condiciones); ?></div></div>
                         <div class="hc-fila"><div class="hc-lbl">Estado de hidratación</div><div><?php $radios('hidratacion', $hidratacion); ?></div></div>
 
