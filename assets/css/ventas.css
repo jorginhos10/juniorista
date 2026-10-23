@@ -252,7 +252,9 @@
 }
 
 .pos-carrito-item:last-child { border-bottom: none; }
-.pos-carrito-item.pos-ci-con-desc { grid-template-columns: 1fr auto auto auto auto; }
+/* Columnas de ancho fijo: cantidades, descuento y total quedan alineados en todas las líneas */
+.pos-carrito-item.pos-ci-con-desc { grid-template-columns: minmax(0, 1fr) 108px 104px 82px 18px; }
+.pos-ci-con-desc .pos-ci-controles { justify-content: center; }
 
 .pos-ci-nombre {
     display: flex;

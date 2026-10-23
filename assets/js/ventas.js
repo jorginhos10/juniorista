@@ -150,9 +150,9 @@ function renderCarrito() {
         return;
     }
 
-    // Con descuento aplicado, cada producto muestra (y deja editar) cuánto se le descuenta
+    // Si se puede dar descuento, cada producto muestra siempre (y deja editar) cuánto se le descuenta
     const reparto   = repartoDescuento();
-    const conDesc   = hayDescuentoManual() || Object.values(reparto).some(d => d > 0);
+    const conDesc   = !document.getElementById('descuentoInput').disabled || Object.values(reparto).some(d => d > 0);
     const html = items.map(([id, item]) => `
         <div class="pos-carrito-item${conDesc ? ' pos-ci-con-desc' : ''}">
             <div class="pos-ci-nombre">
