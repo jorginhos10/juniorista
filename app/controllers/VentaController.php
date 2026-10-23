@@ -413,7 +413,7 @@ class VentaController {
         require_once ROOT . '/app/models/GastoModel.php';
 
         $ventas       = (float)($this->model->getResumenReporte($veterinaria_id, $desde, $hasta)['total_ingresos'] ?? 0);
-        $peluqueria   = (new PeluqueriaModel())->getTotalRango($veterinaria_id, $desde, $hasta);
+        $peluqueria   = (new PeluqueriaModel())->getReparto($veterinaria_id, $desde, $hasta);
         $tratamientos = (new TratamientoModel())->getTotalRango($veterinaria_id, $desde, $hasta);
         $laboratorios = (new LaboratorioModel())->getTotalRango($veterinaria_id, $desde, $hasta);
         $gastos       = (new GastoModel())->getTotalRango($veterinaria_id, $desde, $hasta);
