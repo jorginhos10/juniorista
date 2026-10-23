@@ -276,10 +276,8 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
                                     <a href="<?= BASE_URL ?>/historial/adjunto?id=<?= (int)$a['id'] ?>" target="_blank" class="fw-semibold text-decoration-none"><?= htmlspecialchars($a['descripcion'] ?: $a['nombre']) ?></a>
                                     <div class="small text-muted"><?= htmlspecialchars($a['nombre']) ?> · <?= $fechaCorta(substr($a['created_at'], 0, 10)) ?><?= $a['usuario_nombre'] ? ' · ' . htmlspecialchars($a['usuario_nombre']) : '' ?></div>
                                 </div>
-                                <?php if ($esAdmin): ?>
                                 <button type="button" class="btn btn-sm btn-outline-danger btn-accion" title="Quitar adjunto"
                                         onclick='quitarAdjunto(<?= (int)$a['id'] ?>, <?= json_encode($a['nombre'], $jsonFlags) ?>)'><i class="bi bi-trash-fill"></i></button>
-                                <?php endif; ?>
                             </div>
                             <?php endforeach; ?>
                         </div>
@@ -408,10 +406,8 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
                                                title="<?= htmlspecialchars($a['descripcion'] ? $a['descripcion'] . ' — ' . $a['nombre'] : 'Abrir PDF') ?>">
                                                 <i class="bi bi-file-earmark-pdf-fill me-1"></i><?= htmlspecialchars($a['descripcion'] ?: $a['nombre']) ?>
                                             </a>
-                                            <?php if ($esAdmin): ?>
                                             <button type="button" class="btn btn-link p-0 text-danger lh-1" title="Quitar adjunto"
                                                     onclick='quitarAdjunto(<?= (int)$a['id'] ?>, <?= json_encode($a['nombre'], $jsonFlags) ?>)'><i class="bi bi-x-circle-fill"></i></button>
-                                            <?php endif; ?>
                                         </span>
                                         <?php endforeach; ?>
                                     </div>
@@ -740,6 +736,7 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
                         <label class="form-label mt-2">Observaciones</label>
                         <textarea class="form-control form-control-sm" name="observaciones" id="h-observaciones" rows="2" placeholder="Notas internas, comportamiento, recomendaciones…"></textarea>
 
+                        <div id="h-adjuntos-existentes" class="mt-3"></div>
                         <label class="form-label mt-3" for="h-adjuntos"><i class="bi bi-paperclip me-1"></i>Adjuntar PDF <span class="text-muted fw-normal">(resultados, radiografías, informes…)</span></label>
                         <input type="file" class="form-control form-control-sm" name="adjuntos[]" id="h-adjuntos" accept="application/pdf,.pdf" multiple>
                         <input type="text" class="form-control form-control-sm mt-2" name="adjuntos_descripcion" maxlength="255" placeholder="Descripción de los adjuntos (ej: Hemograma del 22/10)">
@@ -970,7 +967,25 @@ function llenar(d, tipo) {
     $('registroBtnTexto').textContent = editando ? 'Guardar cambios' : 'Guardar en el historial';
 }
 
+// Adjuntos ya cargados del registro que se edita: se pueden quitar desde aquí
+function pintarAdjuntosExistentes(lista) {
+    const h = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    $('h-adjuntos-existentes').innerHTML = lista && lista.length
+        ? '<div class="small fw-semibold mb-1"><i class="bi bi-paperclip me-1"></i>Adjuntos de este registro</div>' + lista.map(a => `
+            <div class="d-flex align-items-center gap-2 small py-1 border-bottom">
+                <i class="bi bi-file-earmark-pdf-fill text-danger"></i>
+                <a href="<?= BASE_URL ?>/historial/adjunto?id=${a.id}" target="_blank" class="flex-grow-1 text-truncate text-decoration-none" title="Abrir PDF">${h(a.descripcion || a.nombre)}</a>
+                <button type="button" class="btn btn-link btn-sm text-danger p-0 js-quitar" title="Quitar adjunto" data-id="${a.id}" data-nombre="${h(a.nombre)}"><i class="bi bi-trash-fill"></i></button>
+            </div>`).join('')
+        : '';
+}
+$('h-adjuntos-existentes').addEventListener('click', e => {
+    const b = e.target.closest('.js-quitar');
+    if (b) quitarAdjunto(b.dataset.id, b.dataset.nombre);
+});
+
 function nuevoRegistro() {
+    pintarAdjuntosExistentes([]);
     archivosRegistro.limpiar();
     const ahora = new Date();
     const hora = String(ahora.getHours()).padStart(2, '0') + ':' + String(ahora.getMinutes()).padStart(2, '0');
@@ -981,6 +996,7 @@ function nuevoRegistro() {
 }
 
 function editarRegistro(r) {
+    pintarAdjuntosExistentes(r.adjuntos || []);
     archivosRegistro.limpiar();
     llenar(r, r.tipo);
     modal().show();

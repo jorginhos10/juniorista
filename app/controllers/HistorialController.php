@@ -195,18 +195,14 @@ class HistorialController {
         AdjuntosHistorial::enviar($a['archivo'], $a['nombre']);
     }
 
-    /** POST: quita un PDF adjunto (solo administrador, igual que eliminar registros) */
+    /** POST: quita un PDF adjunto (cualquier usuario del historial; el archivo se conserva en el servidor) */
     public function eliminarAdjunto(): void {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->redirect('historial');
         }
         $volver = 'historial?mascota=' . (int)($_POST['mascota_id'] ?? 0);
-        if (($_SESSION['usuario_rol'] ?? '') !== 'admin') {
-            $_SESSION['flash_error'] = 'Solo un administrador puede quitar adjuntos del historial.';
-        } else {
-            $ok = $this->model->eliminarAdjunto((int)($_POST['id'] ?? 0));
-            $_SESSION[$ok ? 'flash_success' : 'flash_error'] = $ok ? 'Adjunto quitado del historial.' : 'No se pudo quitar el adjunto.';
-        }
+        $ok = $this->model->eliminarAdjunto((int)($_POST['id'] ?? 0));
+        $_SESSION[$ok ? 'flash_success' : 'flash_error'] = $ok ? 'Adjunto quitado del historial.' : 'No se pudo quitar el adjunto.';
         $this->redirect($volver);
     }
 
