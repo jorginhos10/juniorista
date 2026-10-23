@@ -238,6 +238,21 @@ switch ($uri) {
         (new LaboratorioController())->eliminar();
         break;
 
+    case 'ordenes-laboratorio':
+        require_once ROOT . '/app/controllers/OrdenLaboratorioController.php';
+        (new OrdenLaboratorioController())->index();
+        break;
+
+    case 'ordenes-laboratorio/guardar':
+        require_once ROOT . '/app/controllers/OrdenLaboratorioController.php';
+        (new OrdenLaboratorioController())->guardar();
+        break;
+
+    case 'ordenes-laboratorio/anular':
+        require_once ROOT . '/app/controllers/OrdenLaboratorioController.php';
+        (new OrdenLaboratorioController())->anular();
+        break;
+
     case 'laboratorio/abonar':
         require_once ROOT . '/app/controllers/LaboratorioController.php';
         (new LaboratorioController())->abonar();

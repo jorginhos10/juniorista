@@ -211,9 +211,11 @@ class TratamientoModel {
             "SELECT t.*, {$this->sqlAbonado()} AS abonado,
                     (SELECT COUNT(*) FROM {$this->tablaAbonos} a WHERE a.tratamiento_id = t.id AND a.activo = 1) AS total_abonos,
                     (SELECT MAX(a.fecha) FROM {$this->tablaAbonos} a WHERE a.tratamiento_id = t.id AND a.activo = 1) AS ultimo_abono,
-                    NULLIF(TRIM(CONCAT(COALESCE(c.nombre, ''), ' ', COALESCE(c.apellido, ''))), '') AS cliente_nombre
+                    NULLIF(TRIM(CONCAT(COALESCE(c.nombre, ''), ' ', COALESCE(c.apellido, ''))), '') AS cliente_nombre,
+                    u.nombre AS usuario_nombre
                FROM {$this->tabla} t
           LEFT JOIN clientes c ON c.id = t.cliente_id
+          LEFT JOIN usuarios u ON u.id = t.usuario_id
               WHERE t.activo = 1 AND t.veterinaria_id = ?
            ORDER BY t.fecha DESC, t.id DESC"
         );

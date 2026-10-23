@@ -177,6 +177,9 @@ $Su = ucfirst($S);
                                                 <div class="fw-semibold"><?= htmlspecialchars($t['nombre']) ?><?php if (!empty($t['mascota_id'])): ?>
                                                     <i class="bi bi-link-45deg text-primary" title="Anclada a una mascota registrada"></i><?php endif; ?></div>
                                                 <div class="text-muted small"><?= $especies[$t['especie']] ?><?= !empty($t['cliente_nombre']) ? ' · ' . htmlspecialchars($t['cliente_nombre']) : '' ?></div>
+                                                <?php if ($conCatalogo && !empty($t['usuario_nombre'])): ?>
+                                                <div class="text-muted small"><i class="bi bi-person-badge me-1"></i>Solicitó: <?= htmlspecialchars($t['usuario_nombre']) ?></div>
+                                                <?php endif; ?>
                                             </div>
                                         </div>
                                     </td>
