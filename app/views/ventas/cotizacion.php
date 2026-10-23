@@ -156,7 +156,7 @@ if ((float)$descuento > 0 && (float)$subtotal > 0 && !array_filter($lineas, fn($
     <?php endif; ?>
 
     <div class="condiciones">
-        Esta cotización es válida por 15 días, hasta el <?= date('d/m/Y', $vence) ?>. Los precios de los productos están sujetos
+        Esta cotización es válida por 15 días, hasta el <?= date('d/m/Y', $vence) ?>. Los precios de los productos y servicios están sujetos
         a la disponibilidad del inventario al momento de la compra. Este documento no es una factura.
     </div>
 
