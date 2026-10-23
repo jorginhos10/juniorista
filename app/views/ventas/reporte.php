@@ -186,7 +186,7 @@
                 $fuentes = [
                     ['Ventas',                'bag-fill',   '#4f46e5', $balance['ventas'],                (int)($resumen['ventas_completadas'] ?? 0), 'ventas',    BASE_URL . '/ventas/historial'],
                     ['Tratamientos (abonos)', 'capsule',    '#0891b2', $balance['tratamientos']['total'], $balance['tratamientos']['cantidad'],       'abonos',    BASE_URL . '/tratamiento'],
-                    ['Peluquería',            'scissors',   '#db2777', $balance['peluqueria']['total'],   $balance['peluqueria']['cantidad'],         'servicios', BASE_URL . '/peluqueria'],
+                    ['Peluquería',            'scissors',   '#db2777', $balance['peluqueria']['negocio'], $balance['peluqueria']['cantidad'],         'servicios', BASE_URL . '/peluqueria'],
                     ['Laboratorios',          'eyedropper', '#7c3aed', $balance['laboratorios']['total'], $balance['laboratorios']['cantidad'],       'exámenes',  BASE_URL . '/laboratorio'],
                 ];
             ?>

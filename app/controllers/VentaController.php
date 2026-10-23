@@ -418,7 +418,7 @@ class VentaController {
         $laboratorios = (new LaboratorioModel())->getTotalRango($veterinaria_id, $desde, $hasta);
         $gastos       = (new GastoModel())->getTotalRango($veterinaria_id, $desde, $hasta);
 
-        $ingresos = $ventas + $peluqueria['total'] + $tratamientos['total'] + $laboratorios['total'];
+        $ingresos = $ventas + $peluqueria['negocio'] +$tratamientos['total'] + $laboratorios['total'];
         return [
             'ventas'       => $ventas,
             'peluqueria'   => $peluqueria,

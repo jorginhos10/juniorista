@@ -12,7 +12,7 @@ $anuladas = (int)($resumen['ventas_anuladas'] ?? 0);
 $fuentes = [
     ['Ventas',       '#4f46e5', $balance['ventas'],                (int)($resumen['ventas_completadas'] ?? 0), 'ventas'],
     ['Tratamientos', '#0891b2', $balance['tratamientos']['total'], $balance['tratamientos']['cantidad'],       'abonos'],
-    ['Peluquería',   '#db2777', $balance['peluqueria']['total'],   $balance['peluqueria']['cantidad'],         'servicios'],
+    ['Peluquería',   '#db2777', $balance['peluqueria']['negocio'], $balance['peluqueria']['cantidad'],         'servicios'],
     ['Laboratorios', '#7c3aed', $balance['laboratorios']['total'], $balance['laboratorios']['cantidad'],       'exámenes'],
 ];
 $totalIngresos = (float)$balance['ingresos'];
