@@ -68,6 +68,28 @@ class LaboratorioModel extends TratamientoModel {
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci"
         );
 
+        // Órdenes del doctor: solo informativas. No son un cobro: caja las registra como laboratorio (con sus abonos) o las descarta.
+        $this->db->query(
+            "CREATE TABLE IF NOT EXISTS laboratorio_ordenes (
+                id             INT AUTO_INCREMENT PRIMARY KEY,
+                veterinaria_id INT NOT NULL,
+                fecha          DATE NOT NULL,
+                nombre         VARCHAR(100) NOT NULL,
+                especie        ENUM('perro','gato') NOT NULL DEFAULT 'perro',
+                cliente_id     INT DEFAULT NULL,
+                mascota_id     INT DEFAULT NULL,
+                examenes       VARCHAR(255) NOT NULL,
+                descripcion    VARCHAR(255) NOT NULL,
+                valor          DECIMAL(10,2) NOT NULL DEFAULT 0,
+                costo          DECIMAL(10,2) NOT NULL DEFAULT 0,
+                usuario_id     INT DEFAULT NULL,
+                estado         ENUM('pendiente','atendida','anulada') NOT NULL DEFAULT 'pendiente',
+                laboratorio_id INT DEFAULT NULL,
+                created_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                KEY idx_lab_ordenes_vet_estado (veterinaria_id, estado)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci"
+        );
+
         // Combos (perfiles): un elemento del catálogo con su propio costo y la lista de exámenes que incluye (ids separados por coma)
         $extras = [
             'es_combo'       => 'TINYINT(1) NOT NULL DEFAULT 0',
@@ -136,6 +158,64 @@ class LaboratorioModel extends TratamientoModel {
             'costo'    => (float)$r['costo'],
             'negocio'  => round((float)$r['total'] - (float)$r['costo'], 2),
         ];
+    }
+
+    // ── Órdenes del doctor (informativas) ─────────────────
+
+    /** $d: veterinaria_id, fecha, nombre, especie, cliente_id, mascota_id, examenes (ids), descripcion, valor, costo, usuario_id */
+    public function crearOrden(array $d): int {
+        $stmt = $this->db->prepare(
+            'INSERT INTO laboratorio_ordenes (veterinaria_id, fecha, nombre, especie, cliente_id, mascota_id, examenes, descripcion, valor, costo, usuario_id)
+             VALUES (?, ?, ?, ?, NULLIF(?, 0), NULLIF(?, 0), ?, ?, ?, ?, ?)'
+        );
+        $cliente = (int)($d['cliente_id'] ?? 0);
+        $mascota = (int)($d['mascota_id'] ?? 0);
+        $ids     = implode(',', array_map('intval', $d['examenes']));
+        $stmt->bind_param('isssiissddi', $d['veterinaria_id'], $d['fecha'], $d['nombre'], $d['especie'], $cliente, $mascota,
+            $ids, $d['descripcion'], $d['valor'], $d['costo'], $d['usuario_id']);
+        $ok = $stmt->execute();
+        $id = $ok ? (int)$stmt->insert_id : 0;
+        $stmt->close();
+        return $id;
+    }
+
+    /** Órdenes de la sucursal (todas o solo las de un doctor), más recientes primero; con el nombre del doctor y los ids de exámenes */
+    public function getOrdenes(int $veterinaria_id, ?int $usuario_id = null, ?string $estado = null): array {
+        $sql = 'SELECT o.*, u.nombre AS doctor_nombre FROM laboratorio_ordenes o LEFT JOIN usuarios u ON u.id = o.usuario_id
+                 WHERE o.veterinaria_id = ?';
+        $tipos = 'i'; $params = [$veterinaria_id];
+        if ($usuario_id !== null) { $sql .= ' AND o.usuario_id = ?'; $tipos .= 'i'; $params[] = $usuario_id; }
+        if ($estado !== null)     { $sql .= ' AND o.estado = ?';     $tipos .= 's'; $params[] = $estado; }
+        $stmt = $this->db->prepare($sql . ' ORDER BY o.id DESC');
+        $stmt->bind_param($tipos, ...$params);
+        $stmt->execute();
+        $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
+        foreach ($rows as &$r) {
+            $r['examenes_ids'] = array_values(array_filter(array_map('intval', explode(',', (string)$r['examenes']))));
+        }
+        unset($r);
+        return $rows;
+    }
+
+    public function getOrden(int $id, int $veterinaria_id): ?array {
+        foreach ($this->getOrdenes($veterinaria_id) as $o) {
+            if ((int)$o['id'] === $id) return $o;
+        }
+        return null;
+    }
+
+    /** Pasa una orden pendiente a atendida (con el laboratorio creado) o anulada */
+    public function cambiarEstadoOrden(int $id, int $veterinaria_id, string $estado, int $laboratorio_id = 0): bool {
+        $stmt = $this->db->prepare(
+            "UPDATE laboratorio_ordenes SET estado = ?, laboratorio_id = NULLIF(?, 0)
+              WHERE id = ? AND veterinaria_id = ? AND estado = 'pendiente'"
+        );
+        $stmt->bind_param('siii', $estado, $laboratorio_id, $id, $veterinaria_id);
+        $stmt->execute();
+        $ok = $stmt->affected_rows > 0;
+        $stmt->close();
+        return $ok;
     }
 
     // ── Catálogo de exámenes (costos fijos por sucursal) ──

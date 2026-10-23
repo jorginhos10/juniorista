@@ -22,7 +22,7 @@ class TratamientoController {
     private const PESTANAS = ['pendientes', 'completos', 'cancelados'];
 
     protected TratamientoModel $model;
-    private VeterinariaModel   $vetModel;
+    protected VeterinariaModel $vetModel;
 
     public function __construct() {
         $this->requiereAutenticacion();
@@ -92,6 +92,9 @@ class TratamientoController {
         return '';
     }
 
+    /** Se ejecuta tras crear un registro (Laboratorios marca como atendida la orden del doctor de la que viene) */
+    protected function despuesDeCrear(int $id, array $datos): void {}
+
     /** Datos adicionales para la vista por día (Peluquería agrega el reparto negocio / peluquería) */
     protected function datosExtraDia(int $veterinaria_id, string $fecha, string $iniSemana, string $finSemana): array {
         return [];
@@ -143,6 +146,7 @@ class TratamientoController {
             $datos['usuario_id'] = (int)$_SESSION['usuario_id'];
             $nuevoId = $this->model->crear($datos, $datos['abono_inicial'], $datos['nota_abono']);
             $ok  = $nuevoId > 0;
+            if ($ok) $this->despuesDeCrear($nuevoId, $datos);
             $msg = ucfirst($this->modulo['singular']) . ' de ' . $datos['nombre'] . ' agregado.';
             if ($ok && $this->model->usaAbonos()) {
                 $saldo = $datos['valor'] - $datos['abono_inicial'];
@@ -348,7 +352,7 @@ class TratamientoController {
         return ($d && $d->format('Y-m-d') === $f) ? $f : null;
     }
 
-    private function veterinariaActual(array $veterinarias): int {
+    protected function veterinariaActual(array $veterinarias): int {
         $veterinaria_id = (int)($_SESSION['veterinaria_id'] ?? 0);
         if ($veterinaria_id === 0 && !empty($veterinarias)) {
             $veterinaria_id = (int)$veterinarias[0]['id'];
@@ -364,7 +368,7 @@ class TratamientoController {
         }
     }
 
-    private function redirect(string $ruta): void {
+    protected function redirect(string $ruta): void {
         header('Location: ' . BASE_URL . '/' . $ruta);
         exit;
     }

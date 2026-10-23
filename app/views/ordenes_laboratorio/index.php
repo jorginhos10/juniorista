@@ -2,10 +2,9 @@
 // Órdenes de laboratorio del doctor: informativo. Sin costos, abonos ni importes; solo exámenes y el valor a cobrar que se manda.
 $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE;
 $estados = [
-    'por_cobrar' => ['Por cobrar',   'warning'],
-    'parcial'    => ['Pago parcial', 'info'],
-    'pagada'     => ['Pagada',       'success'],
-    'cancelada'  => ['Cancelada',    'secondary'],
+    'pendiente' => ['En caja',   'warning'],
+    'atendida'  => ['Atendida',  'success'],
+    'anulada'   => ['Anulada',   'secondary'],
 ];
 ?>
 <!DOCTYPE html>
@@ -45,7 +44,7 @@ $estados = [
         <header class="topbar">
             <div class="topbar-left">
                 <h5 class="topbar-title mb-0">Órdenes de laboratorio</h5>
-                <p class="topbar-date mb-0">Envía los exámenes y el valor a cobrar; caja se encarga del pago</p>
+                <p class="topbar-date mb-0">Informativo: envía los exámenes y el valor a cobrar; caja registra el cobro</p>
             </div>
             <div class="topbar-right">
                 <?php require ROOT . '/app/views/layouts/vet_selector.php'; ?>
@@ -120,7 +119,7 @@ $estados = [
                                     <?php if ($esAdmin): ?><td class="small text-muted"><?= htmlspecialchars($o['solicito']) ?></td><?php endif; ?>
                                     <td class="text-center"><span class="badge bg-<?= $color ?>-subtle text-<?= $color ?>-emphasis"><?= $etq ?></span></td>
                                     <td class="text-center">
-                                        <?php if ($o['estado'] === 'por_cobrar'): ?>
+                                        <?php if ($o['estado'] === 'pendiente'): ?>
                                         <button class="btn btn-sm btn-outline-danger btn-accion" title="Anular orden"
                                                 onclick='anular(<?= $o['id'] ?>, <?= json_encode($o['nombre'] . ' · ' . $o['descripcion'], $jsonFlags) ?>)'>
                                             <i class="bi bi-x-lg"></i>

@@ -253,6 +253,11 @@ switch ($uri) {
         (new OrdenLaboratorioController())->anular();
         break;
 
+    case 'laboratorio/orden/descartar':
+        require_once ROOT . '/app/controllers/LaboratorioController.php';
+        (new LaboratorioController())->descartarOrden();
+        break;
+
     case 'laboratorio/abonar':
         require_once ROOT . '/app/controllers/LaboratorioController.php';
         (new LaboratorioController())->abonar();

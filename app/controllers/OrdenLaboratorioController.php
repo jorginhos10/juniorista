@@ -6,7 +6,8 @@ require_once ROOT . '/app/models/VeterinariaModel.php';
 /**
  * Órdenes de laboratorio (módulo del doctor): solo informativo.
  * El doctor elige los exámenes del catálogo y manda un valor a cobrar; no ve costos, abonos ni dinero.
- * La orden queda en Laboratorios (cajera), que es quien registra los abonos y el cobro.
+ * La orden es solo informativa: no es un cobro ni entra en reportes. Caja la ve en Laboratorios como «orden por registrar»
+ * y es quien la registra (con sus abonos) o la descarta.
  */
 class OrdenLaboratorioController {
 
@@ -28,22 +29,16 @@ class OrdenLaboratorioController {
         $esAdmin        = ($_SESSION['usuario_rol'] ?? '') === 'admin';
         $usuario_id     = (int)$_SESSION['usuario_id'];
 
-        // Cada doctor ve sus órdenes (el administrador ve todas); sin ningún importe: solo el estado de cobro
-        $ordenes = [];
-        foreach ($this->model->getTodos($veterinaria_id) as $t) {
-            if (!$esAdmin && (int)$t['usuario_id'] !== $usuario_id) continue;
-            $estado = $t['situacion'] === 'cancelados' ? 'cancelada'
-                    : ((float)$t['saldo'] <= 0 ? 'pagada' : ((float)$t['abonado'] > 0 ? 'parcial' : 'por_cobrar'));
-            $ordenes[] = [
-                'id'          => (int)$t['id'],
-                'fecha'       => $t['fecha'],
-                'nombre'      => $t['nombre'],
-                'especie'     => $t['especie'],
-                'descripcion' => $t['descripcion'],
-                'solicito'    => $t['usuario_nombre'] ?? '',
-                'estado'      => $estado,
-            ];
-        }
+        // Cada doctor ve sus órdenes (el administrador ve todas); sin ningún importe: solo el estado de la orden
+        $ordenes = array_map(fn($o) => [
+            'id'          => (int)$o['id'],
+            'fecha'       => $o['fecha'],
+            'nombre'      => $o['nombre'],
+            'especie'     => $o['especie'],
+            'descripcion' => $o['descripcion'],
+            'solicito'    => $o['doctor_nombre'] ?? '',
+            'estado'      => $o['estado'],
+        ], $this->model->getOrdenes($veterinaria_id, $esAdmin ? null : $usuario_id));
 
         // Catálogo sin costos: el doctor solo elige exámenes
         $examenes = array_map(fn($x) => [
@@ -104,18 +99,19 @@ class OrdenLaboratorioController {
                 [$cliente_id, $mascota_id] = $this->model->validarVinculos($veterinaria_id, (int)($_POST['cliente_id'] ?? 0), (int)($_POST['mascota_id'] ?? 0));
                 $descripcion = mb_substr(implode('+', array_column($examenes, 'codigo')), 0, 255);
                 $nota = mb_substr(trim($_POST['nota'] ?? ''), 0, 255 - mb_strlen($descripcion) - 3);
-                $id = $this->model->crear([
+                $id = $this->model->crearOrden([
                     'veterinaria_id' => $veterinaria_id,
                     'fecha'          => date('Y-m-d'),
                     'nombre'         => $nombre,
                     'especie'        => $especie,
+                    'examenes'       => array_column($examenes, 'id'),
                     'descripcion'    => $nota !== '' ? $descripcion . ' · ' . $nota : $descripcion,
                     'valor'          => $valor,
                     'costo'          => $costo,
                     'usuario_id'     => (int)$_SESSION['usuario_id'],
                     'cliente_id'     => $cliente_id,
                     'mascota_id'     => $mascota_id,
-                ], 0, '');
+                ]);
                 $_SESSION[$id > 0 ? 'flash_success' : 'flash_error'] = $id > 0
                     ? 'Orden de ' . $nombre . ' enviada a caja (' . $descripcion . ').'
                     : 'No se pudo enviar la orden.';
@@ -124,20 +120,20 @@ class OrdenLaboratorioController {
         $this->redirect('ordenes-laboratorio');
     }
 
-    /** POST: anula una orden que todavía no tiene abonos (la ve la cajera como cancelada de la lista) */
+    /** POST: anula una orden que caja todavía no ha registrado */
     public function anular(): void {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') $this->redirect('ordenes-laboratorio');
 
         $veterinaria_id = $this->veterinariaActual($this->vetModel->getAll());
         $id   = (int)($_POST['id'] ?? 0);
-        $t    = $this->model->getConSaldo($id, $veterinaria_id);
+        $o    = $this->model->getOrden($id, $veterinaria_id);
         $esAdmin = ($_SESSION['usuario_rol'] ?? '') === 'admin';
 
-        if (!$t || (!$esAdmin && (int)$t['usuario_id'] !== (int)$_SESSION['usuario_id'])) {
+        if (!$o || (!$esAdmin && (int)$o['usuario_id'] !== (int)$_SESSION['usuario_id'])) {
             $_SESSION['flash_error'] = 'No se encontró la orden.';
-        } elseif ((float)$t['abonado'] > 0) {
-            $_SESSION['flash_error'] = 'La orden ya tiene pagos registrados en caja; no se puede anular desde aquí.';
-        } elseif ($this->model->eliminar($id, $veterinaria_id)) {
+        } elseif ($o['estado'] !== 'pendiente') {
+            $_SESSION['flash_error'] = 'Caja ya atendió esta orden; no se puede anular desde aquí.';
+        } elseif ($this->model->cambiarEstadoOrden($id, $veterinaria_id, 'anulada')) {
             $_SESSION['flash_success'] = 'Orden anulada.';
         } else {
             $_SESSION['flash_error'] = 'No se pudo anular la orden.';

@@ -131,6 +131,39 @@ $Su = ucfirst($S);
             </div>
             <?php endif; ?>
 
+            <?php if ($conCatalogo && !empty($ordenes)): ?>
+            <!-- Órdenes de los doctores: informativas; caja las registra (con sus abonos) o las descarta -->
+            <div class="card border-0 shadow-sm mb-3" style="border-left:4px solid #f59e0b !important">
+                <div class="card-body py-3">
+                    <div class="fw-semibold mb-2"><i class="bi bi-inbox text-warning me-1"></i>Órdenes de doctores por registrar
+                        <span class="badge bg-warning-subtle text-warning-emphasis ms-1"><?= count($ordenes) ?></span></div>
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle mb-0">
+                            <tbody>
+                                <?php foreach ($ordenes as $o): ?>
+                                <tr>
+                                    <td class="small text-nowrap"><?= date('d/m/Y', strtotime($o['fecha'])) ?></td>
+                                    <td class="fw-semibold"><?= $o['especie'] === 'gato' ? '🐱' : '🐶' ?> <?= htmlspecialchars($o['nombre']) ?></td>
+                                    <td><?= htmlspecialchars($o['descripcion']) ?></td>
+                                    <td class="small text-muted"><i class="bi bi-person-badge me-1"></i><?= htmlspecialchars($o['doctor_nombre'] ?? '') ?></td>
+                                    <td class="text-end monto"><?= $money($o['valor']) ?></td>
+                                    <td class="text-end text-nowrap">
+                                        <button class="btn btn-sm btn-success py-0" onclick='registrarOrden(<?= json_encode([
+                                            'id' => (int)$o['id'], 'nombre' => $o['nombre'], 'especie' => $o['especie'], 'cliente_id' => (int)$o['cliente_id'],
+                                            'mascota_id' => (int)$o['mascota_id'], 'examenes' => $o['examenes_ids'], 'descripcion' => $o['descripcion'], 'valor' => (float)$o['valor'],
+                                        ], $jsonFlags) ?>)'><i class="bi bi-check2 me-1"></i>Registrar</button>
+                                        <button class="btn btn-sm btn-outline-danger py-0" title="Descartar orden"
+                                                onclick='descartarOrden(<?= (int)$o['id'] ?>, <?= json_encode($o['nombre'] . ' · ' . $o['descripcion'], $jsonFlags) ?>)'><i class="bi bi-x-lg"></i></button>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
+
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white border-0 pt-3 pb-0">
                     <div class="d-flex justify-content-between align-items-end gap-2 flex-wrap">
@@ -269,6 +302,7 @@ $Su = ucfirst($S);
         <div class="modal-content border-0 shadow">
             <form method="POST" action="<?= $R ?>/guardar" autocomplete="off" id="formNuevo">
                 <input type="hidden" name="id" value="0">
+                <input type="hidden" name="orden_id" id="n-orden" value="0">
                 <input type="hidden" name="tab" value="pendientes">
                 <div class="modal-header border-0 pb-0">
                     <h5 class="modal-title fw-bold"><i class="bi bi-<?= $modulo['icono'] ?> text-primary me-2"></i>Nuevo <?= $S ?></h5>
@@ -557,6 +591,9 @@ $Su = ucfirst($S);
     </div>
 </div>
 
+<?php if ($conCatalogo): ?>
+<form method="POST" action="<?= $R ?>/orden/descartar" id="formDescartar" class="d-none"><input type="hidden" name="id"></form>
+<?php endif; ?>
 <form method="POST" action="<?= $R ?>/reactivar" id="formReactivar" class="d-none">
     <input type="hidden" name="id">
     <input type="hidden" name="tab" class="js-tab">
@@ -736,7 +773,7 @@ const CON_CATALOGO = <?= $conCatalogo ? 'true' : 'false' ?>;
 
 // p = 'n' (nuevo) o 'e' (editar). Sin catálogo (tratamiento) no hace nada.
 function prepararExamenes(p) {
-    if (!CON_CATALOGO) return { cargar() {} };
+    if (!CON_CATALOGO) return { cargar() {}, precargar() {} };
     const buscar = $id(p + '-examen-buscar'), chips = $id(p + '-examen-chips'), ocultos = $id(p + '-examen-hidden');
     const hint = $id(p + '-costo-hint'), valor = $id(p + '-valor'), desc = $id(p + '-descripcion');
     let elegidos = [], costoBase = 0, abonado = 0;
@@ -793,6 +830,12 @@ function prepararExamenes(p) {
             abonado = Number(yaAbonado) || 0;
             pintar();
         },
+        // Exámenes de una orden del doctor: se eligen solos y el valor queda como lo mandó
+        precargar(ids, descripcion) {
+            elegidos = EXAMENES.filter(x => ids.includes(x.id));
+            if (descripcion) desc.value = descripcion;
+            pintar();
+        },
     };
 }
 const BASE_URL_CFG = '<?= BASE_URL ?>/configuracion/laboratorios';
@@ -803,11 +846,31 @@ function nuevoRegistro() {
     $id('formNuevo').reset();
     vincNuevo.cargar(0, 0);
     examenesNuevo.cargar(0, 0);
+    if ($id('n-orden')) $id('n-orden').value = 0;
     $id('n-fecha').value = HOY;
     abonoTocado = false;
     actualizarHintNuevo();
     modal('modalNuevo').show();
     setTimeout(() => $id('n-nombre').focus(), 300);
+}
+
+// Caja registra una orden del doctor: el formulario se abre con sus datos y se manda `orden_id` para marcarla atendida
+function registrarOrden(o) {
+    nuevoRegistro();
+    $id('n-orden').value = o.id;
+    $id('n-nombre').value = o.nombre;
+    $id('n-especie').value = o.especie;
+    vincNuevo.cargar(o.mascota_id, o.cliente_id);
+    $id('n-valor').value = Number(o.valor).toFixed(2);
+    examenesNuevo.precargar(o.examenes, o.descripcion);
+    $id('n-valor').dispatchEvent(new Event('input'));
+}
+
+function descartarOrden(id, texto) {
+    if (!confirm('¿Descartar la orden «' + texto + '»? No generará ningún cobro.')) return;
+    const f = $id('formDescartar');
+    f.id.value = id;
+    f.submit();
 }
 
 let abonoTocado = false;
