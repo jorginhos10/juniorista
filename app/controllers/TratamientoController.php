@@ -5,13 +5,17 @@ require_once ROOT . '/app/models/VeterinariaModel.php';
 
 class TratamientoController {
 
-    // Peluquería reutiliza este controlador cambiando esta configuración (ver PeluqueriaController)
+    // Peluquería y laboratorios reutilizan este controlador cambiando esta configuración (ver sus controladores)
     protected array $modulo = [
         'ruta'        => 'tratamiento',
         'titulo'      => 'Tratamiento',
+        'tituloLista' => 'Tratamientos',
+        'subtitulo'   => 'Tratamientos y sus abonos',
         'singular'    => 'tratamiento',
         'plural'      => 'tratamientos',
         'icono'       => 'capsule',
+        'prefijo'     => 'ABO',     // sigla del comprobante de abono
+        'catalogo'    => false,     // true: el valor se compara con el costo de un catálogo de exámenes (laboratorios)
         'placeholder' => 'Ej: Tratamiento dermatológico, curaciones por 10 días…',
     ];
 
@@ -59,6 +63,7 @@ class TratamientoController {
             $datos['mascotas']     = $this->model->getMascotasSucursal($veterinaria_id);
             $datos['pestana']      = in_array($_GET['tab'] ?? '', self::PESTANAS, true) ? $_GET['tab'] : 'pendientes';
             $datos['abrir']        = (int)($_GET['ver'] ?? 0);
+            $datos += $this->datosExtraLista($veterinaria_id);
             $this->render('tratamientos/lista', $datos);
             return;
         }
@@ -75,6 +80,16 @@ class TratamientoController {
         ];
         $datos += $this->datosExtraDia($veterinaria_id, $fecha, $iniSemana, $finSemana);
         $this->render('tratamientos/index', $datos);
+    }
+
+    /** Datos adicionales para la lista con abonos (Laboratorios agrega su catálogo de exámenes) */
+    protected function datosExtraLista(int $veterinaria_id): array {
+        return [];
+    }
+
+    /** Ajusta o valida los datos antes de guardar; devuelve el mensaje de error o '' (Laboratorios calcula el costo y fija el valor mínimo) */
+    protected function ajustarDatos(array &$datos, int $veterinaria_id, int $id): string {
+        return '';
     }
 
     /** Datos adicionales para la vista por día (Peluquería agrega el reparto negocio / peluquería) */
@@ -104,6 +119,12 @@ class TratamientoController {
             [$datos['cliente_id'], $datos['mascota_id']] = $this->model->validarVinculos(
                 $veterinaria_id, (int)($_POST['cliente_id'] ?? 0), (int)($_POST['mascota_id'] ?? 0)
             );
+        }
+
+        $errorAjuste = $this->ajustarDatos($datos, $veterinaria_id, $id);
+        if ($errorAjuste !== '') {
+            $_SESSION['flash_error'] = $errorAjuste;
+            $this->redirect($volver);
         }
 
         if ($id > 0) {
@@ -177,7 +198,7 @@ class TratamientoController {
             $_SESSION['flash_error'] = $res;
         } else {
             $_SESSION['flash_success'] = 'Abono de $' . number_format($monto, 2) . ' registrado para ' . $t['nombre'] . '. '
-                . ($t['saldo'] > 0 ? 'Saldo pendiente: $' . number_format($t['saldo'], 2) . '.' : '¡Tratamiento pagado por completo!');
+                . ($t['saldo'] > 0 ? 'Saldo pendiente: $' . number_format($t['saldo'], 2) . '.' : '¡' . ucfirst($this->modulo['singular']) . ' pagado por completo!');
             $_SESSION['abono_nuevo'] = $res;   // para resaltar e imprimir el abono recién registrado
         }
         $pestana = !$t ? 'pendientes' : ($t['estado'] === 'cancelado' ? 'cancelados' : ($t['saldo'] > 0 ? 'pendientes' : 'completos'));
@@ -208,14 +229,14 @@ class TratamientoController {
         header('Content-Type: application/json');
         if (!$t) {
             http_response_code(404);
-            echo json_encode(['error' => 'Tratamiento no encontrado.']);
+            echo json_encode(['error' => ucfirst($this->modulo['singular']) . ' no encontrado.']);
             exit;
         }
         // Cada abono con su radicado (mismo patrón que las ventas)
         $sucursal = $this->vetModel->findById($veterinaria_id)['nombre'] ?? '';
         $abonos   = $this->model->getAbonos($id, $veterinaria_id);
         foreach ($abonos as &$a) {
-            $a['comprobante'] = VeterinariaModel::serialServicio($sucursal, 'ABO', (int)$a['id'], $a['created_at']);
+            $a['comprobante'] = VeterinariaModel::serialServicio($sucursal, $this->modulo['prefijo'], (int)$a['id'], $a['created_at']);
         }
         unset($a);
         echo json_encode([
@@ -239,6 +260,7 @@ class TratamientoController {
         }
         $this->render('tratamientos/recibo_abono', [
             'r'        => $recibo,
+            'modulo'   => $this->modulo,
             'especies' => TratamientoModel::ESPECIES,
             'usuario'  => ['nombre' => $_SESSION['usuario_nombre']],
         ]);
@@ -250,7 +272,9 @@ class TratamientoController {
         $veterinaria_id = $this->veterinariaActual($this->vetModel->getAll());
         $motivo = mb_substr(trim($_POST['motivo'] ?? ''), 0, 200);
         $ok = $this->model->cancelar((int)($_POST['id'] ?? 0), $veterinaria_id, $motivo, date('Y-m-d'));
-        $_SESSION[$ok ? 'flash_success' : 'flash_error'] = $ok ? 'Tratamiento cancelado.' : 'No se pudo cancelar el tratamiento.';
+        $_SESSION[$ok ? 'flash_success' : 'flash_error'] = $ok
+            ? ucfirst($this->modulo['singular']) . ' cancelado.'
+            : 'No se pudo cancelar el ' . $this->modulo['singular'] . '.';
         $this->redirect($this->urlVolver('', $ok ? 'cancelados' : ($_POST['tab'] ?? '')));
     }
 
@@ -261,11 +285,13 @@ class TratamientoController {
         $id = (int)($_POST['id'] ?? 0);
         $ok = $this->model->reactivar($id, $veterinaria_id);
         $t  = $ok ? $this->model->getConSaldo($id, $veterinaria_id) : null;
-        $_SESSION[$ok ? 'flash_success' : 'flash_error'] = $ok ? 'Tratamiento reactivado.' : 'No se pudo reactivar el tratamiento.';
+        $_SESSION[$ok ? 'flash_success' : 'flash_error'] = $ok
+            ? ucfirst($this->modulo['singular']) . ' reactivado.'
+            : 'No se pudo reactivar el ' . $this->modulo['singular'] . '.';
         $this->redirect($this->urlVolver('', $t ? ($t['saldo'] > 0 ? 'pendientes' : 'completos') : 'cancelados'));
     }
 
-    /** Las acciones de abonos solo existen en Tratamiento (peluquería y ventas son recaudo directo) */
+    /** Las acciones de abonos solo existen en Tratamiento y Laboratorios (peluquería y ventas son recaudo directo) */
     private function soloConAbonos(): void {
         if (!$this->model->usaAbonos()) {
             http_response_code(404);
@@ -311,13 +337,13 @@ class TratamientoController {
         } elseif ($datos['abono_inicial'] > 0 && $datos['fecha'] > date('Y-m-d')) {
             $datos['error'] = 'No se puede registrar un abono con fecha futura.';
         } elseif ($datos['abono_inicial'] < 0 || $datos['abono_inicial'] > $datos['valor']) {
-            $datos['error'] = 'El abono inicial debe estar entre 0 y el valor del tratamiento.';
+            $datos['error'] = 'El abono inicial debe estar entre 0 y el valor del ' . $this->modulo['singular'] . '.';
         }
 
         return $datos;
     }
 
-    private function fechaValida(string $f): ?string {
+    protected function fechaValida(string $f): ?string {
         $d = DateTime::createFromFormat('!Y-m-d', $f);
         return ($d && $d->format('Y-m-d') === $f) ? $f : null;
     }

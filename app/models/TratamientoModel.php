@@ -12,8 +12,11 @@ class TratamientoModel {
     // Peluquería reutiliza este modelo con su propia tabla (ver PeluqueriaModel)
     protected string $tabla = 'tratamientos';
 
-    // Los tratamientos se pagan con abonos; peluquería se cobra completa el mismo día
+    // Los tratamientos y los laboratorios se pagan con abonos; peluquería se cobra completa el mismo día
     protected bool $conAbonos = true;
+
+    // Tabla de abonos del módulo (la columna que apunta al registro se llama tratamiento_id en todas)
+    protected string $tablaAbonos = 'tratamiento_abonos';
 
     protected mysqli $db;
 
@@ -82,8 +85,9 @@ class TratamientoModel {
         return $this->conAbonos;
     }
 
-    private const SQL_ABONADO =
-        '(SELECT COALESCE(SUM(a.monto), 0) FROM tratamiento_abonos a WHERE a.tratamiento_id = t.id AND a.activo = 1)';
+    private function sqlAbonado(): string {
+        return "(SELECT COALESCE(SUM(a.monto), 0) FROM {$this->tablaAbonos} a WHERE a.tratamiento_id = t.id AND a.activo = 1)";
+    }
 
     // ── Registro diario (peluquería) ──────────────────────
 
@@ -123,10 +127,10 @@ class TratamientoModel {
     /** Cantidad y dinero recibido en un rango (para cierres y reportes): en tratamientos son los abonos */
     public function getTotalRango(int $veterinaria_id, string $desde, string $hasta): array {
         if ($this->conAbonos) {
-            $sql = 'SELECT COUNT(*) AS cantidad, COALESCE(SUM(a.monto), 0) AS total
-                      FROM tratamiento_abonos a
-                      JOIN tratamientos t ON t.id = a.tratamiento_id AND t.activo = 1
-                     WHERE a.activo = 1 AND a.veterinaria_id = ? AND a.fecha BETWEEN ? AND ?';
+            $sql = "SELECT COUNT(*) AS cantidad, COALESCE(SUM(a.monto), 0) AS total
+                      FROM {$this->tablaAbonos} a
+                      JOIN {$this->tabla} t ON t.id = a.tratamiento_id AND t.activo = 1
+                     WHERE a.activo = 1 AND a.veterinaria_id = ? AND a.fecha BETWEEN ? AND ?";
         } else {
             $sql = "SELECT COUNT(*) AS cantidad, COALESCE(SUM(valor), 0) AS total
                       FROM {$this->tabla}
@@ -204,14 +208,14 @@ class TratamientoModel {
     /** Todos los tratamientos de la sucursal con lo abonado, el saldo y su situación (pendiente / completo / cancelado) */
     public function getTodos(int $veterinaria_id): array {
         $stmt = $this->db->prepare(
-            'SELECT t.*, ' . self::SQL_ABONADO . ' AS abonado,
-                    (SELECT COUNT(*) FROM tratamiento_abonos a WHERE a.tratamiento_id = t.id AND a.activo = 1) AS total_abonos,
-                    (SELECT MAX(a.fecha) FROM tratamiento_abonos a WHERE a.tratamiento_id = t.id AND a.activo = 1) AS ultimo_abono,
-                    NULLIF(TRIM(CONCAT(COALESCE(c.nombre, \'\'), \' \', COALESCE(c.apellido, \'\'))), \'\') AS cliente_nombre
-               FROM tratamientos t
+            "SELECT t.*, {$this->sqlAbonado()} AS abonado,
+                    (SELECT COUNT(*) FROM {$this->tablaAbonos} a WHERE a.tratamiento_id = t.id AND a.activo = 1) AS total_abonos,
+                    (SELECT MAX(a.fecha) FROM {$this->tablaAbonos} a WHERE a.tratamiento_id = t.id AND a.activo = 1) AS ultimo_abono,
+                    NULLIF(TRIM(CONCAT(COALESCE(c.nombre, ''), ' ', COALESCE(c.apellido, ''))), '') AS cliente_nombre
+               FROM {$this->tabla} t
           LEFT JOIN clientes c ON c.id = t.cliente_id
               WHERE t.activo = 1 AND t.veterinaria_id = ?
-           ORDER BY t.fecha DESC, t.id DESC'
+           ORDER BY t.fecha DESC, t.id DESC"
         );
         $stmt->bind_param('i', $veterinaria_id);
         $stmt->execute();
@@ -229,8 +233,8 @@ class TratamientoModel {
     /** Tratamiento con su valor, lo abonado y el saldo */
     public function getConSaldo(int $id, int $veterinaria_id): ?array {
         $stmt = $this->db->prepare(
-            'SELECT t.*, ' . self::SQL_ABONADO . ' AS abonado
-               FROM tratamientos t WHERE t.id = ? AND t.veterinaria_id = ? AND t.activo = 1'
+            "SELECT t.*, {$this->sqlAbonado()} AS abonado
+               FROM {$this->tabla} t WHERE t.id = ? AND t.veterinaria_id = ? AND t.activo = 1"
         );
         $stmt->bind_param('ii', $id, $veterinaria_id);
         $stmt->execute();
@@ -244,11 +248,11 @@ class TratamientoModel {
     /** Historial de abonos de un tratamiento */
     public function getAbonos(int $tratamiento_id, int $veterinaria_id): array {
         $stmt = $this->db->prepare(
-            'SELECT a.id, a.fecha, a.monto, a.nota, a.created_at, u.nombre AS usuario_nombre
-               FROM tratamiento_abonos a
+            "SELECT a.id, a.fecha, a.monto, a.nota, a.created_at, u.nombre AS usuario_nombre
+               FROM {$this->tablaAbonos} a
           LEFT JOIN usuarios u ON u.id = a.usuario_id
               WHERE a.activo = 1 AND a.tratamiento_id = ? AND a.veterinaria_id = ?
-           ORDER BY a.fecha ASC, a.id ASC'
+           ORDER BY a.fecha ASC, a.id ASC"
         );
         $stmt->bind_param('ii', $tratamiento_id, $veterinaria_id);
         $stmt->execute();
@@ -260,18 +264,18 @@ class TratamientoModel {
     /** Datos para la factura de un abono: abono, tratamiento, sucursal y saldos antes/después */
     public function getReciboAbono(int $abono_id, int $veterinaria_id): ?array {
         $stmt = $this->db->prepare(
-            'SELECT a.id, a.fecha, a.monto, a.nota, a.created_at, a.tratamiento_id,
+            "SELECT a.id, a.fecha, a.monto, a.nota, a.created_at, a.tratamiento_id,
                     t.nombre, t.especie, t.descripcion, t.fecha AS fecha_tratamiento, t.valor, t.estado,
                     u.nombre AS usuario_nombre,
                     v.nombre AS sucursal, v.ruc, v.telefono, v.direccion, v.email, v.logo,
-                    (SELECT COALESCE(SUM(p.monto), 0) FROM tratamiento_abonos p
+                    (SELECT COALESCE(SUM(p.monto), 0) FROM {$this->tablaAbonos} p
                       WHERE p.tratamiento_id = a.tratamiento_id AND p.activo = 1
                         AND (p.fecha < a.fecha OR (p.fecha = a.fecha AND p.id < a.id))) AS abonado_antes
-               FROM tratamiento_abonos a
-               JOIN tratamientos t  ON t.id = a.tratamiento_id
+               FROM {$this->tablaAbonos} a
+               JOIN {$this->tabla} t  ON t.id = a.tratamiento_id
           LEFT JOIN usuarios u      ON u.id = a.usuario_id
           LEFT JOIN veterinarias v  ON v.id = a.veterinaria_id
-              WHERE a.id = ? AND a.veterinaria_id = ? AND a.activo = 1'
+              WHERE a.id = ? AND a.veterinaria_id = ? AND a.activo = 1"
         );
         $stmt->bind_param('ii', $abono_id, $veterinaria_id);
         $stmt->execute();
@@ -288,7 +292,7 @@ class TratamientoModel {
         $this->db->begin_transaction();
 
         // Bloquea el tratamiento para que dos abonos simultáneos no superen el saldo
-        $stmt = $this->db->prepare('SELECT valor, fecha, estado FROM tratamientos WHERE id = ? AND veterinaria_id = ? AND activo = 1 FOR UPDATE');
+        $stmt = $this->db->prepare("SELECT valor, fecha, estado FROM {$this->tabla} WHERE id = ? AND veterinaria_id = ? AND activo = 1 FOR UPDATE");
         $stmt->bind_param('ii', $tratamiento_id, $veterinaria_id);
         $stmt->execute();
         $t = $stmt->get_result()->fetch_assoc();
@@ -327,10 +331,10 @@ class TratamientoModel {
         $this->db->begin_transaction();
 
         $stmt = $this->db->prepare(
-            'SELECT a.tratamiento_id, t.valor, t.fecha, t.estado
-               FROM tratamiento_abonos a JOIN tratamientos t ON t.id = a.tratamiento_id
+            "SELECT a.tratamiento_id, t.valor, t.fecha, t.estado
+               FROM {$this->tablaAbonos} a JOIN {$this->tabla} t ON t.id = a.tratamiento_id
               WHERE a.id = ? AND a.veterinaria_id = ? AND a.activo = 1 AND t.activo = 1
-                FOR UPDATE'
+                FOR UPDATE"
         );
         $stmt->bind_param('ii', $id, $veterinaria_id);
         $stmt->execute();
@@ -347,7 +351,7 @@ class TratamientoModel {
         } else {
             // Lo abonado por los demás abonos + este no puede superar el valor
             $stmt = $this->db->prepare(
-                'SELECT COALESCE(SUM(monto), 0) FROM tratamiento_abonos WHERE tratamiento_id = ? AND activo = 1 AND id <> ?'
+                "SELECT COALESCE(SUM(monto), 0) FROM {$this->tablaAbonos} WHERE tratamiento_id = ? AND activo = 1 AND id <> ?"
             );
             $stmt->bind_param('ii', $a['tratamiento_id'], $id);
             $stmt->execute();
@@ -361,7 +365,7 @@ class TratamientoModel {
         }
 
         if ($error === '') {
-            $stmt = $this->db->prepare('UPDATE tratamiento_abonos SET monto = ?, fecha = ?, nota = NULLIF(?, \'\') WHERE id = ?');
+            $stmt = $this->db->prepare("UPDATE {$this->tablaAbonos} SET monto = ?, fecha = ?, nota = NULLIF(?, '') WHERE id = ?");
             $stmt->bind_param('dssi', $monto, $fecha, $nota, $id);
             if (!$stmt->execute()) {
                 $error = 'Error al actualizar el abono.';
@@ -378,7 +382,7 @@ class TratamientoModel {
     }
 
     public function eliminarAbono(int $id, int $veterinaria_id): bool {
-        $stmt = $this->db->prepare('UPDATE tratamiento_abonos SET activo = 0 WHERE id = ? AND veterinaria_id = ?');
+        $stmt = $this->db->prepare("UPDATE {$this->tablaAbonos} SET activo = 0 WHERE id = ? AND veterinaria_id = ?");
         $stmt->bind_param('ii', $id, $veterinaria_id);
         $stmt->execute();
         $ok = $stmt->affected_rows > 0;
@@ -387,7 +391,7 @@ class TratamientoModel {
     }
 
     public function sumaAbonos(int $tratamiento_id): float {
-        $stmt = $this->db->prepare('SELECT COALESCE(SUM(monto), 0) FROM tratamiento_abonos WHERE tratamiento_id = ? AND activo = 1');
+        $stmt = $this->db->prepare("SELECT COALESCE(SUM(monto), 0) FROM {$this->tablaAbonos} WHERE tratamiento_id = ? AND activo = 1");
         $stmt->bind_param('i', $tratamiento_id);
         $stmt->execute();
         $total = (float)$stmt->get_result()->fetch_row()[0];
@@ -397,7 +401,7 @@ class TratamientoModel {
 
     public function cancelar(int $id, int $veterinaria_id, string $motivo, string $fecha): bool {
         $stmt = $this->db->prepare(
-            "UPDATE tratamientos SET estado = 'cancelado', motivo_cancelacion = NULLIF(?, ''), fecha_cancelacion = ?
+            "UPDATE {$this->tabla} SET estado = 'cancelado', motivo_cancelacion = NULLIF(?, ''), fecha_cancelacion = ?
               WHERE id = ? AND veterinaria_id = ? AND activo = 1 AND estado = 'activo'"
         );
         $stmt->bind_param('ssii', $motivo, $fecha, $id, $veterinaria_id);
@@ -409,7 +413,7 @@ class TratamientoModel {
 
     public function reactivar(int $id, int $veterinaria_id): bool {
         $stmt = $this->db->prepare(
-            "UPDATE tratamientos SET estado = 'activo', motivo_cancelacion = NULL, fecha_cancelacion = NULL
+            "UPDATE {$this->tabla} SET estado = 'activo', motivo_cancelacion = NULL, fecha_cancelacion = NULL
               WHERE id = ? AND veterinaria_id = ? AND activo = 1 AND estado = 'cancelado'"
         );
         $stmt->bind_param('ii', $id, $veterinaria_id);
@@ -421,8 +425,8 @@ class TratamientoModel {
 
     private function insertarAbono(int $tratamiento_id, int $veterinaria_id, string $fecha, float $monto, string $nota, int $usuario_id): bool {
         $stmt = $this->db->prepare(
-            'INSERT INTO tratamiento_abonos (tratamiento_id, veterinaria_id, fecha, monto, nota, usuario_id)
-             VALUES (?, ?, ?, ?, NULLIF(?, \'\'), ?)'
+            "INSERT INTO {$this->tablaAbonos} (tratamiento_id, veterinaria_id, fecha, monto, nota, usuario_id)
+             VALUES (?, ?, ?, ?, NULLIF(?, ''), ?)"
         );
         $stmt->bind_param('iisdsi', $tratamiento_id, $veterinaria_id, $fecha, $monto, $nota, $usuario_id);
         $ok = $stmt->execute();

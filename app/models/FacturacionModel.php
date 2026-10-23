@@ -2,13 +2,13 @@
 
 require_once ROOT . '/config/Database.php';
 
-/** Vista unificada de todo lo cobrado: ventas, peluquería y laboratorios (recaudo directo) y abonos de tratamientos */
+/** Vista unificada de todo lo cobrado: ventas y peluquería (recaudo directo) y abonos de tratamientos y laboratorios */
 class FacturacionModel {
 
     public const TIPOS = [
         'venta'       => ['label' => 'Venta',             'icon' => 'bag-fill', 'color' => '#4f46e5', 'prefijo' => ''],
         'peluqueria'  => ['label' => 'Peluquería',        'icon' => 'scissors', 'color' => '#db2777', 'prefijo' => 'PEL'],
-        'laboratorio' => ['label' => 'Laboratorio',       'icon' => 'eyedropper', 'color' => '#7c3aed', 'prefijo' => 'LAB'],
+        'laboratorio' => ['label' => 'Abono laboratorio', 'icon' => 'eyedropper', 'color' => '#7c3aed', 'prefijo' => 'LAB'],
         'tratamiento' => ['label' => 'Abono tratamiento', 'icon' => 'capsule',  'color' => '#0891b2', 'prefijo' => 'ABO'],
     ];
 
@@ -16,6 +16,9 @@ class FacturacionModel {
 
     public function __construct() {
         $this->db = Database::getInstance()->getConnection();
+        // Crea las tablas de abonos de laboratorios si aún no existen (las consulta getMovimientos)
+        require_once ROOT . '/app/models/LaboratorioModel.php';
+        new LaboratorioModel();
     }
 
     /**
@@ -43,12 +46,17 @@ class FacturacionModel {
                         t.valor, t.activo = 0, u.nombre, NULL, t.descripcion, 0
                    FROM peluquerias t LEFT JOIN usuarios u ON u.id = t.usuario_id
                   WHERE t.veterinaria_id = ? AND t.fecha BETWEEN ? AND ?",
-            // Laboratorios: igual que peluquería (recaudo directo; desactivado = anulado)
+            // Laboratorios: igual que tratamientos, cada abono es un cobro en su propia fecha
             'laboratorio' =>
-                "SELECT 'laboratorio', t.id, t.fecha, t.created_at, t.descripcion, NULL, t.nombre, t.especie,
-                        t.valor, t.activo = 0, u.nombre, NULL, t.descripcion, 0
-                   FROM laboratorios t LEFT JOIN usuarios u ON u.id = t.usuario_id
-                  WHERE t.veterinaria_id = ? AND t.fecha BETWEEN ? AND ?",
+                "SELECT 'laboratorio', a.id, a.fecha, a.created_at,
+                        CONCAT(t.descripcion, ' · abono', IF(a.nota IS NULL, '', CONCAT(' (', a.nota, ')')),
+                               ' · examen del ', DATE_FORMAT(t.fecha, '%d/%m/%Y'), ' por $', FORMAT(t.valor, 2)),
+                        NULL, t.nombre, t.especie, a.monto, a.activo = 0, u.nombre, a.tratamiento_id, a.nota,
+                        t.estado = 'cancelado'
+                   FROM laboratorio_abonos a
+                   JOIN laboratorios t ON t.id = a.tratamiento_id AND t.activo = 1
+              LEFT JOIN usuarios u ON u.id = a.usuario_id
+                  WHERE a.activo = 1 AND a.veterinaria_id = ? AND a.fecha BETWEEN ? AND ?",
             // Tratamientos: cada abono es un cobro en su propia fecha (no el valor del tratamiento).
             // Un abono eliminado deja de aparecer en los listados y reportes (no se muestra como anulado).
             'tratamiento' =>
@@ -108,9 +116,9 @@ class FacturacionModel {
         return $venta;
     }
 
-    /** Servicio de recaudo directo (peluquería o laboratorio; incluye anulados) para la factura */
+    /** Servicio de recaudo directo (peluquería; incluye anulados) para la factura */
     public function getServicio(string $tipo, int $id, int $veterinaria_id): ?array {
-        $tabla = ['peluqueria' => 'peluquerias', 'laboratorio' => 'laboratorios'][$tipo] ?? null;
+        $tabla = ['peluqueria' => 'peluquerias'][$tipo] ?? null;
         if ($tabla === null) return null;
         $stmt = $this->db->prepare(
             "SELECT t.*, u.nombre AS usuario_nombre

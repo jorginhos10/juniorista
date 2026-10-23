@@ -55,7 +55,7 @@ class DashboardController {
         $hasta = date('Y-m-d');
         return (float)((new VentaModel())->getResumenReporte($veterinaria_id, $desde, $hasta)['total_ingresos'] ?? 0)
              + (new PeluqueriaModel())->getReparto($veterinaria_id, $desde, $hasta)['negocio']
-             + (new LaboratorioModel())->getTotalRango($veterinaria_id, $desde, $hasta)['total']
+             + (new LaboratorioModel())->getReparto($veterinaria_id, $desde, $hasta)['negocio']
              + (new TratamientoModel())->getTotalRango($veterinaria_id, $desde, $hasta)['total'];
     }
 

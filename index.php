@@ -238,6 +238,36 @@ switch ($uri) {
         (new LaboratorioController())->eliminar();
         break;
 
+    case 'laboratorio/abonar':
+        require_once ROOT . '/app/controllers/LaboratorioController.php';
+        (new LaboratorioController())->abonar();
+        break;
+
+    case 'laboratorio/abono/eliminar':
+        require_once ROOT . '/app/controllers/LaboratorioController.php';
+        (new LaboratorioController())->eliminarAbono();
+        break;
+
+    case 'laboratorio/abonos':
+        require_once ROOT . '/app/controllers/LaboratorioController.php';
+        (new LaboratorioController())->abonos();
+        break;
+
+    case 'laboratorio/cancelar':
+        require_once ROOT . '/app/controllers/LaboratorioController.php';
+        (new LaboratorioController())->cancelar();
+        break;
+
+    case 'laboratorio/reactivar':
+        require_once ROOT . '/app/controllers/LaboratorioController.php';
+        (new LaboratorioController())->reactivar();
+        break;
+
+    case 'laboratorio/abono/imprimir':
+        require_once ROOT . '/app/controllers/LaboratorioController.php';
+        (new LaboratorioController())->imprimirAbono();
+        break;
+
     case 'peluqueria':
         require_once ROOT . '/app/controllers/PeluqueriaController.php';
         (new PeluqueriaController())->index();
@@ -416,6 +446,21 @@ switch ($uri) {
     case 'configuracion/peluqueria/guardar':
         require_once ROOT . '/app/controllers/ConfiguracionController.php';
         (new ConfiguracionController())->guardarNegocioPeluqueria();
+        break;
+
+    case 'configuracion/laboratorios':
+        require_once ROOT . '/app/controllers/ConfiguracionController.php';
+        (new ConfiguracionController())->laboratorios();
+        break;
+
+    case 'configuracion/laboratorios/guardar':
+        require_once ROOT . '/app/controllers/ConfiguracionController.php';
+        (new ConfiguracionController())->guardarExamenLab();
+        break;
+
+    case 'configuracion/laboratorios/eliminar':
+        require_once ROOT . '/app/controllers/ConfiguracionController.php';
+        (new ConfiguracionController())->eliminarExamenLab();
         break;
 
     case 'configuracion/apariencia':

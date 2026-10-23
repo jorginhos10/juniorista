@@ -96,6 +96,87 @@ class ConfiguracionController {
         $this->redirect('configuracion/peluqueria');
     }
 
+    /** Laboratorios: catálogo de exámenes con su costo (lo que cobra el laboratorio); el doctor no puede cobrar menos que la suma */
+    public function laboratorios(): void {
+        require_once ROOT . '/app/models/LaboratorioModel.php';
+        $veterinarias   = $this->vetModel->getAll();
+        $veterinaria_id = (int)($_SESSION['veterinaria_id'] ?? 0);
+        if ($veterinaria_id === 0 && !empty($veterinarias)) {
+            $veterinaria_id = (int)$veterinarias[0]['id'];
+            $_SESSION['veterinaria_id'] = $veterinaria_id;
+        }
+
+        $actual = null;
+        foreach ($veterinarias as $v) {
+            if ((int)$v['id'] === $veterinaria_id) { $actual = $v; break; }
+        }
+
+        $datos = [
+            'activePage'     => 'configuracion',
+            'veterinarias'   => $veterinarias,
+            'veterinaria_id' => $veterinaria_id,
+            'sucursal'       => $actual,
+            'examenes'       => (new LaboratorioModel())->getExamenes($veterinaria_id),
+            'esAdmin'        => ($_SESSION['usuario_rol'] ?? '') === 'admin',
+            'usuario' => [
+                'nombre' => $_SESSION['usuario_nombre'],
+                'email'  => $_SESSION['usuario_email'],
+                'rol'    => $_SESSION['usuario_rol'],
+            ],
+            'success' => $_SESSION['flash_success'] ?? '',
+            'error'   => $_SESSION['flash_error']   ?? '',
+        ];
+        unset($_SESSION['flash_success'], $_SESSION['flash_error']);
+        $this->render('configuracion/laboratorios', $datos);
+    }
+
+    public function guardarExamenLab(): void {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect('configuracion/laboratorios');
+        }
+        if (($_SESSION['usuario_rol'] ?? '') !== 'admin') {
+            $_SESSION['flash_error'] = 'Solo un administrador puede cambiar los costos de laboratorio.';
+            $this->redirect('configuracion/laboratorios');
+        }
+
+        require_once ROOT . '/app/models/LaboratorioModel.php';
+        $veterinaria_id = (int)($_SESSION['veterinaria_id'] ?? 0);
+        $id     = (int)($_POST['id'] ?? 0);
+        $codigo = mb_strtoupper(mb_substr(trim($_POST['codigo'] ?? ''), 0, 30));
+        $nombre = mb_substr(trim($_POST['nombre'] ?? ''), 0, 100);
+        $costo  = round((float)str_replace(',', '.', (string)($_POST['costo'] ?? '0')), 2);
+
+        if ($codigo === '' || $nombre === '') {
+            $_SESSION['flash_error'] = 'Indica la sigla y el nombre del examen.';
+        } elseif (str_contains($codigo, '+')) {
+            $_SESSION['flash_error'] = 'La sigla no puede llevar el signo «+» (se usa para unir exámenes).';
+        } elseif ($costo < 0 || $costo > 99999999) {
+            $_SESSION['flash_error'] = 'El costo no es válido.';
+        } elseif ((new LaboratorioModel())->guardarExamen($id, $veterinaria_id, $codigo, $nombre, $costo)) {
+            $_SESSION['flash_success'] = 'Examen ' . $codigo . ' guardado con costo de $' . number_format($costo, 2) . '. Se aplica a los exámenes que se registren desde ahora.';
+        } else {
+            $_SESSION['flash_error'] = 'No se pudo guardar el examen.';
+        }
+        $this->redirect('configuracion/laboratorios');
+    }
+
+    public function eliminarExamenLab(): void {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect('configuracion/laboratorios');
+        }
+        if (($_SESSION['usuario_rol'] ?? '') !== 'admin') {
+            $_SESSION['flash_error'] = 'Solo un administrador puede cambiar los costos de laboratorio.';
+            $this->redirect('configuracion/laboratorios');
+        }
+
+        require_once ROOT . '/app/models/LaboratorioModel.php';
+        $ok = (new LaboratorioModel())->eliminarExamen((int)($_POST['id'] ?? 0), (int)($_SESSION['veterinaria_id'] ?? 0));
+        $_SESSION[$ok ? 'flash_success' : 'flash_error'] = $ok
+            ? 'Examen quitado del catálogo. Los exámenes ya registrados conservan su costo.'
+            : 'No se pudo quitar el examen.';
+        $this->redirect('configuracion/laboratorios');
+    }
+
     public const TEMAS = ['original', 'halloween'];
 
     public function apariencia(): void {

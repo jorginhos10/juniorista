@@ -415,10 +415,10 @@ class VentaController {
         $ventas       = (float)($this->model->getResumenReporte($veterinaria_id, $desde, $hasta)['total_ingresos'] ?? 0);
         $peluqueria   = (new PeluqueriaModel())->getReparto($veterinaria_id, $desde, $hasta);
         $tratamientos = (new TratamientoModel())->getTotalRango($veterinaria_id, $desde, $hasta);
-        $laboratorios = (new LaboratorioModel())->getTotalRango($veterinaria_id, $desde, $hasta);
+        $laboratorios = (new LaboratorioModel())->getReparto($veterinaria_id, $desde, $hasta);
         $gastos       = (new GastoModel())->getTotalRango($veterinaria_id, $desde, $hasta);
 
-        $ingresos = $ventas + $peluqueria['negocio'] +$tratamientos['total'] + $laboratorios['total'];
+        $ingresos = $ventas + $peluqueria['negocio'] + $tratamientos['total'] + $laboratorios['negocio'];
         return [
             'ventas'       => $ventas,
             'peluqueria'   => $peluqueria,

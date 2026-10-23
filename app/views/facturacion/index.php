@@ -247,9 +247,9 @@ $url = fn(array $cambios) => BASE_URL . '/facturacion?' . http_build_query(array
                                     <td class="text-center pe-3">
                                         <?php
                                             $puedeEditar   = !$m['anulada'] && !$m['tratamiento_cancelado'];
-                                            $puedeCancelar = !$m['anulada'] && ($m['tipo'] !== 'tratamiento' || $esAdmin);
+                                            $puedeCancelar = !$m['anulada'] && (!in_array($m['tipo'], ['tratamiento', 'laboratorio'], true) || $esAdmin);
                                             $motivoEditar  = $m['anulada'] ? 'Movimiento anulado'
-                                                : 'El tratamiento está cancelado';
+                                                : ($m['tipo'] === 'laboratorio' ? 'El examen está cancelado' : 'El tratamiento está cancelado');
                                             $motivoCancel  = $m['anulada'] ? 'Ya está anulado' : 'Solo un administrador puede anular abonos';
                                         ?>
                                         <div class="d-flex justify-content-center gap-1">
@@ -405,28 +405,29 @@ async function editarMov(m) {
     $id('ed-fecha').removeAttribute('min');
     $id('ed-max').textContent = '';
     $id('ed-monto').removeAttribute('max');
-    const esServicio = m.tipo === 'peluqueria' || m.tipo === 'laboratorio';   // recaudo directo: mismos campos
+    const esServicio = m.tipo === 'peluqueria';   // recaudo directo; tratamientos y laboratorios editan un abono
+    const ruta = m.tipo === 'laboratorio' ? 'laboratorio' : 'tratamiento', cosa = m.tipo === 'laboratorio' ? 'examen' : 'tratamiento';
     $id('ed-comprobante').textContent = m.comprobante;
-    document.querySelectorAll('.js-campos').forEach(el => el.style.display = el.dataset.tipo === (esServicio ? 'servicio' : m.tipo) ? '' : 'none');
+    document.querySelectorAll('.js-campos').forEach(el => el.style.display = el.dataset.tipo === (esServicio ? 'servicio' : 'tratamiento') ? '' : 'none');
 
     if (esServicio) {
-        $id('ed-titulo').textContent   = m.tipo === 'laboratorio' ? 'Editar examen de laboratorio' : 'Editar servicio de peluquería';
+        $id('ed-titulo').textContent   = 'Editar servicio de peluquería';
         $id('ed-lbl-monto').innerHTML  = 'Valor <span class="text-danger">*</span>';
         $id('ed-nombre').value         = m.mascota || '';
         $id('ed-especie').value        = m.especie || 'perro';
         $id('ed-descripcion').value    = m.nota || '';
     } else {
-        $id('ed-titulo').textContent   = 'Editar abono de tratamiento';
+        $id('ed-titulo').textContent   = 'Editar abono de ' + (m.tipo === 'laboratorio' ? 'laboratorio' : 'tratamiento');
         $id('ed-lbl-monto').innerHTML  = 'Monto del abono <span class="text-danger">*</span>';
         $id('ed-nota').value           = m.nota || '';
         $id('ed-tratamiento').textContent = (m.especie === 'gato' ? '🐱 ' : '🐶 ') + (m.mascota || '') + ' · cargando saldo…';
         // Máximo permitido = saldo actual del tratamiento + lo que ya vale este abono
         try {
-            const r = await fetch(BASE + '/tratamiento/abonos?id=' + m.ref_id);
+            const r = await fetch(BASE + '/' + ruta + '/abonos?id=' + m.ref_id);
             const d = await r.json();
             const max = Number(d.tratamiento.saldo) + Number(m.monto);
             $id('ed-monto').max = max.toFixed(2);
-            $id('ed-max').textContent = 'Máximo ' + money(max) + ' (valor del tratamiento ' + money(d.tratamiento.valor) + ').';
+            $id('ed-max').textContent = 'Máximo ' + money(max) + ' (valor del ' + cosa + ' ' + money(d.tratamiento.valor) + ').';
             $id('ed-fecha').min = d.tratamiento.fecha;
             $id('ed-tratamiento').textContent = (m.especie === 'gato' ? '🐱 ' : '🐶 ') + d.tratamiento.nombre + ' · ' + d.tratamiento.descripcion;
         } catch { $id('ed-tratamiento').textContent = ''; }
@@ -437,7 +438,7 @@ async function editarMov(m) {
 const EFECTOS = {
     venta:       'La venta queda anulada y el stock de sus productos vuelve al inventario.',
     peluqueria:  'El servicio queda anulado y deja de sumar en los cierres.',
-    laboratorio: 'El examen queda anulado y deja de sumar en los cierres.',
+    laboratorio: 'El abono queda anulado, deja de sumar en los cierres y el saldo del examen vuelve a quedar pendiente.',
     tratamiento: 'El abono queda anulado, deja de sumar en los cierres y el saldo del tratamiento vuelve a quedar pendiente.',
 };
 function cancelarMov(m) {

@@ -226,6 +226,19 @@
                 </div>
 
                 <div class="col-sm-6 col-xl-4">
+                    <a class="cfg-item" href="<?= BASE_URL ?>/configuracion/laboratorios">
+                        <div class="cfg-item-icon" style="background:#ede9fe;">
+                            <i class="bi bi-eyedropper" style="color:#7c3aed;"></i>
+                        </div>
+                        <div>
+                            <div class="cfg-item-title">Laboratorios</div>
+                            <p class="cfg-item-desc">Exámenes y su costo (valor mínimo a cobrar)</p>
+                        </div>
+                        <i class="bi bi-chevron-right cfg-item-arrow"></i>
+                    </a>
+                </div>
+
+                <div class="col-sm-6 col-xl-4">
                     <a class="cfg-item" href="<?= BASE_URL ?>/configuracion/apariencia">
                         <div class="cfg-item-icon" style="background:#ffedd5;">
                             <i class="bi bi-palette-fill" style="color:#ea580c;"></i>

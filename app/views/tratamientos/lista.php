@@ -1,5 +1,5 @@
 <?php
-// Tratamiento: listado completo (no por día) con pestañas. El dinero se registra por ABONOS.
+// Tratamiento y Laboratorios: listado completo (no por día) con pestañas. El dinero se registra por ABONOS.
 $money = fn($n) => '$' . number_format((float)$n, 2);
 $R     = BASE_URL . '/' . $modulo['ruta'];
 
@@ -14,13 +14,17 @@ foreach ($tratamientos as $t) {
 }
 $saldoPendiente = array_sum(array_map(fn($t) => $t['situacion'] === 'pendientes' ? $t['saldo'] : 0, $tratamientos));
 $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
+$conCatalogo = !empty($modulo['catalogo']);   // laboratorios: exámenes con costo y valor mínimo
+$S  = $modulo['singular'];                    // «tratamiento» / «examen»
+$P  = $modulo['plural'];
+$Su = ucfirst($S);
 ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PetControl &mdash; Tratamientos</title>
+    <title>PetControl &mdash; <?= $modulo['tituloLista'] ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <link href="<?= BASE_URL ?>/assets/css/style.css" rel="stylesheet">
@@ -81,13 +85,13 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
 
         <header class="topbar">
             <div class="topbar-left">
-                <h5 class="topbar-title mb-0">Tratamientos</h5>
-                <p class="topbar-date mb-0">Tratamientos y sus abonos</p>
+                <h5 class="topbar-title mb-0"><?= $modulo['tituloLista'] ?></h5>
+                <p class="topbar-date mb-0"><?= $modulo['subtitulo'] ?></p>
             </div>
             <div class="topbar-right">
                 <?php require ROOT . '/app/views/layouts/vet_selector.php'; ?>
-                <button class="btn btn-primary-custom btn-sm" onclick="nuevoTratamiento()">
-                    <i class="bi bi-plus-lg me-1"></i> Nuevo tratamiento
+                <button class="btn btn-primary-custom btn-sm" onclick="nuevoRegistro()">
+                    <i class="bi bi-plus-lg me-1"></i> Nuevo <?= $S ?>
                 </button>
                 <div class="dropdown">
                     <button class="btn btn-link topbar-avatar-btn p-0" data-bs-toggle="dropdown">
@@ -142,7 +146,7 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
                             <?php if ($saldoPendiente > 0): ?>
                             <span class="small text-muted">Por cobrar: <span class="monto text-warning"><?= $money($saldoPendiente) ?></span></span>
                             <?php endif; ?>
-                            <input type="text" class="form-control form-control-sm" id="buscador" placeholder="Buscar mascota o tratamiento…" style="width:230px">
+                            <input type="text" class="form-control form-control-sm" id="buscador" placeholder="Buscar mascota o <?= $S ?>…" style="width:230px">
                         </div>
                     </div>
                 </div>
@@ -185,7 +189,14 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
                                         </div>
                                         <?php endif; ?>
                                     </td>
-                                    <td class="text-end monto"><?= $money($t['valor']) ?></td>
+                                    <td class="text-end monto">
+                                        <?= $money($t['valor']) ?>
+                                        <?php if ($conCatalogo && (float)$t['costo'] > 0): ?>
+                                        <div class="small fw-normal text-muted" title="Costo del laboratorio y ganancia">
+                                            Costo <?= $money($t['costo']) ?> · <span class="text-success">Ganancia <?= $money((float)$t['valor'] - (float)$t['costo']) ?></span>
+                                        </div>
+                                        <?php endif; ?>
+                                    </td>
                                     <td>
                                         <div class="small mb-1">
                                             <?= $money($t['abonado']) ?>
@@ -215,7 +226,7 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
                                             <button class="btn btn-sm btn-outline-secondary btn-accion" title="Reactivar"
                                                     onclick="reactivar(<?= (int)$t['id'] ?>)"><i class="bi bi-arrow-counterclockwise"></i></button>
                                             <?php elseif ($t['situacion'] === 'pendientes'): ?>
-                                            <button class="btn btn-sm btn-outline-danger btn-accion" title="Cancelar tratamiento"
+                                            <button class="btn btn-sm btn-outline-danger btn-accion" title="Cancelar <?= $S ?>"
                                                     onclick='cancelar(<?= (int)$t['id'] ?>, <?= json_encode($t['nombre'] . ' · ' . $t['descripcion'], $jsonFlags) ?>)'>
                                                 <i class="bi bi-x-lg"></i>
                                             </button>
@@ -226,7 +237,7 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
                                 <?php endforeach; ?>
                                 <tr id="filaVacia" style="display:none">
                                     <td colspan="7" class="text-center text-muted py-5">
-                                        <i class="bi bi-capsule fs-2 d-block mb-2 opacity-25"></i>
+                                        <i class="bi bi-<?= $modulo['icono'] ?> fs-2 d-block mb-2 opacity-25"></i>
                                         <span id="textoVacio"></span>
                                     </td>
                                 </tr>
@@ -257,7 +268,7 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
                 <input type="hidden" name="id" value="0">
                 <input type="hidden" name="tab" value="pendientes">
                 <div class="modal-header border-0 pb-0">
-                    <h5 class="modal-title fw-bold"><i class="bi bi-capsule text-primary me-2"></i>Nuevo tratamiento</h5>
+                    <h5 class="modal-title fw-bold"><i class="bi bi-<?= $modulo['icono'] ?> text-primary me-2"></i>Nuevo <?= $S ?></h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body pt-3">
@@ -295,9 +306,24 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
                             </div>
                             <input type="hidden" name="cliente_id" id="n-cliente_id" value="0">
                         </div>
+                        <?php if ($conCatalogo): ?>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold" for="n-examen-buscar">Exámenes del catálogo</label>
+                            <div class="vinc-ac">
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                    <input type="text" class="form-control" id="n-examen-buscar" autocomplete="off" placeholder="Buscar examen por sigla o nombre…">
+                                </div>
+                                <div class="vinc-lista" id="n-examen-lista"></div>
+                            </div>
+                            <div class="d-flex flex-wrap gap-1 mt-2" id="n-examen-chips"></div>
+                            <div id="n-examen-hidden"></div>
+                            <div class="small mt-1" id="n-costo-hint"></div>
+                        </div>
+                        <?php endif; ?>
                         <div class="col-12">
                             <label class="form-label fw-semibold">Descripción <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" name="descripcion" maxlength="255" required placeholder="<?= htmlspecialchars($modulo['placeholder']) ?>">
+                            <input type="text" class="form-control" name="descripcion" id="n-descripcion" maxlength="255" required placeholder="<?= htmlspecialchars($modulo['placeholder']) ?>">
                         </div>
                         <div class="col-6">
                             <label class="form-label fw-semibold">Valor total <span class="text-danger">*</span></label>
@@ -331,7 +357,7 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
                 </div>
                 <div class="modal-footer border-0 pt-0">
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary-custom"><i class="bi bi-save me-1"></i>Registrar tratamiento</button>
+                    <button type="submit" class="btn btn-primary-custom"><i class="bi bi-save me-1"></i>Registrar <?= $S ?></button>
                 </div>
             </form>
         </div>
@@ -346,7 +372,7 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
                 <input type="hidden" name="id" id="e-id">
                 <input type="hidden" name="tab" class="js-tab">
                 <div class="modal-header border-0 pb-0">
-                    <h5 class="modal-title fw-bold"><i class="bi bi-pencil-square text-primary me-2"></i>Editar tratamiento</h5>
+                    <h5 class="modal-title fw-bold"><i class="bi bi-pencil-square text-primary me-2"></i>Editar <?= $S ?></h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body pt-3">
@@ -384,6 +410,21 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
                             </div>
                             <input type="hidden" name="cliente_id" id="e-cliente_id" value="0">
                         </div>
+                        <?php if ($conCatalogo): ?>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold" for="e-examen-buscar">Exámenes del catálogo</label>
+                            <div class="vinc-ac">
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                    <input type="text" class="form-control" id="e-examen-buscar" autocomplete="off" placeholder="Buscar examen por sigla o nombre…">
+                                </div>
+                                <div class="vinc-lista" id="e-examen-lista"></div>
+                            </div>
+                            <div class="d-flex flex-wrap gap-1 mt-2" id="e-examen-chips"></div>
+                            <div id="e-examen-hidden"></div>
+                            <div class="small mt-1" id="e-costo-hint"></div>
+                        </div>
+                        <?php endif; ?>
                         <div class="col-12">
                             <label class="form-label fw-semibold">Descripción <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" name="descripcion" id="e-descripcion" maxlength="255" required>
@@ -417,7 +458,7 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
         <div class="modal-content border-0 shadow">
             <div class="modal-header border-0 pb-0">
                 <div>
-                    <h5 class="modal-title fw-bold"><i class="bi bi-receipt text-success me-2"></i>Abonos del tratamiento</h5>
+                    <h5 class="modal-title fw-bold"><i class="bi bi-receipt text-success me-2"></i>Abonos del <?= $S ?></h5>
                     <div class="text-muted small" id="ab-titulo"></div>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -495,18 +536,18 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
                 <input type="hidden" name="id" id="c-id">
                 <input type="hidden" name="tab" class="js-tab">
                 <div class="modal-header border-0 pb-0">
-                    <h5 class="modal-title fw-bold"><i class="bi bi-x-circle text-danger me-2"></i>Cancelar tratamiento</h5>
+                    <h5 class="modal-title fw-bold"><i class="bi bi-x-circle text-danger me-2"></i>Cancelar <?= $S ?></h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <p class="mb-2" id="c-texto"></p>
                     <p class="small text-muted">No recibirá más abonos. Lo que ya se abonó sigue contando como cobrado en los cierres.</p>
                     <label class="form-label small fw-semibold">Motivo</label>
-                    <input type="text" class="form-control" name="motivo" maxlength="200" placeholder="Ej: el dueño no continuó el tratamiento">
+                    <input type="text" class="form-control" name="motivo" maxlength="200" placeholder="Ej: el dueño no continuó el <?= $S ?>">
                 </div>
                 <div class="modal-footer border-0 pt-0">
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">Volver</button>
-                    <button type="submit" class="btn btn-danger">Cancelar tratamiento</button>
+                    <button type="submit" class="btn btn-danger">Cancelar <?= $S ?></button>
                 </div>
             </form>
         </div>
@@ -529,6 +570,7 @@ const R        = '<?= $R ?>';
 const HOY      = '<?= $hoy ?>';
 const ES_ADMIN = <?= $esAdmin ? 'true' : 'false' ?>;
 const ABRIR    = <?= (int)$abrir ?>;
+const TXT      = <?= json_encode(['s' => $S, 'p' => $P, 'S' => $Su], $jsonFlags | JSON_UNESCAPED_UNICODE) ?>;
 const $id      = id => document.getElementById(id);
 const money    = n => '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const esc      = s => String(s ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
@@ -537,7 +579,7 @@ const modal    = id => bootstrap.Modal.getOrCreateInstance($id(id));
 let pestana    = '<?= $pestana ?>';
 
 // ── Pestañas + buscador ───────────────────────────────
-const VACIO = { pendientes: 'No hay tratamientos con saldo pendiente.', completos: 'Aún no hay tratamientos pagados por completo.', cancelados: 'No hay tratamientos cancelados.' };
+const VACIO = { pendientes: `No hay ${TXT.p} con saldo pendiente.`, completos: `Aún no hay ${TXT.p} pagados por completo.`, cancelados: `No hay ${TXT.p} cancelados.` };
 
 function filtrar() {
     const q = $id('buscador').value.toLowerCase();
@@ -551,9 +593,9 @@ function filtrar() {
         }
     });
     $id('filaVacia').style.display = n ? 'none' : '';
-    $id('textoVacio').textContent  = q ? 'Ningún tratamiento coincide con la búsqueda.' : VACIO[pestana];
+    $id('textoVacio').textContent  = q ? `Ningún ${TXT.s} coincide con la búsqueda.` : VACIO[pestana];
     $id('pieTabla').style.display  = n ? '' : 'none';
-    $id('pieCantidad').textContent = n + (n === 1 ? ' tratamiento' : ' tratamientos');
+    $id('pieCantidad').textContent = n + ' ' + (n === 1 ? TXT.s : TXT.p);
     $id('pieValor').textContent    = money(valor);
     $id('pieAbonado').textContent  = money(abonado);
     $id('pieSaldo').textContent    = pestana === 'pendientes' ? money(saldo) : '';
@@ -685,10 +727,76 @@ function prepararVinculos(p) {
 }
 const vincNuevo = prepararVinculos('n'), vincEditar = prepararVinculos('e');
 
+// ── Exámenes del catálogo: el costo es la suma de los elegidos y fija el valor mínimo a cobrar ──
+const EXAMENES = <?= json_encode(array_map(fn($x) => ['id' => (int)$x['id'], 'codigo' => $x['codigo'], 'nombre' => $x['nombre'], 'costo' => (float)$x['costo']], $examenes ?? []), $jsonFlags | JSON_UNESCAPED_UNICODE) ?>;
+const CON_CATALOGO = <?= $conCatalogo ? 'true' : 'false' ?>;
+
+// p = 'n' (nuevo) o 'e' (editar). Sin catálogo (tratamiento) no hace nada.
+function prepararExamenes(p) {
+    if (!CON_CATALOGO) return { cargar() {} };
+    const buscar = $id(p + '-examen-buscar'), chips = $id(p + '-examen-chips'), ocultos = $id(p + '-examen-hidden');
+    const hint = $id(p + '-costo-hint'), valor = $id(p + '-valor'), desc = $id(p + '-descripcion');
+    let elegidos = [], costoBase = 0, abonado = 0;
+    const costo = () => elegidos.length ? elegidos.reduce((t, x) => t + x.costo, 0) : costoBase;
+
+    function pintar() {
+        const c = Math.round(costo() * 100) / 100, v = parseFloat(valor.value) || 0;
+        valor.min = Math.max(c, abonado);
+        chips.innerHTML = elegidos.map(x => `<span class="vinc-chip" title="${escV(x.nombre)}">${escV(x.codigo)} · ${money(x.costo)}
+            <button type="button" data-id="${x.id}" aria-label="Quitar ${escV(x.codigo)}">&times;</button></span>`).join('');
+        ocultos.innerHTML = elegidos.map(x => `<input type="hidden" name="examenes[]" value="${x.id}">`).join('');
+        hint.innerHTML = !EXAMENES.length && !c
+            ? 'Aún no hay exámenes en el catálogo. <a href="' + BASE_URL_CFG + '">Agrégalos en Configuración</a>.'
+            : !c ? '<span class="text-muted">Elige los exámenes para calcular el costo mínimo.</span>'
+            : v && v + 0.001 < c ? `<span class="text-danger"><i class="bi bi-exclamation-circle-fill me-1"></i>Costo ${money(c)}: el valor no puede ser menor.</span>`
+            : v ? `<span class="text-muted">Costo ${money(c)} · <strong class="text-success">Ganancia ${money(v - c)}</strong></span>`
+            : `<span class="text-muted">Costo ${money(c)}: el valor mínimo a cobrar.</span>`;
+    }
+    function elegir(x) {
+        if (!elegidos.some(e => e.id === x.id)) elegidos.push(x);
+        buscar.value = '';
+        // La descripción se arma con las siglas (HH+PHR+CDV) y sigue siendo editable
+        desc.value = elegidos.map(e => e.codigo).join('+');
+        const c = costo(), v = parseFloat(valor.value) || 0;
+        if (v < c) valor.value = c.toFixed(2);
+        valor.dispatchEvent(new Event('input'));
+        pintar();
+    }
+
+    const sel = listaPredictiva({
+        input: buscar, lista: $id(p + '-examen-lista'), items: () => EXAMENES.filter(x => !elegidos.some(e => e.id === x.id)),
+        texto: x => x.codigo + ' · ' + x.nombre, detalle: x => 'Costo ' + money(x.costo),
+        vacio: EXAMENES.length ? 'No hay más exámenes que coincidan' : 'El catálogo está vacío (Configuración → Laboratorios)',
+        alElegir: elegir,
+    });
+    buscar.addEventListener('focus', () => sel.abrir());
+    buscar.addEventListener('input', () => sel.abrir());
+    chips.addEventListener('click', e => {
+        const b = e.target.closest('button[data-id]');
+        if (!b) return;
+        elegidos = elegidos.filter(x => x.id !== Number(b.dataset.id));
+        if (elegidos.length) desc.value = elegidos.map(x => x.codigo).join('+');
+        pintar();
+    });
+    valor.addEventListener('input', pintar);
+
+    return {
+        cargar(costoGuardado, yaAbonado) {
+            elegidos = [];
+            costoBase = Number(costoGuardado) || 0;
+            abonado = Number(yaAbonado) || 0;
+            pintar();
+        },
+    };
+}
+const BASE_URL_CFG = '<?= BASE_URL ?>/configuracion/laboratorios';
+const examenesNuevo = prepararExamenes('n'), examenesEditar = prepararExamenes('e');
+
 // ── Nuevo / editar / cancelar ─────────────────────────
-function nuevoTratamiento() {
+function nuevoRegistro() {
     $id('formNuevo').reset();
     vincNuevo.cargar(0, 0);
+    examenesNuevo.cargar(0, 0);
     $id('n-fecha').value = HOY;
     abonoTocado = false;
     actualizarHintNuevo();
@@ -713,6 +821,7 @@ function editar(t) {
     ['id', 'nombre', 'especie', 'descripcion', 'valor', 'fecha'].forEach(c => $id('e-' + c).value = t[c] ?? '');
     vincEditar.cargar(t.mascota_id, t.cliente_id);
     $id('e-valor').min = t.abonado;
+    examenesEditar.cargar(t.costo, t.abonado);
     $id('e-hint').textContent = Number(t.abonado) > 0 ? 'Ya abonado: ' + money(t.abonado) + ' (el valor no puede ser menor).' : '';
     modal('modalEditar').show();
 }
@@ -724,7 +833,7 @@ function cancelar(id, texto) {
 }
 
 function reactivar(id) {
-    if (!confirm('¿Reactivar este tratamiento? Volverá a recibir abonos.')) return;
+    if (!confirm('¿Reactivar este ' + TXT.s + '? Volverá a recibir abonos.')) return;
     const f = $id('formReactivar');
     f.id.value = id;
     f.submit();
@@ -776,8 +885,8 @@ async function verAbonos(id) {
         aviso.style.display = puedeAbonar ? 'none' : '';
         aviso.className = 'alert py-2 small mb-0 ' + (cancelado ? 'alert-secondary' : 'alert-success');
         aviso.innerHTML = cancelado
-            ? '<i class="bi bi-x-circle me-1"></i>Tratamiento cancelado' + (t.motivo_cancelacion ? ': ' + esc(t.motivo_cancelacion) : '') + '. No recibe más abonos.'
-            : '<i class="bi bi-check2-circle me-1"></i>Tratamiento pagado por completo.';
+            ? '<i class="bi bi-x-circle me-1"></i>' + TXT.S + ' cancelado' + (t.motivo_cancelacion ? ': ' + esc(t.motivo_cancelacion) : '') + '. No recibe más abonos.'
+            : '<i class="bi bi-check2-circle me-1"></i>' + TXT.S + ' pagado por completo.';
 
         $id('ab-monto').max   = saldoActual;
         $id('ab-monto').value = saldoActual > 0 ? saldoActual.toFixed(2) : '';

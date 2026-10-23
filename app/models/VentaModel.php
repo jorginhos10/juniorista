@@ -310,6 +310,8 @@ class VentaModel {
      * Usa las mismas reglas que el balance (sin anulados; los abonos cuentan por su fecha).
      */
     public function getRecaudoPorUsuario(int $veterinaria_id, string $desde, string $hasta): array {
+        require_once ROOT . '/app/models/LaboratorioModel.php';
+        new LaboratorioModel();   // asegura las tablas de abonos de laboratorios
         $stmt = $this->db->prepare(
             "SELECT m.usuario_id, COALESCE(u.nombre, 'Sin usuario') AS nombre, m.concepto,
                     COUNT(*) AS cantidad, SUM(m.monto) AS total
@@ -327,9 +329,10 @@ class VentaModel {
                       FROM peluquerias
                      WHERE activo = 1 AND veterinaria_id = ? AND fecha BETWEEN ? AND ?
                     UNION ALL
-                    SELECT usuario_id, 'laboratorios', valor
-                      FROM laboratorios
-                     WHERE activo = 1 AND veterinaria_id = ? AND fecha BETWEEN ? AND ?
+                    SELECT a.usuario_id, 'laboratorios', a.monto
+                      FROM laboratorio_abonos a
+                      JOIN laboratorios t ON t.id = a.tratamiento_id AND t.activo = 1
+                     WHERE a.activo = 1 AND a.veterinaria_id = ? AND a.fecha BETWEEN ? AND ?
                ) m
           LEFT JOIN usuarios u ON u.id = m.usuario_id
            GROUP BY m.usuario_id, m.concepto"

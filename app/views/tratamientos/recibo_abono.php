@@ -1,7 +1,7 @@
 <?php
 $e      = fn($v) => htmlspecialchars((string)$v);
 $money  = fn($n) => '$' . number_format((float)$n, 2);
-$numero = VeterinariaModel::serialServicio((string)$r['sucursal'], 'ABO', (int)$r['id'], $r['created_at']);
+$numero = VeterinariaModel::serialServicio((string)$r['sucursal'], $modulo['prefijo'], (int)$r['id'], $r['created_at']);
 $pagado = $r['saldo_despues'] <= 0;
 ?>
 <!DOCTYPE html>
@@ -101,7 +101,7 @@ $pagado = $r['saldo_despues'] <= 0;
         </thead>
         <tbody>
             <tr>
-                <td>Tratamiento: <?= $e($r['descripcion']) ?></td>
+                <td><?= ucfirst($modulo['singular']) ?>: <?= $e($r['descripcion']) ?></td>
                 <td><?= date('d/m/Y', strtotime($r['fecha_tratamiento'])) ?></td>
                 <td class="r"><?= $money($r['valor']) ?></td>
             </tr>
@@ -111,13 +111,13 @@ $pagado = $r['saldo_despues'] <= 0;
     <div class="abono">
         <div>
             <div class="lbl">Valor de este abono</div>
-            <div><?= $e($r['nota'] ?: 'Abono al tratamiento') ?></div>
+            <div><?= $e($r['nota'] ?: 'Abono al ' . $modulo['singular']) ?></div>
         </div>
         <div class="abono-monto"><?= $money($r['monto']) ?></div>
     </div>
 
     <table class="saldos">
-        <tr><td>Valor total del tratamiento</td><td class="r"><?= $money($r['valor']) ?></td></tr>
+        <tr><td>Valor total del <?= $modulo['singular'] ?></td><td class="r"><?= $money($r['valor']) ?></td></tr>
         <tr><td>Abonado anteriormente</td><td class="r"><?= $money($r['abonado_antes']) ?></td></tr>
         <tr><td>Saldo antes de este abono</td><td class="r"><?= $money($r['saldo_antes']) ?></td></tr>
         <tr><td>Este abono</td><td class="r">− <?= $money($r['monto']) ?></td></tr>
@@ -127,7 +127,7 @@ $pagado = $r['saldo_despues'] <= 0;
         </tr>
     </table>
     <div style="text-align:right">
-        <span class="sello <?= $pagado ? 'ok' : 'pend' ?>"><?= $pagado ? '✓ TRATAMIENTO PAGADO' : 'SALDO POR PAGAR' ?></span>
+        <span class="sello <?= $pagado ? 'ok' : 'pend' ?>"><?= $pagado ? '✓ ' . mb_strtoupper($modulo['singular']) . ' PAGADO' : 'SALDO POR PAGAR' ?></span>
     </div>
 
     <div class="firma">

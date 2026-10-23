@@ -2,7 +2,7 @@
 
 require_once ROOT . '/app/models/FacturacionModel.php';
 require_once ROOT . '/app/models/VeterinariaModel.php';
-require_once ROOT . '/app/models/TratamientoModel.php';   // base de peluquería y laboratorios (especies, edición)
+require_once ROOT . '/app/models/TratamientoModel.php';   // base de peluquería, tratamientos y laboratorios (especies, abonos)
 
 class FacturacionController {
 
@@ -55,6 +55,9 @@ class FacturacionController {
 
         if ($tipo === 'tratamiento') {
             $this->redirect('tratamiento/abono/imprimir?id=' . $id);
+        }
+        if ($tipo === 'laboratorio') {
+            $this->redirect('laboratorio/abono/imprimir?id=' . $id);
         }
 
         $doc = null;
@@ -128,7 +131,7 @@ class FacturacionController {
             $error = 'La fecha no es válida.';
         } elseif ($fecha > date('Y-m-d')) {
             $error = 'La fecha no puede ser futura.';
-        } elseif ($tipo === 'peluqueria' || $tipo === 'laboratorio') {
+        } elseif ($tipo === 'peluqueria') {
             $d = [
                 'fecha'          => $fecha,
                 'nombre'         => mb_substr(trim($_POST['nombre'] ?? ''), 0, 100),
@@ -146,11 +149,10 @@ class FacturacionController {
             } elseif (!$this->modeloServicio($tipo)->actualizar($id, $d)) {
                 $error = 'No se pudo actualizar el servicio.';
             }
-        } elseif ($tipo === 'tratamiento') {
-            require_once ROOT . '/app/models/TratamientoModel.php';
+        } elseif ($tipo === 'tratamiento' || $tipo === 'laboratorio') {
             $error = $monto <= 0
                 ? 'El abono debe ser mayor a cero.'
-                : (new TratamientoModel())->actualizarAbono($id, $veterinaria_id, $monto, $fecha, mb_substr(trim($_POST['nota'] ?? ''), 0, 150));
+                : $this->modeloAbonos($tipo)->actualizarAbono($id, $veterinaria_id, $monto, $fecha, mb_substr(trim($_POST['nota'] ?? ''), 0, 150));
         } else {
             $error = 'Este movimiento no se puede editar aquí.';
         }
@@ -175,31 +177,35 @@ class FacturacionController {
             // Se verifica que la venta sea de la sucursal actual antes de anularla
             $ok  = $this->model->getVenta($id, $veterinaria_id) !== null && (new VentaModel())->anular($id);
             $msg = 'Venta anulada. El stock de sus productos volvió al inventario.';
-        } elseif ($tipo === 'peluqueria' || $tipo === 'laboratorio') {
+        } elseif ($tipo === 'peluqueria') {
             $ok  = $this->modeloServicio($tipo)->eliminar($id, $veterinaria_id);
-            $msg = $tipo === 'peluqueria' ? 'Servicio de peluquería anulado.' : 'Examen de laboratorio anulado.';
-        } elseif ($tipo === 'tratamiento') {
+            $msg = 'Servicio de peluquería anulado.';
+        } elseif ($tipo === 'tratamiento' || $tipo === 'laboratorio') {
             if (($_SESSION['usuario_rol'] ?? '') !== 'admin') {
                 $_SESSION['flash_error'] = 'Solo un administrador puede anular abonos.';
                 $this->redirect($this->volver());
             }
-            require_once ROOT . '/app/models/TratamientoModel.php';
-            $ok  = (new TratamientoModel())->eliminarAbono($id, $veterinaria_id);
-            $msg = 'Abono anulado. El saldo del tratamiento volvió a quedar pendiente.';
+            $ok  = $this->modeloAbonos($tipo)->eliminarAbono($id, $veterinaria_id);
+            $msg = 'Abono anulado. El saldo del ' . ($tipo === 'laboratorio' ? 'examen' : 'tratamiento') . ' volvió a quedar pendiente.';
         }
 
         $_SESSION[$ok ? 'flash_success' : 'flash_error'] = $ok ? $msg : 'No se pudo cancelar (ya estaba anulado o no existe).';
         $this->redirect($this->volver());
     }
 
-    /** Modelo del servicio de recaudo directo según el tipo de movimiento */
+    /** Modelo del servicio de recaudo directo (peluquería) */
     private function modeloServicio(string $tipo): TratamientoModel {
+        require_once ROOT . '/app/models/PeluqueriaModel.php';
+        return new PeluqueriaModel();
+    }
+
+    /** Modelo con abonos según el tipo de movimiento (tratamientos o laboratorios) */
+    private function modeloAbonos(string $tipo): TratamientoModel {
         if ($tipo === 'laboratorio') {
             require_once ROOT . '/app/models/LaboratorioModel.php';
             return new LaboratorioModel();
         }
-        require_once ROOT . '/app/models/PeluqueriaModel.php';
-        return new PeluqueriaModel();
+        return new TratamientoModel();
     }
 
     /** Vuelve a facturación conservando los filtros que traía el formulario */

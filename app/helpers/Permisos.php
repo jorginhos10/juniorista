@@ -44,6 +44,8 @@ class Permisos {
     private const RUTAS_COMPARTIDAS = [
         'tratamiento/abonos'         => ['tratamiento', 'facturacion'],
         'tratamiento/abono/imprimir' => ['tratamiento', 'facturacion'],
+        'laboratorio/abonos'         => ['laboratorio', 'facturacion'],
+        'laboratorio/abono/imprimir' => ['laboratorio', 'facturacion'],
     ];
 
     private static ?array $habilitados = null;   // caché por petición

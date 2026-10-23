@@ -43,7 +43,7 @@ class GastoModel {
         return array_map('floatval', $row);
     }
 
-    /** Ingresos del período (ventas no anuladas + peluquería + abonos de tratamientos), para comparar con los gastos */
+    /** Ingresos del período (ventas no anuladas + parte del negocio en peluquería + ganancia de laboratorios + abonos de tratamientos), para comparar con los gastos */
     public function getIngresosPeriodo(int $veterinaria_id, string $desde, string $hasta): float {
         $stmt = $this->db->prepare(
             "SELECT COALESCE(SUM(total), 0) FROM ventas
@@ -55,9 +55,9 @@ class GastoModel {
         $stmt->close();
 
         require_once ROOT . '/app/models/PeluqueriaModel.php';
-        $total += (new PeluqueriaModel())->getTotalRango($veterinaria_id, $desde, $hasta)['total'];
+        $total += (new PeluqueriaModel())->getReparto($veterinaria_id, $desde, $hasta)['negocio'];
         require_once ROOT . '/app/models/LaboratorioModel.php';
-        $total += (new LaboratorioModel())->getTotalRango($veterinaria_id, $desde, $hasta)['total'];
+        $total += (new LaboratorioModel())->getReparto($veterinaria_id, $desde, $hasta)['negocio'];
         $total += (new TratamientoModel())->getTotalRango($veterinaria_id, $desde, $hasta)['total'];
         return $total;
     }
