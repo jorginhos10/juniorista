@@ -16,6 +16,14 @@ $icono = fn($esp) => strtolower((string)$esp) === 'gato' ? '🐱' : '🐶';
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <link href="<?= BASE_URL ?>/assets/css/style.css" rel="stylesheet">
     <style>
+        .mc { position: relative; }
+        .mc-lista { display: none; position: absolute; left: 0; right: 0; top: calc(100% + 2px); z-index: 1060; max-height: 260px; overflow-y: auto;
+                    background: #fff; border: 1px solid #e2e8f0; border-radius: .5rem; box-shadow: 0 8px 24px rgba(15, 23, 42, .14); }
+        .mc-op { display: flex; align-items: center; gap: .6rem; padding: .45rem .75rem; cursor: pointer; font-size: .9rem; }
+        .mc-op:hover, .mc-op.activa { background: #eef2ff; }
+        .mc-op.bloqueada { opacity: .5; cursor: not-allowed; }
+        .mc-op small { display: block; color: #94a3b8; font-size: .75rem; }
+        .mc-vacio { padding: .6rem .75rem; font-size: .85rem; color: #94a3b8; }
         .tablero { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; }
         .paciente { background: #fff; border: 1px solid #e5e7eb; border-left: 4px solid #f59e0b; border-radius: .75rem; padding: 1rem; display: flex; flex-direction: column; gap: .6rem;
                     text-decoration: none; color: inherit; transition: box-shadow .15s, transform .15s; }
@@ -181,12 +189,13 @@ $icono = fn($esp) => strtolower((string)$esp) === 'gato' ? '🐱' : '🐶';
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Mascota <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="h-nombre" required list="h-mascotas" placeholder="Busca la mascota por nombre o dueño">
-                            <datalist id="h-mascotas">
-                                <?php foreach ($mascotas as $m): ?>
-                                <option value="<?= $e($m['nombre']) ?><?= $m['cliente_nombre'] ? ' — ' . $e($m['cliente_nombre']) : '' ?>">
-                                <?php endforeach; ?>
-                            </datalist>
+                            <div class="mc">
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                    <input type="text" class="form-control" id="h-nombre" required placeholder="Selecciona o busca la mascota…" role="combobox" aria-expanded="false" aria-controls="h-lista">
+                                </div>
+                                <div class="mc-lista" id="h-lista" role="listbox"></div>
+                            </div>
                             <div class="form-text" id="h-info">Elige una mascota registrada de la lista.</div>
                         </div>
                         <div class="col-md-6">
@@ -237,25 +246,85 @@ const INTERNADOS = <?= json_encode(array_map(fn($h) => (int)$h['mascota_id'], $i
 function nuevaHospitalizacion(mascota) {
     $id('formHosp').reset();
     $id('h-mascota_id').value = 0;
-    $id('h-info').textContent = 'Elige una mascota registrada de la lista.';
-    if (mascota) { $id('h-nombre').value = mascota.etiqueta; elegirMascota(); }
+    mensajeMascota('');
     bootstrap.Modal.getOrCreateInstance($id('modalHosp')).show();
-    setTimeout(() => (mascota ? $id('h-dx') : $id('h-nombre')).focus(), 300);
+    setTimeout(() => {
+        if (mascota && !INTERNADOS.includes(mascota.id)) elegirMascota(mascota);
+        else $id('h-nombre').focus();
+    }, 300);
 }
 
-// El campo guarda «Nombre — Dueño»; se enlaza a la mascota solo si coincide con una de la lista
-function elegirMascota() {
-    const t = $id('h-nombre').value.trim().toLowerCase();
-    const mismoNombre = MASCOTAS.filter(x => x.nombre.toLowerCase() === t);
-    const m = MASCOTAS.find(x => x.etiqueta.toLowerCase() === t) || (mismoNombre.length === 1 ? mismoNombre[0] : null);
-    $id('h-mascota_id').value = m ? m.id : 0;
-    $id('h-info').innerHTML = !m ? 'Elige una mascota registrada de la lista.'
-        : INTERNADOS.includes(m.id) ? '<span class="text-danger">Esta mascota ya está internada.</span>'
-        : `${m.especie}${m.raza ? ' · ' + m.raza : ''}${m.cliente ? ' · Dueño: ' + m.cliente : ''}`;
+// Mascota: lista desplegable con búsqueda (nombre, dueño o especie) solo sobre las mascotas registradas
+let activa = -1;
+const esc = t => escHtml(t);
+
+function etiquetaInfo(m) {
+    return `${m.especie}${m.raza ? ' · ' + m.raza : ''}${m.cliente ? ' · Dueño: ' + m.cliente : ''}`;
 }
-$id('h-nombre').addEventListener('input', elegirMascota);
+
+function filtrar() {
+    const q = $id('h-nombre').value.trim().toLowerCase();
+    return MASCOTAS.filter(m => !q || (m.nombre + ' ' + m.cliente + ' ' + m.especie + ' ' + m.raza).toLowerCase().includes(q)).slice(0, 40);
+}
+
+function abrirLista() {
+    const res = filtrar();
+    activa = res.findIndex(m => !INTERNADOS.includes(m.id));
+    $id('h-lista').innerHTML = res.length
+        ? res.map((m, i) => {
+            const dentro = INTERNADOS.includes(m.id);
+            return `<div class="mc-op ${dentro ? 'bloqueada' : ''} ${i === activa ? 'activa' : ''}" role="option" data-id="${m.id}">
+                <span>${m.especie.toLowerCase() === 'gato' ? '🐱' : '🐶'}</span>
+                <div><b>${esc(m.nombre)}</b>${dentro ? ' <span class="badge bg-warning-subtle text-warning-emphasis">Internado</span>' : ''}
+                <small>${esc([m.cliente ? 'Dueño: ' + m.cliente : 'Sin dueño', m.especie, m.raza].filter(Boolean).join(' · '))}</small></div></div>`;
+        }).join('')
+        : '<div class="mc-vacio">Ninguna mascota registrada coincide</div>';
+    $id('h-lista').style.display = 'block';
+    $id('h-nombre').setAttribute('aria-expanded', 'true');
+}
+function cerrarLista() { $id('h-lista').style.display = 'none'; $id('h-nombre').setAttribute('aria-expanded', 'false'); }
+
+function elegirMascota(m) {
+    $id('h-mascota_id').value = m.id;
+    $id('h-nombre').value = m.nombre + (m.cliente ? ' — ' + m.cliente : '');
+    $id('h-info').textContent = etiquetaInfo(m);
+    $id('h-info').className = 'form-text';
+    cerrarLista();
+    $id('h-dx').focus();
+}
+
+function mensajeMascota(texto) {
+    $id('h-info').innerHTML = texto ? `<span class="text-danger">${texto}</span>` : 'Elige una mascota registrada de la lista.';
+}
+
+// Escribir solo filtra: la mascota queda elegida únicamente al seleccionarla de la lista
+$id('h-nombre').addEventListener('input', () => { $id('h-mascota_id').value = 0; mensajeMascota(''); abrirLista(); });
+$id('h-nombre').addEventListener('focus', abrirLista);
+$id('h-nombre').addEventListener('blur', () => setTimeout(() => {
+    cerrarLista();
+    if (!Number($id('h-mascota_id').value)) $id('h-nombre').value = '';   // sin selección no queda texto suelto
+}, 150));
+$id('h-nombre').addEventListener('keydown', e => {
+    const ops = [...$id('h-lista').querySelectorAll('.mc-op:not(.bloqueada)')];
+    if (e.key === 'Escape') { e.stopPropagation(); cerrarLista(); return; }
+    if (!ops.length || !['ArrowDown', 'ArrowUp', 'Enter'].includes(e.key)) return;
+    e.preventDefault();
+    let i = ops.findIndex(o => o.classList.contains('activa'));
+    if (e.key === 'Enter') { if (i < 0) i = 0; elegirMascota(MASCOTAS.find(m => m.id === Number(ops[i].dataset.id))); return; }
+    i = e.key === 'ArrowDown' ? Math.min(ops.length - 1, i + 1) : Math.max(0, i - 1);
+    ops.forEach(o => o.classList.remove('activa'));
+    ops[i].classList.add('activa');
+    ops[i].scrollIntoView({ block: 'nearest' });
+});
+$id('h-lista').addEventListener('mousedown', e => {
+    const op = e.target.closest('.mc-op');
+    e.preventDefault();
+    if (!op) return;
+    if (op.classList.contains('bloqueada')) { mensajeMascota('Esta mascota ya está internada.'); return; }
+    elegirMascota(MASCOTAS.find(m => m.id === Number(op.dataset.id)));
+});
 $id('formHosp').addEventListener('submit', e => {
-    if (!Number($id('h-mascota_id').value)) { e.preventDefault(); $id('h-info').innerHTML = '<span class="text-danger">Elige una mascota registrada de la lista.</span>'; $id('h-nombre').focus(); }
+    if (!Number($id('h-mascota_id').value)) { e.preventDefault(); mensajeMascota('Elige una mascota registrada de la lista.'); $id('h-nombre').focus(); }
 });
 
 $id('h-vet').addEventListener('input', () => {
