@@ -178,12 +178,13 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT | JSON_
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Veterinario</label>
-                            <select class="form-select" name="veterinario_id">
-                                <option value="0">—</option>
-                                <?php foreach ($veterinarios as $v): ?>
-                                <option value="<?= (int)$v['id'] ?>"<?= (int)$v['id'] === (int)$_SESSION['usuario_id'] ? ' selected' : '' ?>><?= htmlspecialchars($v['nombre']) ?></option>
-                                <?php endforeach; ?>
-                            </select>
+                            <?php $miVet = current(array_filter($veterinarios, fn($v) => (int)$v['id'] === (int)$_SESSION['usuario_id'])) ?: null; ?>
+                            <input type="text" class="form-control" id="o-vet" list="o-vets" maxlength="100" placeholder="Busca el veterinario"
+                                   value="<?= htmlspecialchars($miVet['nombre'] ?? '') ?>">
+                            <input type="hidden" name="veterinario_id" id="o-vet-id" value="<?= (int)($miVet['id'] ?? 0) ?>">
+                            <datalist id="o-vets">
+                                <?php foreach ($veterinarios as $v): ?><option value="<?= htmlspecialchars($v['nombre']) ?>"><?php endforeach; ?>
+                            </datalist>
                         </div>
                         <div class="col-md-6 d-flex align-items-end">
                             <div class="form-check">
@@ -218,6 +219,13 @@ const MASCOTAS = <?= json_encode(array_map(fn($m) => [
     'cliente_id' => (int)($m['cliente_id'] ?? 0),
     'cliente' => (string)($m['cliente_nombre'] ?? ''), 'cc' => (string)($m['cliente_dni'] ?? ''),
 ], $mascotas), $jsonFlags) ?>;
+
+const VETERINARIOS = <?= json_encode(array_map(fn($v) => ['id' => (int)$v['id'], 'nombre' => $v['nombre']], $veterinarios), $jsonFlags) ?>;
+// Veterinario: el nombre escrito se enlaza al id solo si coincide con uno de la lista
+$id('o-vet').addEventListener('input', () => {
+    const v = VETERINARIOS.find(x => x.nombre.toLowerCase() === $id('o-vet').value.trim().toLowerCase());
+    $id('o-vet-id').value = v ? v.id : 0;
+});
 
 const norm = s => String(s || '').trim().toLowerCase();
 // Responsables únicos (clientes que tienen mascotas registradas)
@@ -293,7 +301,8 @@ function editarOrden(id) {
     $id('o-cc').value         = o.responsable_cc;
     fijarProcedimiento(o.procedimiento);
     f.fecha.value             = o.fecha;
-    f.veterinario_id.value    = o.veterinario_id;
+    $id('o-vet-id').value     = o.veterinario_id;
+    $id('o-vet').value        = (VETERINARIOS.find(v => v.id === o.veterinario_id) || {}).nombre || '';
     $id('o-examenes').checked = !!o.examenes;
     f.notas.value             = o.notas;
     $id('o-titulo').textContent = 'Editar orden de cirugía';
