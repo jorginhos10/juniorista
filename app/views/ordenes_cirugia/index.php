@@ -297,6 +297,13 @@ $id('buscador').addEventListener('input', function () {
     $id('filaVacia').style.display = n ? 'none' : '';
     $id('textoVacio').textContent = q ? 'Ninguna orden coincide con la búsqueda.' : 'Aún no hay órdenes de cirugía.';
 });
+
+// Llegó desde el Historial con una mascota: abre la nueva orden ya rellenada
+const MASCOTA_INICIAL = <?= (int)$mascotaInicial ?>;
+if (MASCOTA_INICIAL) {
+    const m = MASCOTAS.find(x => x.id === MASCOTA_INICIAL);
+    if (m) { nuevaOrden(); aplicarMascota(m); pintarSugerencias(); }
+}
 </script>
 </body>
 </html>

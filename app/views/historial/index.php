@@ -233,6 +233,11 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
                                     <button type="button" class="btn btn-sm btn-outline-danger" onclick="abrirAdjuntar()" title="Adjuntar un PDF con su descripción">
                                         <i class="bi bi-paperclip me-1"></i>Adjuntar PDF
                                     </button>
+                                    <?php if (Permisos::puede('ordenes-cirugia')): ?>
+                                    <a href="<?= BASE_URL ?>/ordenes-cirugia?mascota=<?= $mascota['id'] ?>" class="btn btn-sm btn-outline-secondary" title="Crear una orden de cirugía con el consentimiento informado">
+                                        <i class="bi bi-bandaid me-1"></i>Orden de cirugía
+                                    </a>
+                                    <?php endif; ?>
                                     <a href="<?= BASE_URL ?>/citas?nueva=1" class="btn btn-sm btn-light">
                                         <i class="bi bi-calendar-plus me-1"></i>Agendar cita
                                     </a>
