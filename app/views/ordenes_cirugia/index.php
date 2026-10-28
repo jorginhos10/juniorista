@@ -142,11 +142,7 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT | JSON_
                         <div class="col-md-5">
                             <label class="form-label fw-semibold">Mascota <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" name="mascota_nombre" id="o-nombre" maxlength="100" required list="o-mascotas" placeholder="Busca o escribe el nombre">
-                            <datalist id="o-mascotas">
-                                <?php foreach ($mascotas as $m): ?>
-                                <option value="<?= htmlspecialchars($m['nombre']) ?>" label="<?= htmlspecialchars(trim(($m['cliente_nombre'] ? 'Dueño: ' . $m['cliente_nombre'] : 'Sin dueño') . ' · ' . $m['especie'])) ?>">
-                                <?php endforeach; ?>
-                            </datalist>
+                            <datalist id="o-mascotas"></datalist>
                         </div>
                         <div class="col-md-3">
                             <label class="form-label fw-semibold">Especie</label>
@@ -158,7 +154,8 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT | JSON_
                         </div>
                         <div class="col-md-8">
                             <label class="form-label fw-semibold">Responsable del paciente</label>
-                            <input type="text" class="form-control" name="responsable_nombre" id="o-resp" maxlength="200">
+                            <input type="text" class="form-control" name="responsable_nombre" id="o-resp" maxlength="200" list="o-responsables" placeholder="Busca o escribe el nombre">
+                            <datalist id="o-responsables"></datalist>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-semibold">C.C.</label>
@@ -215,26 +212,71 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT | JSON_
 const $id = id => document.getElementById(id);
 const MASCOTAS = <?= json_encode(array_map(fn($m) => [
     'id' => (int)$m['id'], 'nombre' => $m['nombre'], 'especie' => (string)$m['especie'], 'raza' => (string)($m['raza'] ?? ''),
+    'cliente_id' => (int)($m['cliente_id'] ?? 0),
     'cliente' => (string)($m['cliente_nombre'] ?? ''), 'cc' => (string)($m['cliente_dni'] ?? ''),
 ], $mascotas), $jsonFlags) ?>;
+
+const norm = s => String(s || '').trim().toLowerCase();
+// Responsables únicos (clientes que tienen mascotas registradas)
+const RESPONSABLES = [...new Map(MASCOTAS.filter(m => m.cliente_id).map(m => [m.cliente_id, { id: m.cliente_id, nombre: m.cliente, cc: m.cc }])).values()];
+
+const opcion = (valor, etiqueta) => { const o = document.createElement('option'); o.value = valor; o.label = etiqueta; return o; };
+
+// Responsable escrito/elegido (si coincide con un cliente registrado)
+const responsableActual = () => RESPONSABLES.find(r => norm(r.nombre) === norm($id('o-resp').value));
+
+// Cada campo sugiere según el otro: con un responsable elegido, la mascota solo ofrece sus mascotas; con una mascota, el responsable ofrece a sus dueños
+function pintarSugerencias() {
+    const r = responsableActual();
+    const mascotas = r ? MASCOTAS.filter(m => m.cliente_id === r.id) : MASCOTAS;
+    const dl = $id('o-mascotas');
+    dl.replaceChildren(...mascotas.map(m => opcion(m.nombre, [m.cliente ? 'Dueño: ' + m.cliente : 'Sin dueño', m.especie].filter(Boolean).join(' · '))));
+
+    const nombre = norm($id('o-nombre').value);
+    const duenos = nombre ? MASCOTAS.filter(m => norm(m.nombre) === nombre && m.cliente_id).map(m => m.cliente_id) : [];
+    const lista = duenos.length ? RESPONSABLES.filter(x => duenos.includes(x.id)) : RESPONSABLES;
+    $id('o-responsables').replaceChildren(...lista.map(x => opcion(x.nombre, x.cc ? 'C.C. ' + x.cc : '')));
+}
+
+function aplicarMascota(m) {
+    $id('o-mascota_id').value = m.id;
+    $id('o-nombre').value  = m.nombre;
+    $id('o-especie').value = m.especie;
+    $id('o-raza').value    = m.raza;
+    if (m.cliente) { $id('o-resp').value = m.cliente; $id('o-cc').value = m.cc; }
+}
 
 function nuevaOrden() {
     $id('formOrden').reset();
     $id('o-mascota_id').value = 0;
+    pintarSugerencias();
     bootstrap.Modal.getOrCreateInstance($id('modalOrden')).show();
     setTimeout(() => $id('o-nombre').focus(), 300);
 }
 
-// Al elegir una mascota registrada se rellenan especie, raza, responsable y cédula (todo sigue editable)
+// Mascota elegida → completa el responsable y los demás datos (si hay varias con ese nombre, prefiere la del responsable ya puesto)
 $id('o-nombre').addEventListener('input', () => {
-    const m = MASCOTAS.find(x => x.nombre.toLowerCase() === $id('o-nombre').value.trim().toLowerCase());
-    $id('o-mascota_id').value = m ? m.id : 0;
-    if (!m) return;
-    $id('o-especie').value = m.especie;
-    $id('o-raza').value    = m.raza;
-    $id('o-resp').value    = m.cliente;
-    $id('o-cc').value      = m.cc;
+    const r = responsableActual();
+    const candidatas = MASCOTAS.filter(x => norm(x.nombre) === norm($id('o-nombre').value));
+    const m = candidatas.find(x => r && x.cliente_id === r.id) || candidatas[0];
+    if (m) aplicarMascota(m); else $id('o-mascota_id').value = 0;
+    pintarSugerencias();
 });
+
+// Responsable elegido → completa la cédula y, si solo tiene una mascota (o ya hay una suya escrita), la mascota
+$id('o-resp').addEventListener('input', () => {
+    const r = responsableActual();
+    if (r) {
+        $id('o-cc').value = r.cc;
+        const suyas = MASCOTAS.filter(m => m.cliente_id === r.id);
+        const actual = suyas.find(m => norm(m.nombre) === norm($id('o-nombre').value));
+        if (actual) aplicarMascota(actual);
+        else if (suyas.length === 1 && !$id('o-nombre').value.trim()) aplicarMascota(suyas[0]);
+    }
+    pintarSugerencias();
+});
+
+pintarSugerencias();
 
 function estado(id, nuevo) {
     if (!confirm(nuevo === 'realizada' ? '¿Marcar la cirugía como realizada?' : '¿Cancelar esta orden?')) return;
