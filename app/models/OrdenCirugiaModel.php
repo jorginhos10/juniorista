@@ -11,6 +11,19 @@ class OrdenCirugiaModel {
         'cancelada'  => ['Cancelada',  'secondary'],
     ];
 
+    // Cirugías y servicios de la tarifa; además se puede escribir otro procedimiento
+    public const PROCEDIMIENTOS = [
+        'OVH en perras', 'OVH en gatas', 'Castración en perros', 'Castración en gatos',
+        'Cesárea perras', 'Cesárea gatas', 'Piometra perras', 'Piometra gatas',
+        'Mastectomía perras unilateral', 'Mastectomía perras bilateral', 'Mastectomía gatos unilateral', 'Mastectomía gatos bilateral',
+        'Cistectomía perros', 'Cistectomía gatos', 'Otohematomas unilateral', 'Otohematomas bilateral',
+        'Prolapso 3er párpado unilateral', 'Prolapso 3er párpado bilateral', 'Enucleación',
+        'Tumor sticker - hembras', 'Tumor sticker - machos', 'Tumor sticker - nasal',
+        'Férulas Robert Jhon perro', 'Férulas Robert Jhon gatos', 'Mucocele - unilateral', 'Mucocele - bilateral',
+        'Suturación', 'Miasis perro', 'Miasis gato', 'Rx 1 vista', 'Rx 2 vista',
+        'Ecografía digital', 'Ecografía análoga', 'Profilaxis',
+    ];
+
     private mysqli $db;
 
     public function __construct() {

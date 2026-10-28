@@ -37,6 +37,7 @@ class OrdenCirugiaController {
             'hoy'            => date('Y-m-d'),
             'ordenes'        => $this->model->getAll(),
             'estados'        => OrdenCirugiaModel::ESTADOS,
+            'procedimientos' => OrdenCirugiaModel::PROCEDIMIENTOS,
             'mascotas'       => $this->historial->getMascotas(),
             'mascotaInicial' => (int)($_GET['mascota'] ?? 0),   // viene del Historial: abre la orden con la mascota elegida
             'veterinarios'   => $this->historial->getVeterinarios(),

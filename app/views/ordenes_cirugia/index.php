@@ -165,11 +165,12 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT | JSON_
                         </div>
                         <div class="col-md-8">
                             <label class="form-label fw-semibold">Cirugía o procedimiento <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" name="procedimiento" id="o-proc" maxlength="150" required list="o-procs" placeholder="Ej: Castración">
-                            <datalist id="o-procs">
-                                <option value="Castración"><option value="Esterilización"><option value="Profilaxis dental">
-                                <option value="Extracción de masa"><option value="Cesárea"><option value="Hernia">
-                            </datalist>
+                            <select class="form-select" id="o-proc-sel" required>
+                                <option value="">Selecciona…</option>
+                                <?php foreach ($procedimientos as $p): ?><option value="<?= htmlspecialchars($p) ?>"><?= htmlspecialchars($p) ?></option><?php endforeach; ?>
+                                <option value="__otro">Otro (escribir)…</option>
+                            </select>
+                            <input type="text" class="form-control mt-2 d-none" name="procedimiento" id="o-proc" maxlength="150" placeholder="Escribe la cirugía o procedimiento">
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-semibold">Fecha</label>
@@ -255,6 +256,28 @@ const ORDENES = <?= json_encode(array_map(fn($o) => [
     'examenes' => (int)$o['examenes_prequirurgicos'], 'notas' => $o['notas'],
 ], $ordenes), $jsonFlags) ?>;
 
+// Cirugía: lista de la tarifa o texto libre. El campo «procedimiento» siempre lleva el valor final que se guarda
+const PROCEDIMIENTOS = <?= json_encode($procedimientos, $jsonFlags) ?>;
+function fijarProcedimiento(texto) {
+    const sel = $id('o-proc-sel'), inp = $id('o-proc');
+    const enLista = PROCEDIMIENTOS.includes(texto);
+    sel.value = !texto ? '' : (enLista ? texto : '__otro');
+    inp.value = texto || '';
+    mostrarOtro();
+}
+function mostrarOtro() {
+    const sel = $id('o-proc-sel'), inp = $id('o-proc'), otro = sel.value === '__otro';
+    inp.classList.toggle('d-none', !otro);
+    inp.required = otro;
+    if (!otro) inp.value = sel.value;
+}
+$id('o-proc-sel').addEventListener('change', () => {
+    const otro = $id('o-proc-sel').value === '__otro';
+    if (otro) $id('o-proc').value = '';
+    mostrarOtro();
+    if (otro) $id('o-proc').focus();
+});
+
 // Editar: solo órdenes programadas; reutiliza el formulario con los datos de la orden
 function editarOrden(id) {
     const o = ORDENES.find(x => x.id === id);
@@ -268,7 +291,7 @@ function editarOrden(id) {
     $id('o-raza').value       = o.raza;
     $id('o-resp').value       = o.responsable_nombre;
     $id('o-cc').value         = o.responsable_cc;
-    $id('o-proc').value       = o.procedimiento;
+    fijarProcedimiento(o.procedimiento);
     f.fecha.value             = o.fecha;
     f.veterinario_id.value    = o.veterinario_id;
     $id('o-examenes').checked = !!o.examenes;
@@ -282,6 +305,7 @@ function editarOrden(id) {
 function nuevaOrden() {
     $id('formOrden').reset();
     $id('o-id').value = 0;
+    fijarProcedimiento('');
     $id('o-titulo').textContent = 'Nueva orden de cirugía';
     $id('o-btn').textContent    = 'Guardar e imprimir consentimiento';
     $id('o-mascota_id').value = 0;
