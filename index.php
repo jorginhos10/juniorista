@@ -403,6 +403,11 @@ switch ($uri) {
         (new HistorialController())->formato();
         break;
 
+    case 'historial/consentimiento':
+        require_once ROOT . '/app/controllers/HistorialController.php';
+        (new HistorialController())->consentimiento();
+        break;
+
     case 'historial/imprimir':
         require_once ROOT . '/app/controllers/HistorialController.php';
         (new HistorialController())->imprimir();

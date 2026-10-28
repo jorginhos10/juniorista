@@ -82,6 +82,24 @@ class HistorialController {
         ]);
     }
 
+    /** Consentimiento informado imprimible, con la mascota y el responsable ya rellenados */
+    public function consentimiento(): void {
+        $mascota_id = (int)($_GET['mascota'] ?? 0);
+        $mascota    = null;
+        foreach ($this->model->getMascotas() as $m) {
+            if ((int)$m['id'] === $mascota_id) { $mascota = $m; break; }
+        }
+        if (!$mascota) {
+            $this->redirect('historial');
+        }
+
+        $this->render('historial/consentimiento', [
+            'mascota'       => $mascota,
+            'veterinaria'   => $this->vetModel->findById(Seguridad::sucursalActual()),
+            'procedimiento' => mb_substr(trim($_GET['procedimiento'] ?? ''), 0, 120),
+        ]);
+    }
+
     public function guardar(): void {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->redirect('historial');

@@ -223,6 +223,9 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
                                     <a href="<?= BASE_URL ?>/historial/imprimir?mascota=<?= $mascota['id'] ?>" target="_blank" class="btn btn-sm btn-outline-secondary">
                                         <i class="bi bi-printer me-1"></i>Imprimir historia
                                     </a>
+                                    <a href="<?= BASE_URL ?>/historial/consentimiento?mascota=<?= $mascota['id'] ?>" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                        <i class="bi bi-file-earmark-text me-1"></i>Consentimiento informado
+                                    </a>
                                     <?php if (Permisos::puede('formulas')): ?>
                                     <a href="<?= BASE_URL ?>/formulas/nueva?mascota=<?= $mascota['id'] ?>" class="btn btn-sm btn-outline-primary">
                                         <i class="bi bi-prescription2 me-1"></i>Fórmula médica
