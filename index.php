@@ -403,6 +403,36 @@ switch ($uri) {
         (new HistorialController())->formato();
         break;
 
+    case 'hospitalizacion':
+        require_once ROOT . '/app/controllers/HospitalizacionController.php';
+        (new HospitalizacionController())->index();
+        break;
+
+    case 'hospitalizacion/ver':
+        require_once ROOT . '/app/controllers/HospitalizacionController.php';
+        (new HospitalizacionController())->ver();
+        break;
+
+    case 'hospitalizacion/guardar':
+        require_once ROOT . '/app/controllers/HospitalizacionController.php';
+        (new HospitalizacionController())->guardar();
+        break;
+
+    case 'hospitalizacion/estado':
+        require_once ROOT . '/app/controllers/HospitalizacionController.php';
+        (new HospitalizacionController())->estado();
+        break;
+
+    case 'hospitalizacion/aplicacion':
+        require_once ROOT . '/app/controllers/HospitalizacionController.php';
+        (new HospitalizacionController())->aplicacion();
+        break;
+
+    case 'hospitalizacion/imprimir':
+        require_once ROOT . '/app/controllers/HospitalizacionController.php';
+        (new HospitalizacionController())->imprimir();
+        break;
+
     case 'ordenes-cirugia':
         require_once ROOT . '/app/controllers/OrdenCirugiaController.php';
         (new OrdenCirugiaController())->index();

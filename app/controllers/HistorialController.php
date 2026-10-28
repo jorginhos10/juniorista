@@ -2,6 +2,7 @@
 
 require_once ROOT . '/app/models/HistorialModel.php';
 require_once ROOT . '/app/models/VeterinariaModel.php';
+require_once ROOT . '/app/models/HospitalizacionModel.php';
 require_once ROOT . '/app/helpers/AdjuntosHistorial.php';
 
 class HistorialController {
@@ -34,6 +35,7 @@ class HistorialController {
             'mascotas'       => $mascotas,
             'mascota'        => $mascota,
             'registros'      => $mascota ? $this->model->getRegistros($mascota_id) : [],
+            'hospitalizaciones' => $mascota && Permisos::puede('hospitalizacion') ? (new HospitalizacionModel())->getPorMascota($mascota_id) : [],
             'adjuntosGenerales' => $mascota ? $this->model->getAdjuntosGenerales($mascota_id) : [],
             'proximos'       => $this->model->getProximos(date('Y-m-d')),
             'veterinarios'   => $this->model->getVeterinarios(),

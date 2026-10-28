@@ -233,6 +233,11 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
                                     <button type="button" class="btn btn-sm btn-outline-danger" onclick="abrirAdjuntar()" title="Adjuntar un PDF con su descripción">
                                         <i class="bi bi-paperclip me-1"></i>Adjuntar PDF
                                     </button>
+                                    <?php if (Permisos::puede('hospitalizacion')): ?>
+                                    <a href="<?= BASE_URL ?>/hospitalizacion?mascota=<?= $mascota['id'] ?>" class="btn btn-sm btn-outline-secondary" title="Internar al paciente y abrir su hoja ECOP">
+                                        <i class="bi bi-hospital me-1"></i>Hospitalizar
+                                    </a>
+                                    <?php endif; ?>
                                     <?php if (Permisos::puede('ordenes-cirugia')): ?>
                                     <a href="<?= BASE_URL ?>/ordenes-cirugia?mascota=<?= $mascota['id'] ?>" class="btn btn-sm btn-outline-secondary" title="Crear una orden de cirugía con el consentimiento informado">
                                         <i class="bi bi-bandaid me-1"></i>Orden de cirugía
@@ -266,6 +271,31 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
                             </div>
                         </div>
                     </div>
+
+                    <!-- Hospitalizaciones del paciente (hoja ECOP) -->
+                    <?php if (!empty($hospitalizaciones)): ?>
+                    <div class="card border-0 shadow-sm mb-3">
+                        <div class="card-body py-3">
+                            <div class="fw-semibold mb-2"><i class="bi bi-hospital me-1"></i>Hospitalizaciones
+                                <span class="badge bg-warning-subtle text-warning-emphasis ms-1"><?= count($hospitalizaciones) ?></span></div>
+                            <?php foreach ($hospitalizaciones as $hs): $abierta = $hs['estado'] === 'internado'; ?>
+                            <div class="d-flex align-items-center gap-2 py-1 border-top flex-wrap">
+                                <i class="bi bi-clipboard2-pulse fs-5 <?= $abierta ? 'text-warning' : 'text-muted' ?>"></i>
+                                <div class="flex-grow-1 min-w-0">
+                                    <a href="<?= BASE_URL ?>/hospitalizacion/ver?id=<?= (int)$hs['id'] ?>" class="fw-semibold text-decoration-none"><?= htmlspecialchars($hs['diagnostico']) ?></a>
+                                    <div class="small text-muted">
+                                        <?= date('d/m/Y', strtotime($hs['fecha_ingreso'])) ?><?= $hs['fecha_salida'] ? ' → ' . date('d/m/Y', strtotime($hs['fecha_salida'])) : '' ?>
+                                        · <?= (int)$hs['total_aplicaciones'] ?> aplicaciones
+                                    </div>
+                                </div>
+                                <span class="badge bg-<?= $abierta ? 'warning' : 'secondary' ?>-subtle text-<?= $abierta ? 'warning' : 'secondary' ?>-emphasis"><?= $abierta ? 'Internado' : ucfirst($hs['estado']) ?></span>
+                                <a href="<?= BASE_URL ?>/hospitalizacion/ver?id=<?= (int)$hs['id'] ?>" class="btn btn-sm btn-outline-primary btn-accion" title="Abrir hoja ECOP"><i class="bi bi-eye"></i></a>
+                                <a href="<?= BASE_URL ?>/hospitalizacion/imprimir?id=<?= (int)$hs['id'] ?>" target="_blank" class="btn btn-sm btn-outline-secondary btn-accion" title="Imprimir ECOP"><i class="bi bi-printer"></i></a>
+                            </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                    <?php endif; ?>
 
                     <!-- Documentos adjuntos generales (no ligados a un registro) -->
                     <?php if (!empty($adjuntosGenerales)): ?>
