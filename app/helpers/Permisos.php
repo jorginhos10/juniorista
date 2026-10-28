@@ -20,7 +20,8 @@ class Permisos {
         'peluqueria'  => ['Peluquería',       'scissors',                'Servicios'],
         'laboratorio' => ['Laboratorios',     'eyedropper',              'Servicios'],
         'ordenes-laboratorio' => ['Órdenes de laboratorio', 'clipboard2-pulse', 'Servicios'],   // doctor: solo envía exámenes y valor, sin ver dinero
-        'ventas'      => ['Ventas',           'bag-fill',                'Caja'],
+        'ordenes-cirugia' => ['Órdenes de cirugía', 'bandaid', 'Servicios'],
+        'ventas'      => ['Ventas',          'bag-fill',                'Caja'],
         'facturacion' => ['Facturación',      'receipt-cutoff',          'Caja'],
         'gastos'      => ['Gastos',           'wallet2',                 'Caja'],
         'arqueo'      => ['Arqueo de caja',   'cash-stack',              'Caja'],

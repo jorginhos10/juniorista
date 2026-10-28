@@ -6,7 +6,7 @@ $clinica = mb_strtoupper($veterinaria['nombre'] ?? 'Veterinaria');
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Consentimiento informado — <?= $e($mascota['nombre']) ?></title>
+    <title>Consentimiento informado — <?= $e($orden["mascota_nombre"]) ?></title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: Arial, Helvetica, sans-serif; font-size: 13px; line-height: 1.45; color: #111; background: #fff; padding: 36px 56px; max-width: 820px; margin: 0 auto; }
@@ -36,16 +36,16 @@ $clinica = mb_strtoupper($veterinaria['nombre'] ?? 'Veterinaria');
 <body>
 
 <div class="no-print">
-    <label><input type="checkbox" id="chkSinExamenes" checked> «No se realizaron los exámenes prequirúrgicos»</label>
+    <label><input type="checkbox" id="chkSinExamenes" <?= $orden["examenes_prequirurgicos"] ? "" : "checked" ?>> «No se realizaron los exámenes prequirúrgicos»</label>
     <small style="color:#6b7280">Haz clic en el procedimiento, la raza u otro dato subrayado para corregirlo.</small>
     <button onclick="window.print()" style="background:#4f46e5;color:#fff">Imprimir</button>
     <button onclick="window.close()" style="background:#e5e7eb">Cerrar</button>
 </div>
 
-<div class="fecha">FECHA: <span class="campo" style="min-width:170px" contenteditable="true"><?= date('d/m/y') ?></span></div>
+<div class="fecha">FECHA: <span class="campo" style="min-width:170px" contenteditable="true"><?= date('d/m/y', strtotime($orden['fecha'])) ?></span></div>
 
 <div class="titulo">
-    <div class="alerta" id="alertaExamenes">NO SE REALIZARON LOS EXAMENES PREQUIRURGICO CORRESPONDIENTE</div>
+    <div class="alerta" id="alertaExamenes" style="<?= $orden["examenes_prequirurgicos"] ? "display:none" : "" ?>">NO SE REALIZARON LOS EXAMENES PREQUIRURGICO CORRESPONDIENTE</div>
     <h1>AUTORIZACIÓN VOLUNTARIA</h1>
     <h2>(CONSENTIMIENTO INFORMADO)</h2>
 </div>
@@ -54,11 +54,11 @@ $clinica = mb_strtoupper($veterinaria['nombre'] ?? 'Veterinaria');
 
 <ol>
     <li>1. En pleno uso de mis facultades mentales, autorizo al EQUIPO “<b><?= $e($clinica) ?></b>” y a los asistentes de su elección, para realizar en el (la) paciente
-        <span class="campo" contenteditable="true"><?= $e($mascota['nombre']) ?></span>,
-        especie <span class="campo" contenteditable="true"><?= $e($mascota['especie']) ?></span>
-        y raza <span class="campo" contenteditable="true"><?= $e($mascota['raza'] ?? '') ?></span>
+        <span class="campo" contenteditable="true"><?= $e($orden["mascota_nombre"]) ?></span>,
+        especie <span class="campo" contenteditable="true"><?= $e($orden['especie']) ?></span>
+        y raza <span class="campo" contenteditable="true"><?= $e($orden['raza']) ?></span>
         la siguiente intervención o procedimiento especial:
-        <span class="campo largo" contenteditable="true"><?= $e($procedimiento) ?></span></li>
+        <span class="campo largo" contenteditable="true"><?= $e($orden['procedimiento']) ?></span></li>
     <li>2. Después del examen clínico practicado por el médico especialista tratante y los exámenes complementarios pertinentes, se me ha explicado la naturaleza y el propósito de la intervención o procedimiento especial, así como las ventajas, complicaciones y riesgos que puedan producirse, en particular las siguientes:
         <ol class="sub">
             <li>a. Shock anafiláctico.</li>
@@ -78,9 +78,9 @@ $clinica = mb_strtoupper($veterinaria['nombre'] ?? 'Veterinaria');
 <div class="firma">
     <div style="height:46px"></div>
     <div class="linea">Firma del responsable del paciente</div>
-    <div class="cc">C.C. <span contenteditable="true"><?= $e($mascota['cliente_dni'] ?? '') ?></span></div>
-    <?php if (!empty($mascota['cliente_nombre'])): ?>
-    <div style="font-size:12px;margin-top:2px"><?= $e($mascota['cliente_nombre']) ?></div>
+    <div class="cc">C.C. <span contenteditable="true"><?= $e($orden['responsable_cc']) ?></span></div>
+    <?php if ($orden['responsable_nombre'] !== ''): ?>
+    <div style="font-size:12px;margin-top:2px"><?= $e($orden['responsable_nombre']) ?></div>
     <?php endif; ?>
 </div>
 

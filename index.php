@@ -403,9 +403,24 @@ switch ($uri) {
         (new HistorialController())->formato();
         break;
 
-    case 'historial/consentimiento':
-        require_once ROOT . '/app/controllers/HistorialController.php';
-        (new HistorialController())->consentimiento();
+    case 'ordenes-cirugia':
+        require_once ROOT . '/app/controllers/OrdenCirugiaController.php';
+        (new OrdenCirugiaController())->index();
+        break;
+
+    case 'ordenes-cirugia/guardar':
+        require_once ROOT . '/app/controllers/OrdenCirugiaController.php';
+        (new OrdenCirugiaController())->guardar();
+        break;
+
+    case 'ordenes-cirugia/estado':
+        require_once ROOT . '/app/controllers/OrdenCirugiaController.php';
+        (new OrdenCirugiaController())->estado();
+        break;
+
+    case 'ordenes-cirugia/consentimiento':
+        require_once ROOT . '/app/controllers/OrdenCirugiaController.php';
+        (new OrdenCirugiaController())->consentimiento();
         break;
 
     case 'historial/imprimir':

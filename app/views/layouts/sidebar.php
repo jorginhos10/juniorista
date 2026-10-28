@@ -48,6 +48,7 @@ $_tema = $_SESSION['tema'] ?? 'original';
                     ['peluqueria',       'peluqueria',         'scissors',              'Peluquería'],
                     ['laboratorio',      'laboratorio',        'eyedropper',            'Laboratorios'],
                     ['ordenes-laboratorio', 'ordenes-laboratorio', 'clipboard2-pulse',     'Órdenes de laboratorio'],
+                    ['ordenes-cirugia',  'ordenes-cirugia',    'bandaid',               'Órdenes de cirugía'],
                 ],
                 'Inventario' => [
                     ['almacen',          'almacen',            'archive-fill',          'Almacén'],
