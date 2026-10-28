@@ -92,6 +92,27 @@ class OrdenCirugiaModel {
         return $id;
     }
 
+    /** Solo se edita mientras la orden sigue programada */
+    public function actualizar(int $id, array $d): bool {
+        $mascota = $d['mascota_id'] ?: null;
+        $cliente = $d['cliente_id'] ?: null;
+        $medico  = $d['veterinario_id'] ?: null;
+        $stmt = $this->db->prepare(
+            "UPDATE ordenes_cirugia SET fecha=?, mascota_id=?, cliente_id=?, mascota_nombre=?, especie=?, raza=?,
+                    responsable_nombre=?, responsable_cc=?, procedimiento=?, veterinario_id=?, examenes_prequirurgicos=?, notas=?
+              WHERE id=? AND veterinaria_id=? AND estado='programada'"
+        );
+        $vet = Seguridad::sucursalActual();
+        $stmt->bind_param('siissssssiisii',
+            $d['fecha'], $mascota, $cliente, $d['mascota_nombre'], $d['especie'], $d['raza'],
+            $d['responsable_nombre'], $d['responsable_cc'], $d['procedimiento'], $medico,
+            $d['examenes_prequirurgicos'], $d['notas'], $id, $vet
+        );
+        $ok = $stmt->execute() && $stmt->affected_rows >= 0;
+        $stmt->close();
+        return $ok;
+    }
+
     public function cambiarEstado(int $id, string $estado): bool {
         if (!isset(self::ESTADOS[$estado])) return false;
         $stmt = $this->db->prepare('UPDATE ordenes_cirugia SET estado = ? WHERE id = ? AND veterinaria_id = ?');

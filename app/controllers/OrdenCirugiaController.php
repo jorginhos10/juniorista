@@ -3,6 +3,7 @@
 require_once ROOT . '/app/models/OrdenCirugiaModel.php';
 require_once ROOT . '/app/models/HistorialModel.php';
 require_once ROOT . '/app/models/VeterinariaModel.php';
+require_once ROOT . '/app/models/FacturacionModel.php';
 
 /** Órdenes de cirugía: programa el procedimiento y imprime el consentimiento informado con los datos ya rellenados */
 class OrdenCirugiaController {
@@ -82,6 +83,15 @@ class OrdenCirugiaController {
             $_SESSION['flash_error'] = 'Indica el nombre de la mascota.';
         } elseif ($d['procedimiento'] === '') {
             $_SESSION['flash_error'] = 'Indica la cirugía o procedimiento.';
+        } elseif (($editar = (int)($_POST['id'] ?? 0)) > 0) {
+            $actual = $this->model->find($editar);
+            if (!$actual || $actual['estado'] !== 'programada') {
+                $_SESSION['flash_error'] = 'Solo se pueden editar órdenes programadas.';
+            } elseif ($this->model->actualizar($editar, $d)) {
+                $_SESSION['flash_success'] = 'Orden actualizada.';
+            } else {
+                $_SESSION['flash_error'] = 'No se pudo actualizar la orden.';
+            }
         } elseif ($id = $this->model->crear($d)) {
             // Al guardar se abre el consentimiento listo para imprimir
             $this->redirect('ordenes-cirugia/consentimiento?id=' . $id);
@@ -104,7 +114,7 @@ class OrdenCirugiaController {
 
         extract([
             'orden'       => $orden,
-            'veterinaria' => $this->vetModel->findById((int)$orden['veterinaria_id']),
+            'empresa'     => (new FacturacionModel())->getSucursal((int)$orden['veterinaria_id']),
         ]);
         require ROOT . '/app/views/ordenes_cirugia/consentimiento.php';
     }

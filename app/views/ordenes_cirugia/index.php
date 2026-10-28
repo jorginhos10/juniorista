@@ -105,6 +105,7 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT | JSON_
                                         <a class="btn btn-sm btn-outline-primary btn-accion" title="Imprimir consentimiento" target="_blank"
                                            href="<?= BASE_URL ?>/ordenes-cirugia/consentimiento?id=<?= (int)$o['id'] ?>"><i class="bi bi-printer"></i></a>
                                         <?php if ($o['estado'] === 'programada'): ?>
+                                        <button class="btn btn-sm btn-outline-secondary btn-accion" title="Editar" onclick="editarOrden(<?= (int)$o['id'] ?>)"><i class="bi bi-pencil"></i></button>
                                         <button class="btn btn-sm btn-outline-success btn-accion" title="Marcar como realizada" onclick="estado(<?= (int)$o['id'] ?>, 'realizada')"><i class="bi bi-check-lg"></i></button>
                                         <button class="btn btn-sm btn-outline-danger btn-accion" title="Cancelar" onclick="estado(<?= (int)$o['id'] ?>, 'cancelada')"><i class="bi bi-x-lg"></i></button>
                                         <?php endif; ?>
@@ -133,8 +134,9 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT | JSON_
         <div class="modal-content border-0 shadow">
             <form method="POST" action="<?= BASE_URL ?>/ordenes-cirugia/guardar" autocomplete="off" id="formOrden">
                 <input type="hidden" name="mascota_id" id="o-mascota_id" value="0">
+                <input type="hidden" name="id" id="o-id" value="0">
                 <div class="modal-header border-0 pb-0">
-                    <h5 class="modal-title fw-bold"><i class="bi bi-bandaid text-primary me-2"></i>Nueva orden de cirugía</h5>
+                    <h5 class="modal-title fw-bold"><i class="bi bi-bandaid text-primary me-2"></i><span id="o-titulo">Nueva orden de cirugía</span></h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body pt-3">
@@ -196,7 +198,7 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT | JSON_
                 </div>
                 <div class="modal-footer border-0 pt-0">
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary-custom"><i class="bi bi-printer me-1"></i>Guardar e imprimir consentimiento</button>
+                    <button type="submit" class="btn btn-primary-custom"><i class="bi bi-printer me-1"></i><span id="o-btn">Guardar e imprimir consentimiento</span></button>
                 </div>
             </form>
         </div>
@@ -246,8 +248,42 @@ function aplicarMascota(m) {
     if (m.cliente) { $id('o-resp').value = m.cliente; $id('o-cc').value = m.cc; }
 }
 
+const ORDENES = <?= json_encode(array_map(fn($o) => [
+    'id' => (int)$o['id'], 'fecha' => $o['fecha'], 'mascota_id' => (int)($o['mascota_id'] ?? 0), 'mascota_nombre' => $o['mascota_nombre'],
+    'especie' => $o['especie'], 'raza' => $o['raza'], 'responsable_nombre' => $o['responsable_nombre'], 'responsable_cc' => $o['responsable_cc'],
+    'procedimiento' => $o['procedimiento'], 'veterinario_id' => (int)($o['veterinario_id'] ?? 0),
+    'examenes' => (int)$o['examenes_prequirurgicos'], 'notas' => $o['notas'],
+], $ordenes), $jsonFlags) ?>;
+
+// Editar: solo órdenes programadas; reutiliza el formulario con los datos de la orden
+function editarOrden(id) {
+    const o = ORDENES.find(x => x.id === id);
+    if (!o) return;
+    const f = $id('formOrden');
+    f.reset();
+    $id('o-id').value         = o.id;
+    $id('o-mascota_id').value = o.mascota_id;
+    $id('o-nombre').value     = o.mascota_nombre;
+    $id('o-especie').value    = o.especie;
+    $id('o-raza').value       = o.raza;
+    $id('o-resp').value       = o.responsable_nombre;
+    $id('o-cc').value         = o.responsable_cc;
+    $id('o-proc').value       = o.procedimiento;
+    f.fecha.value             = o.fecha;
+    f.veterinario_id.value    = o.veterinario_id;
+    $id('o-examenes').checked = !!o.examenes;
+    f.notas.value             = o.notas;
+    $id('o-titulo').textContent = 'Editar orden de cirugía';
+    $id('o-btn').textContent    = 'Guardar cambios';
+    pintarSugerencias();
+    bootstrap.Modal.getOrCreateInstance($id('modalOrden')).show();
+}
+
 function nuevaOrden() {
     $id('formOrden').reset();
+    $id('o-id').value = 0;
+    $id('o-titulo').textContent = 'Nueva orden de cirugía';
+    $id('o-btn').textContent    = 'Guardar e imprimir consentimiento';
     $id('o-mascota_id').value = 0;
     pintarSugerencias();
     bootstrap.Modal.getOrCreateInstance($id('modalOrden')).show();

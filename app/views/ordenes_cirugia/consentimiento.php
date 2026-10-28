@@ -1,6 +1,6 @@
 <?php
 $e = fn($v) => htmlspecialchars((string)$v);
-$clinica = mb_strtoupper($veterinaria['nombre'] ?? 'Veterinaria');
+$clinica = mb_strtoupper($empresa['nombre'] ?? 'Veterinaria');
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -11,6 +11,12 @@ $clinica = mb_strtoupper($veterinaria['nombre'] ?? 'Veterinaria');
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: Arial, Helvetica, sans-serif; font-size: 13px; line-height: 1.45; color: #111; background: #fff; padding: 36px 56px; max-width: 820px; margin: 0 auto; }
 
+        .hdr { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding-bottom: 12px; border-bottom: 2px solid #16a34a; margin-bottom: 16px; }
+        .empresa { display: flex; align-items: center; gap: 12px; }
+        .empresa-logo { width: 64px; height: 64px; object-fit: contain; flex-shrink: 0; }
+        .empresa-nombre { font-size: 16px; font-weight: 800; color: #14532d; }
+        .empresa-datos { font-size: 10px; color: #6b7280; margin-top: 3px; line-height: 1.5; }
+        .doc-fecha { text-align: right; font-size: 11px; font-weight: 700; }
         .fecha { font-size: 11px; font-weight: 700; margin-bottom: 18px; }
         .titulo { text-align: center; margin-bottom: 18px; }
         .titulo .alerta { color: #dc2626; font-weight: 800; font-size: 14px; margin-bottom: 6px; }
@@ -19,18 +25,18 @@ $clinica = mb_strtoupper($veterinaria['nombre'] ?? 'Veterinaria');
         p, li { margin-bottom: 5px; }
         ol { list-style: none; }
         .sub { list-style: none; margin-left: 0; }
-        .campo { display: inline-block; min-width: 130px; border-bottom: 1px solid #111; padding: 0 6px; font-weight: 700; text-align: center; text-transform: uppercase; }
+        .campo { display: inline-block; min-width: 130px; padding: 0 6px; font-weight: 700; text-align: center; text-transform: uppercase; }
         .campo.largo { min-width: 260px; }
         [contenteditable]:hover, [contenteditable]:focus { background: #fef9c3; outline: none; }
         .firma { margin-top: 56px; text-align: center; width: 340px; }
         .firma .linea { border-top: 1px solid #111; padding-top: 4px; font-size: 14px; }
         .firma .cc { margin-top: 2px; font-size: 14px; }
-        .firma .cc span { display: inline-block; min-width: 150px; border-bottom: 1px solid #111; font-weight: 700; text-align: left; padding-left: 4px; }
+        .firma .cc span { display: inline-block; min-width: 150px; font-weight: 700; text-align: left; padding-left: 4px; }
 
         .no-print { position: fixed; top: 16px; right: 16px; display: flex; flex-direction: column; gap: 8px; background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; box-shadow: 0 4px 14px rgba(0,0,0,.1); font-size: 12px; }
         .no-print button { padding: 8px 14px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; }
         .no-print label { display: flex; gap: 6px; align-items: center; cursor: pointer; }
-        @media print { .no-print { display: none; } body { padding: 0; } [contenteditable]:hover { background: none; } }
+        @media print { .no-print { display: none; } body { padding: 0; } .hdr { -webkit-print-color-adjust: exact; print-color-adjust: exact; } [contenteditable]:hover { background: none; } }
     </style>
 </head>
 <body>
@@ -42,7 +48,22 @@ $clinica = mb_strtoupper($veterinaria['nombre'] ?? 'Veterinaria');
     <button onclick="window.close()" style="background:#e5e7eb">Cerrar</button>
 </div>
 
-<div class="fecha">FECHA: <span class="campo" style="min-width:170px" contenteditable="true"><?= date('d/m/y', strtotime($orden['fecha'])) ?></span></div>
+<div class="hdr">
+    <div class="empresa">
+        <?php if (!empty($empresa['logo'])): ?>
+        <img class="empresa-logo" src="<?= BASE_URL ?>/<?= $e($empresa['logo']) ?>" alt="">
+        <?php endif; ?>
+        <div>
+            <div class="empresa-nombre"><?= $e($empresa['nombre']) ?></div>
+            <div class="empresa-datos">
+                <?= $empresa['ruc'] ? 'NIT: ' . $e($empresa['ruc']) . '<br>' : '' ?>
+                <?= $empresa['direccion'] ? $e($empresa['direccion']) . '<br>' : '' ?>
+                <?= $empresa['telefono'] ? 'Tel: ' . $e($empresa['telefono']) : '' ?><?= $empresa['telefono'] && $empresa['email'] ? ' · ' : '' ?><?= $e($empresa['email']) ?>
+            </div>
+        </div>
+    </div>
+    <div class="doc-fecha">FECHA: <span class="campo" style="min-width:90px" contenteditable="true"><?= date('d/m/y', strtotime($orden['fecha'])) ?></span></div>
+</div>
 
 <div class="titulo">
     <div class="alerta" id="alertaExamenes" style="<?= $orden["examenes_prequirurgicos"] ? "display:none" : "" ?>">NO SE REALIZARON LOS EXAMENES PREQUIRURGICO CORRESPONDIENTE</div>
