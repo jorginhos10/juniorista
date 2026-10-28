@@ -223,10 +223,42 @@ class IngresoModel {
     }
 
     /**
-     * El precio del artículo (precio de compra) es el del último ingreso por compra que lo incluye.
-     * Si el producto aparece varias veces, manda la línea más reciente. Los ingresos con precio 0
-     * (no se escribió precio) y las transferencias entre sucursales no cambian el precio.
-     * Se recalcula desde los ingresos guardados, así también queda bien al editar o eliminar uno.
+     * El precio de compra del artículo es el último que se aplicó, ya sea desde la edición del producto
+     * o desde un ingreso por compra (al crearlo o editarlo): esa acción pisa a la anterior y es el valor
+     * por defecto al ingresar de nuevo. Precio 0 (no se escribió) no cambia nada. Si el producto repite
+     * línea, manda la última.
+     */
+    private function aplicarPrecioLineas(array $lineas): void {
+        $stmt = $this->db->prepare('UPDATE productos SET precio_compra = ? WHERE id = ?');
+        foreach ($lineas as $l) {
+            $prec = (float)$l['precio_unitario'];
+            $pid  = (int)$l['producto_id'];
+            if ($prec <= 0) continue;
+            $stmt->bind_param('di', $prec, $pid);
+            $stmt->execute();
+        }
+        $stmt->close();
+    }
+
+    // Solo retrocede el precio de los productos cuyo precio vigente era el de la línea que se quitó;
+    // si ya tenían otro precio más reciente (producto u otro ingreso), no se toca.
+    private function revertirPrecioSiVigente(array $producto_ids, array $precioQuitado): void {
+        if (!$producto_ids) return;
+        $stmt = $this->db->prepare('SELECT precio_compra FROM productos WHERE id = ?');
+        $aRevertir = [];
+        foreach (array_unique(array_map('intval', $producto_ids)) as $pid) {
+            $stmt->bind_param('i', $pid);
+            $stmt->execute();
+            $row = $stmt->get_result()->fetch_assoc();
+            if ($row && abs((float)$row['precio_compra'] - ($precioQuitado[$pid] ?? -1)) <= 0.004) $aRevertir[] = $pid;
+        }
+        $stmt->close();
+        $this->aplicarUltimoPrecio($aRevertir);
+    }
+
+    /**
+     * Al eliminar un ingreso (o quitarle un producto) el precio vuelve al del último ingreso por compra
+     * guardado que quede (por orden de registro); si no queda ninguno, se conserva el actual.
      */
     private function aplicarUltimoPrecio(array $producto_ids): void {
         $stmt = $this->db->prepare(
@@ -236,7 +268,7 @@ class IngresoModel {
                           FROM ingreso_detalles d
                           JOIN ingresos i ON i.id = d.ingreso_id
                          WHERE d.producto_id = p.id AND i.tipo = 'compra' AND d.precio_unitario > 0
-                      ORDER BY i.created_at DESC, d.id DESC
+                      ORDER BY i.id DESC, d.id DESC
                          LIMIT 1
                     )
               WHERE p.id = ?
@@ -257,13 +289,14 @@ class IngresoModel {
         $this->db->begin_transaction();
         try {
             $stmt = $this->db->prepare(
-                'INSERT INTO ingresos (veterinaria_id, proveedor, notas, total, usuario_id)
-                 VALUES (?, ?, ?, ?, ?)'
+                'INSERT INTO ingresos (veterinaria_id, proveedor, notas, total, usuario_id, created_at)
+                 VALUES (?, ?, ?, ?, ?, ?)'
             );
-            $stmt->bind_param('issdi',
+            $creado = $cabecera['created_at'] ?? date('Y-m-d H:i:s');
+            $stmt->bind_param('issdis',
                 $cabecera['veterinaria_id'], $cabecera['proveedor'],
                 $cabecera['notas'],          $cabecera['total'],
-                $cabecera['usuario_id']
+                $cabecera['usuario_id'],     $creado
             );
             $stmt->execute();
             $ingreso_id = (int)$this->db->insert_id;
@@ -284,7 +317,7 @@ class IngresoModel {
                 $this->upsertStock($cabecera['veterinaria_id'], $pid, $cant);
             }
             $ins->close();
-            $this->aplicarUltimoPrecio(array_column($lineas, 'producto_id'));
+            $this->aplicarPrecioLineas($lineas);
 
             $this->db->commit();
             return true;
@@ -303,9 +336,11 @@ class IngresoModel {
 
             // Revertir stock de líneas anteriores
             $afectados = [];
+            $precioAnterior = [];   // producto => precio que tenía en este ingreso antes de editarlo
             foreach ($this->getDetalles($id) as $d) {
                 $this->decrementarStock($vet, $d['producto_id'], $d['cantidad']);
                 $afectados[] = $d['producto_id'];
+                $precioAnterior[(int)$d['producto_id']] = (float)$d['precio_unitario'];
             }
 
             // Borrar líneas antiguas
@@ -335,8 +370,14 @@ class IngresoModel {
                 $this->upsertStock($vet, $pid, $cant);
             }
             $ins->close();
-            // Productos que estaban antes y los que quedan ahora: su precio vuelve a salir del último ingreso
-            $this->aplicarUltimoPrecio(array_merge($afectados, array_column($lineas, 'producto_id')));
+            // Productos que se quitaron de este ingreso: vuelven al precio del último ingreso que quede
+            $this->revertirPrecioSiVigente(array_diff($afectados, array_column($lineas, 'producto_id')), $precioAnterior);
+            // Solo se aplica el precio de las líneas que cambiaron: guardar un ingreso viejo sin tocar
+            // el precio no debe pisar un precio más reciente
+            $this->aplicarPrecioLineas(array_filter($lineas, function ($l) use ($precioAnterior) {
+                $pid = (int)$l['producto_id'];
+                return !isset($precioAnterior[$pid]) || abs($precioAnterior[$pid] - (float)$l['precio_unitario']) > 0.004;
+            }));
 
             $this->db->commit();
             return true;
@@ -351,17 +392,19 @@ class IngresoModel {
         $vet = (int)($r->fetch_assoc()['veterinaria_id'] ?? 0);
 
         $afectados = [];
+        $precioAnterior = [];
         foreach ($this->getDetalles($id) as $d) {
             $this->decrementarStock($vet, $d['producto_id'], $d['cantidad']);
             $afectados[] = $d['producto_id'];
+            $precioAnterior[(int)$d['producto_id']] = (float)$d['precio_unitario'];
         }
 
         $stmt = $this->db->prepare('DELETE FROM ingresos WHERE id = ?');
         $stmt->bind_param('i', $id);
         $ok = $stmt->execute();
         $stmt->close();
-        // El precio vuelve al del ingreso anterior que quede (si no queda ninguno, se conserva el actual)
-        if ($ok) $this->aplicarUltimoPrecio($afectados);
+        // Si el precio vigente era el de este ingreso, vuelve al del ingreso anterior que quede
+        if ($ok) $this->revertirPrecioSiVigente($afectados, $precioAnterior);
         return $ok;
     }
 

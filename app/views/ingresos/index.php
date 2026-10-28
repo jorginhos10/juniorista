@@ -301,7 +301,11 @@
 
                     <!-- Cabecera del ingreso -->
                     <div class="row g-3 mb-3 pb-3 border-bottom">
-                        <div class="col-md-6">
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold small">Fecha de ingreso</label>
+                            <input type="date" class="form-control" name="fecha" value="<?= date('Y-m-d') ?>" max="<?= date('Y-m-d') ?>" required>
+                        </div>
+                        <div class="col-md-4">
                             <label class="form-label fw-semibold small">Proveedor</label>
                             <div class="input-group position-relative">
                                 <span class="input-group-text"><i class="bi bi-truck-front"></i></span>
@@ -316,7 +320,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label class="form-label fw-semibold small">Notas generales</label>
                             <input type="text" class="form-control" name="notas"
                                 placeholder="Observaciones del ingreso, número de factura…">
@@ -408,6 +412,8 @@ const BASE_URL  = '<?= BASE_URL ?>';
         'nombre' => $p['nombre'],
         'activo' => $p['activo'],
     ], array_filter($proveedores, fn($p) => $p['activo']))) ?>;
+    const _provDefecto = <?= json_encode(array_values(array_map(fn($p) => $p['nombre'],
+        array_filter($proveedores, fn($p) => $p['activo'] && !empty($p['por_defecto']))))[0] ?? '') ?>;
 
     const inpTxt  = document.getElementById('inp-prov-txt');
     const inpVal  = document.getElementById('inp-prov-val');
@@ -448,8 +454,9 @@ const BASE_URL  = '<?= BASE_URL ?>';
 
     // Limpiar al abrir modal nuevo ingreso
     document.getElementById('modalIngreso')?.addEventListener('show.bs.modal', function () {
-        inpTxt.value = '';
-        inpVal.value = '';
+        const nuevo = document.getElementById('inp-ingreso-id').value === '0';
+        inpTxt.value = nuevo ? _provDefecto : '';
+        inpVal.value = nuevo ? _provDefecto : '';
     });
 }());
 </script>

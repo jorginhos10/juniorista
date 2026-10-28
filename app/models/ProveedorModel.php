@@ -9,6 +9,26 @@ class ProveedorModel {
 
     public function __construct() {
         $this->db = Database::getInstance()->getConnection();
+        $this->asegurarColumnaPorDefecto();
+    }
+
+    // Un solo proveedor por sucursal puede ser el predeterminado de los ingresos
+    private function asegurarColumnaPorDefecto(): void {
+        $r = $this->db->query("SHOW COLUMNS FROM proveedores LIKE 'por_defecto'");
+        if ($r && $r->num_rows === 0) {
+            $this->db->query("ALTER TABLE proveedores ADD COLUMN por_defecto tinyint(1) NOT NULL DEFAULT 0");
+        }
+    }
+
+    // Deja a $id como el único predeterminado de la sucursal (o ninguno si $marcar es false)
+    private function fijarPorDefecto(int $id, bool $marcar): void {
+        $vet = Seguridad::sucursalActual();
+        if ($marcar) {
+            $this->db->query("UPDATE proveedores SET por_defecto = 0 WHERE veterinaria_id = $vet");
+            $this->db->query("UPDATE proveedores SET por_defecto = 1 WHERE id = $id AND veterinaria_id = $vet");
+        } else {
+            $this->db->query("UPDATE proveedores SET por_defecto = 0 WHERE id = $id AND veterinaria_id = $vet");
+        }
     }
 
     public function getAll(): array {
@@ -51,7 +71,9 @@ class ProveedorModel {
             $d['email'],  $d['direccion'], $d['notas'], $vet
         );
         $ok = $stmt->execute();
+        $nuevoId = (int)$this->db->insert_id;
         $stmt->close();
+        if ($ok) $this->fijarPorDefecto($nuevoId, !empty($d['por_defecto']));
         return $ok;
     }
 
@@ -67,6 +89,7 @@ class ProveedorModel {
         );
         $ok = $stmt->execute();
         $stmt->close();
+        if ($ok) $this->fijarPorDefecto($id, !empty($d['por_defecto']));
         return $ok;
     }
 

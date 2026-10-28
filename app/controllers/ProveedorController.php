@@ -52,6 +52,7 @@ class ProveedorController {
             'email'     => trim($_POST['email']     ?? ''),
             'direccion' => trim($_POST['direccion'] ?? ''),
             'notas'     => trim($_POST['notas']     ?? ''),
+            'por_defecto' => !empty($_POST['por_defecto']),
         ];
 
         if (empty($d['nombre'])) {

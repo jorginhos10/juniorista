@@ -277,6 +277,14 @@
                             <textarea class="form-control" name="notas" id="prov-notas" rows="2"
                                       placeholder="Condiciones de pago, observaciones…"></textarea>
                         </div>
+                        <div class="col-12">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="por_defecto" id="prov-por_defecto" value="1">
+                                <label class="form-check-label small fw-semibold" for="prov-por_defecto">
+                                    Proveedor por defecto <span class="text-muted fw-normal">(se coloca automático en los ingresos; solo puede haber uno)</span>
+                                </label>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -300,6 +308,7 @@ function nuevoProveedor() {
     document.getElementById('prov-btn').textContent    = 'Registrar proveedor';
     document.getElementById('prov-id').value = '0';
     _campos.forEach(f => { const el = document.getElementById('prov-' + f); if (el) el.value = ''; });
+    document.getElementById('prov-por_defecto').checked = false;
 }
 
 function editarProveedor(p) {
@@ -307,6 +316,7 @@ function editarProveedor(p) {
     document.getElementById('prov-btn').textContent    = 'Guardar cambios';
     document.getElementById('prov-id').value = p.id;
     _campos.forEach(f => { const el = document.getElementById('prov-' + f); if (el) el.value = p[f] || ''; });
+    document.getElementById('prov-por_defecto').checked = p.por_defecto == 1;
     new bootstrap.Modal(document.getElementById('modalProveedor')).show();
 }
 

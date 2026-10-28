@@ -91,6 +91,7 @@ class IngresoController {
             'notas'          => trim($_POST['notas']     ?? ''),
             'total'          => $total,
             'usuario_id'     => (int)($_SESSION['usuario_id'] ?? 0),
+            'created_at'     => self::fechaIngreso($_POST['fecha'] ?? ''),
         ];
 
         if ($this->model->crear($cabecera, $lineas)) {
@@ -186,6 +187,13 @@ class IngresoController {
     private function sinAcceso(): void {
         $_SESSION['flash_error'] = 'El ingreso no existe o no pertenece a esta sucursal.';
         $this->redirect('ingresos');
+    }
+
+    // Fecha elegida (Y-m-d, no futura) con la hora actual; si es inválida, ahora
+    private static function fechaIngreso(string $fecha): string {
+        $d = DateTime::createFromFormat('Y-m-d', $fecha);
+        if (!$d || $d->format('Y-m-d') !== $fecha || $fecha > date('Y-m-d')) return date('Y-m-d H:i:s');
+        return $fecha . ' ' . date('H:i:s');
     }
 
     private static function fechaCorta(?string $fecha): string {
