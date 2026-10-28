@@ -11,6 +11,7 @@ $edad = function (?string $nac): string {
 $fmt = fn($f) => $f ? date('d/m/Y H:i', strtotime($f)) : '';
 $minimo = 17;   // filas totales de la hoja; si hay más aplicaciones, la hoja continúa en otra página
 $blancos = max(0, $minimo - count($aplicaciones));
+$blancosC = max(0, $minimo - count($constancias));
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -33,6 +34,10 @@ $blancos = max(0, $minimo - count($aplicaciones));
         th { text-align: center; font-weight: 800; text-transform: uppercase; }
         td.c { text-align: center; }
         tr { page-break-inside: avoid; }
+        .pagina2 { page-break-before: always; padding-top: 4px; }
+        .pagina2 h1 { font-size: 24px; margin-bottom: 6px; }
+        .paciente-linea { text-align: center; font-size: 11px; margin-bottom: 10px; }
+        .pagina2 td { height: 25px; }
         .no-print { position: fixed; top: 12px; right: 12px; display: flex; gap: 8px; }
         .no-print button { padding: 8px 14px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; }
         @media print { .no-print { display: none; } body { padding: 0; } }
@@ -85,6 +90,37 @@ $blancos = max(0, $minimo - count($aplicaciones));
         <?php endfor; ?>
     </tbody>
 </table>
+
+<!-- Página 2: constancias fisiológicas -->
+<div class="pagina2">
+    <h1>CONSTANCIAS FISIOLÓGICAS</h1>
+    <div class="paciente-linea">
+        <b><?= $e($h['mascota_nombre']) ?></b> · <?= $e($h['especie']) ?><?= $h['raza'] ? ' · ' . $e($h['raza']) : '' ?>
+        · Ingreso <?= $fmt($h['fecha_ingreso']) ?> · <?= $e($h['diagnostico']) ?>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th style="width:8%">Fecha</th><th style="width:6%">Hora</th><th>TEMP.</th><th>F.C.</th><th>F.R.</th><th>P.S.D.</th>
+                <th>S.O.</th><th>GLU.</th><th>VOM.</th><th>DEP.</th><th>OR.</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php foreach ($constancias as $c): ?>
+            <tr>
+                <td class="c"><?= date('d/m/Y', strtotime($c['fecha'])) ?></td>
+                <td class="c"><?= $e($c['hora']) ?></td>
+                <td class="c"><?= $e($c['temp']) ?></td><td class="c"><?= $e($c['fc']) ?></td><td class="c"><?= $e($c['fr']) ?></td>
+                <td class="c"><?= $e($c['psd']) ?></td><td class="c"><?= $e($c['so']) ?></td><td class="c"><?= $e($c['glu']) ?></td>
+                <td class="c"><?= $e($c['vom']) ?></td><td class="c"><?= $e($c['dep']) ?></td><td class="c"><?= $e($c['orina']) ?></td>
+            </tr>
+            <?php endforeach; ?>
+            <?php for ($i = 0; $i < $blancosC; $i++): ?>
+            <tr><?php for ($j = 0; $j < 11; $j++): ?><td></td><?php endfor; ?></tr>
+            <?php endfor; ?>
+        </tbody>
+    </table>
+</div>
 
 <script>window.addEventListener('load', () => setTimeout(() => window.print(), 300));</script>
 </body>

@@ -125,8 +125,14 @@ $hoy = date('Y-m-d');
                 </div>
             </div>
 
+            <!-- Páginas de la hoja -->
+            <ul class="nav nav-tabs mb-3" id="paginas">
+                <li class="nav-item"><button type="button" class="nav-link active" data-pagina="ecop"><i class="bi bi-capsule me-1"></i>ECOP · medicamentos <span class="badge bg-secondary-subtle text-secondary-emphasis ms-1" id="tabEcop">0</span></button></li>
+                <li class="nav-item"><button type="button" class="nav-link" data-pagina="const"><i class="bi bi-activity me-1"></i>Constancias fisiológicas <span class="badge bg-secondary-subtle text-secondary-emphasis ms-1" id="tabConst">0</span></button></li>
+            </ul>
+
             <!-- ECOP -->
-            <div class="card border-0 shadow-sm">
+            <div class="card border-0 shadow-sm" id="cardEcop">
                 <div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <h6 class="fw-bold mb-0">ECOP <span class="text-muted fw-normal small">· registro de medicamentos</span></h6>
                     <div class="d-flex gap-2 align-items-center flex-wrap">
@@ -182,6 +188,64 @@ $hoy = date('Y-m-d');
                     </div>
                     <div class="text-center text-muted py-4 d-none" id="vacio">
                         <i class="bi bi-capsule fs-2 d-block mb-1 opacity-25"></i>Aún no hay medicamentos registrados en esta hoja.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Constancias fisiológicas (página 2) -->
+            <div class="card border-0 shadow-sm d-none" id="cardConst">
+                <div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <h6 class="fw-bold mb-0">Constancias fisiológicas <span class="text-muted fw-normal small">· TEMP, F.C., F.R., P.S.D., S.O., GLU., VOM., DEP., OR.</span></h6>
+                    <?php if ($rangos): ?><span class="small text-muted">En rojo: fuera del rango normal de <?= $e(strtolower($h['especie'])) ?> (temp. <?= $rangos['temperatura'][0] ?>–<?= $rangos['temperatura'][1] ?> °C, F.C. <?= $rangos['frecuencia_cardiaca'][0] ?>–<?= $rangos['frecuencia_cardiaca'][1] ?>, F.R. <?= $rangos['frecuencia_respiratoria'][0] ?>–<?= $rangos['frecuencia_respiratoria'][1] ?>)</span><?php endif; ?>
+                </div>
+                <div class="card-body">
+
+                    <?php if ($editable): ?>
+                    <form class="ecop-registro mb-3" id="formConst" autocomplete="off">
+                        <input type="hidden" id="c-id" value="0">
+                        <div class="row g-2 align-items-end">
+                            <div class="col-6 col-md-2"><label>Fecha</label><input type="date" class="form-control form-control-sm" id="c-fecha" required></div>
+                            <div class="col-6 col-md-1"><label>Hora</label><input type="time" class="form-control form-control-sm" id="c-hora" required></div>
+                            <div class="col-4 col-md-1"><label>Temp °C</label><input type="text" inputmode="decimal" class="form-control form-control-sm" id="c-temp" maxlength="12" placeholder="38.5"></div>
+                            <div class="col-4 col-md-1"><label>F.C.</label><input type="text" inputmode="numeric" class="form-control form-control-sm" id="c-fc" maxlength="12" placeholder="lpm"></div>
+                            <div class="col-4 col-md-1"><label>F.R.</label><input type="text" inputmode="numeric" class="form-control form-control-sm" id="c-fr" maxlength="12" placeholder="rpm"></div>
+                            <div class="col-4 col-md-1"><label>P.S.D.</label><input type="text" class="form-control form-control-sm" id="c-psd" maxlength="16" placeholder="120/80"></div>
+                            <div class="col-4 col-md-1"><label>S.O. %</label><input type="text" inputmode="numeric" class="form-control form-control-sm" id="c-so" maxlength="12" placeholder="98"></div>
+                            <div class="col-4 col-md-1"><label>Glu.</label><input type="text" inputmode="numeric" class="form-control form-control-sm" id="c-glu" maxlength="12" placeholder="mg/dl"></div>
+                            <div class="col-4 col-md-1"><label>Vom.</label><input type="text" class="form-control form-control-sm" id="c-vom" list="c-vom-l" maxlength="30"></div>
+                            <div class="col-6 col-md-1"><label>Dep.</label><input type="text" class="form-control form-control-sm" id="c-dep" list="c-dep-l" maxlength="30"></div>
+                            <div class="col-6 col-md-1"><label>Or.</label><input type="text" class="form-control form-control-sm" id="c-orina" list="c-or-l" maxlength="30"></div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-2 flex-wrap gap-2">
+                            <span class="small text-muted"><i class="bi bi-pen me-1"></i>Firma: <b><?= $e($usuario['nombre']) ?></b> · Tab pasa de casilla en casilla y Enter registra</span>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-sm btn-light d-none" id="btnCancelarConst">Cancelar edición</button>
+                                <button type="button" class="btn btn-sm btn-light" id="btnAhoraConst"><i class="bi bi-clock me-1"></i>Ahora</button>
+                                <button type="submit" class="btn btn-sm btn-primary-custom" id="btnRegistrarConst"><i class="bi bi-check2-circle me-1"></i><span>Registrar</span></button>
+                            </div>
+                        </div>
+                        <div class="small text-danger mt-1 d-none" id="cError"></div>
+                        <datalist id="c-vom-l"><option value="No"><option value="1"><option value="2"><option value="3"><option value="Espuma"><option value="Bilis"><option value="Alimento"></datalist>
+                        <datalist id="c-dep-l"><option value="No"><option value="Normal"><option value="Blanda"><option value="Líquida"><option value="Con sangre"><option value="Melena"></datalist>
+                        <datalist id="c-or-l"><option value="No"><option value="Normal"><option value="Poca"><option value="Abundante"><option value="Con sangre"></datalist>
+                    </form>
+                    <?php else: ?>
+                    <div class="alert alert-secondary py-2 small mb-3"><i class="bi bi-lock me-1"></i>La hoja está cerrada (<?= $e(strtolower($etq)) ?>).</div>
+                    <?php endif; ?>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0 ecop-tabla">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Fecha</th><th>Hora</th><th>Temp.</th><th>F.C.</th><th>F.R.</th><th>P.S.D.</th><th>S.O.</th><th>Glu.</th><th>Vom.</th><th>Dep.</th><th>Or.</th><th>Firma</th>
+                                    <?php if ($editable): ?><th class="text-end" style="width:110px"></th><?php endif; ?>
+                                </tr>
+                            </thead>
+                            <tbody id="filasConst"></tbody>
+                        </table>
+                    </div>
+                    <div class="text-center text-muted py-4 d-none" id="vacioConst">
+                        <i class="bi bi-activity fs-2 d-block mb-1 opacity-25"></i>Aún no hay constancias registradas en esta hoja.
                     </div>
                 </div>
             </div>
@@ -299,6 +363,7 @@ function pintar() {
     });
     $id('filas').innerHTML = html;
     $id('vacio').classList.toggle('d-none', filas.length > 0);
+    $id('tabEcop').textContent = filas.length;
     kpis();
 }
 
@@ -407,6 +472,118 @@ $id('d-vet').addEventListener('input', () => {
 });
 
 pintar();
+
+// ── Páginas de la hoja (pestañas) ───────────────────────
+function irPagina(p) {
+    $id('cardEcop').classList.toggle('d-none', p !== 'ecop');
+    $id('cardConst').classList.toggle('d-none', p !== 'const');
+    document.querySelectorAll('#paginas .nav-link').forEach(b => b.classList.toggle('active', b.dataset.pagina === p));
+    history.replaceState(null, '', p === 'const' ? '#constancias' : location.pathname + location.search);
+}
+document.querySelectorAll('#paginas .nav-link').forEach(b => b.addEventListener('click', () => irPagina(b.dataset.pagina)));
+
+// ── Constancias fisiológicas ────────────────────────────
+let constancias = <?= json_encode($constancias, $jsonFlags) ?>;
+let ultimaConst = 0;
+const RANGOS = <?= json_encode($rangos, $jsonFlags) ?>;
+const CAMPOS_C = ['temp', 'fc', 'fr', 'psd', 'so', 'glu', 'vom', 'dep', 'orina'];
+
+// Marca en rojo lo que sale del rango normal de la especie
+function fuera(campo, valor) {
+    if (!RANGOS || valor === '') return false;
+    const r = { temp: RANGOS.temperatura, fc: RANGOS.frecuencia_cardiaca, fr: RANGOS.frecuencia_respiratoria }[campo];
+    const n = parseFloat(String(valor).replace(',', '.'));
+    return !!r && !isNaN(n) && (n < r[0] || n > r[1]);
+}
+
+function pintarConst() {
+    const orden = [...constancias];
+    if (recientesPrimero) orden.reverse();
+    let html = '', dia = null;
+    orden.forEach(f => {
+        if (f.fecha !== dia) {
+            dia = f.fecha;
+            html += `<tr class="ecop-dia"><td colspan="${EDITABLE ? 13 : 12}">${escHtml(nombreDia(f.fecha))}</td></tr>`;
+        }
+        const celda = c => `<td class="${fuera(c, f[c]) ? 'text-danger fw-bold' : ''}">${escHtml(f[c]) || '—'}</td>`;
+        html += `<tr class="${f.id === ultimaConst ? 'fila-nueva' : ''}">
+            <td class="text-nowrap">${fechaCorta(f.fecha)}</td><td class="fw-semibold">${escHtml(f.hora)}</td>
+            ${CAMPOS_C.map(celda).join('')}
+            <td class="small text-muted">${escHtml(f.firma)}</td>
+            ${EDITABLE ? `<td class="text-end text-nowrap">
+                <button class="btn btn-sm btn-outline-secondary btn-accion" title="Editar" onclick="editarConst(${f.id})"><i class="bi bi-pencil"></i></button>
+                <button class="btn btn-sm btn-outline-danger btn-accion" title="Eliminar" onclick="eliminarConst(${f.id})"><i class="bi bi-trash"></i></button>
+            </td>` : ''}
+        </tr>`;
+    });
+    $id('filasConst').innerHTML = html;
+    $id('vacioConst').classList.toggle('d-none', constancias.length > 0);
+    $id('tabConst').textContent = constancias.length;
+    $id('tabEcop').textContent = filas.length;
+}
+
+async function enviarConst(datos) {
+    const fd = new FormData();
+    fd.append('hospitalizacion_id', HID);
+    Object.entries(datos).forEach(([k, v]) => fd.append(k, v));
+    const r = await fetch(`${BASE_URL}/hospitalizacion/constancia`, { method: 'POST', body: fd, headers: { 'Accept': 'application/json' } });
+    return r.json();
+}
+
+async function eliminarConst(id) {
+    const f = constancias.find(x => x.id === id);
+    if (!confirm(`¿Eliminar las constancias de las ${f.hora}?`)) return;
+    const r = await enviarConst({ accion: 'eliminar', id });
+    if (r.ok) { constancias = r.filas; ultimaConst = 0; pintarConst(); } else alert(r.error);
+}
+
+if (EDITABLE) {
+    const ahoraConst = () => { $id('c-fecha').value = hoyISO(); $id('c-hora').value = ahoraHM(); };
+    const limpiarConst = () => {
+        $id('c-id').value = 0;
+        CAMPOS_C.forEach(c => $id('c-' + c).value = '');
+        ahoraConst();
+        $id('formConst').classList.remove('editando');
+        $id('btnRegistrarConst').querySelector('span').textContent = 'Registrar';
+        $id('btnCancelarConst').classList.add('d-none');
+        $id('cError').classList.add('d-none');
+    };
+    window.editarConst = id => {
+        const f = constancias.find(x => x.id === id);
+        $id('c-id').value = f.id; $id('c-fecha').value = f.fecha; $id('c-hora').value = f.hora;
+        CAMPOS_C.forEach(c => $id('c-' + c).value = f[c]);
+        $id('formConst').classList.add('editando');
+        $id('btnRegistrarConst').querySelector('span').textContent = 'Guardar cambios';
+        $id('btnCancelarConst').classList.remove('d-none');
+        $id('formConst').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        $id('c-temp').focus();
+    };
+    ahoraConst();
+    $id('btnAhoraConst').addEventListener('click', ahoraConst);
+    $id('btnCancelarConst').addEventListener('click', limpiarConst);
+    $id('formConst').addEventListener('submit', async e => {
+        e.preventDefault();
+        const btn = $id('btnRegistrarConst');
+        btn.disabled = true;
+        const editando = $id('c-id').value !== '0';
+        const datos = { accion: 'guardar', id: $id('c-id').value, fecha: $id('c-fecha').value, hora: $id('c-hora').value };
+        CAMPOS_C.forEach(c => datos[c] = $id('c-' + c).value);
+        const r = await enviarConst(datos).catch(() => ({ ok: false, error: 'No se pudo conectar con el servidor.' }));
+        btn.disabled = false;
+        if (!r.ok) { $id('cError').textContent = r.error; $id('cError').classList.remove('d-none'); return; }
+        const previos = new Set(constancias.map(f => f.id));
+        constancias = r.filas;
+        ultimaConst = editando ? Number($id('c-id').value) : (constancias.find(f => !previos.has(f.id)) || {}).id || 0;
+        limpiarConst();
+        pintarConst();
+        $id('c-temp').focus();
+    });
+}
+
+// El botón de orden aplica a las dos páginas
+$id('btnOrden').addEventListener('click', pintarConst);
+pintarConst();
+if (location.hash === '#constancias') irPagina('const');
 </script>
 </body>
 </html>

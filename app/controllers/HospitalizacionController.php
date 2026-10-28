@@ -67,6 +67,8 @@ class HospitalizacionController {
         $datos = $this->datosBase('hospitalizacion') + [
             'h'             => $h,
             'aplicaciones'  => $this->model->getAplicaciones((int)$h['id']),
+            'constancias'   => $this->model->getConstancias((int)$h['id']),
+            'rangos'        => HistorialModel::RANGOS[$h['especie']] ?? null,
             'medicamentos'  => $this->model->sugerenciasMedicamentos(),
             'vias'          => HospitalizacionModel::VIAS,
             'frecuencias'   => HospitalizacionModel::FRECUENCIAS,
@@ -82,6 +84,7 @@ class HospitalizacionController {
         if (!$h) $this->redirect('hospitalizacion');
         $empresa      = (new FacturacionModel())->getSucursal((int)$h['veterinaria_id']);
         $aplicaciones = $this->model->getAplicaciones((int)$h['id']);
+        $constancias  = $this->model->getConstancias((int)$h['id']);
         require ROOT . '/app/views/hospitalizacion/imprimir.php';
     }
 
@@ -191,6 +194,51 @@ class HospitalizacionController {
         }
 
         echo json_encode(['ok' => (bool)$ok, 'error' => $ok ? '' : 'No se pudo guardar.', 'filas' => $this->model->getAplicaciones($hid)]);
+        exit;
+    }
+
+    /** POST (AJAX): agrega, edita o elimina una fila de constancias fisiológicas y devuelve la tabla completa */
+    public function constancia(): void {
+        header('Content-Type: application/json; charset=utf-8');
+        $h = $this->model->find((int)($_POST['hospitalizacion_id'] ?? 0));
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !$h) {
+            http_response_code(404);
+            echo json_encode(['ok' => false, 'error' => 'No se encontró la hoja.']);
+            exit;
+        }
+        if ($h['estado'] !== 'internado') {
+            echo json_encode(['ok' => false, 'error' => 'La hoja está cerrada. Reábrela para registrar más constancias.']);
+            exit;
+        }
+
+        $hid = (int)$h['id'];
+        $id  = (int)($_POST['id'] ?? 0);
+
+        if (($_POST['accion'] ?? '') === 'eliminar') {
+            $ok = $id > 0 && $this->model->eliminarConstancia($hid, $id);
+        } else {
+            $fecha = DateTime::createFromFormat('Y-m-d', $_POST['fecha'] ?? '');
+            $hora  = DateTime::createFromFormat('H:i', $_POST['hora'] ?? '');
+            $d = [
+                'fecha' => $fecha ? $fecha->format('Y-m-d') : date('Y-m-d'),
+                'hora'  => $hora ? $hora->format('H:i:s') : date('H:i:s'),
+                'firma' => mb_substr((string)$_SESSION['usuario_nombre'], 0, 100),
+                'usuario_id' => (int)$_SESSION['usuario_id'],
+            ];
+            $largos = ['temp' => 12, 'fc' => 12, 'fr' => 12, 'psd' => 16, 'so' => 12, 'glu' => 12, 'vom' => 30, 'dep' => 30, 'orina' => 30];
+            $alguno = false;
+            foreach ($largos as $campo => $max) {
+                $d[$campo] = mb_substr(trim($_POST[$campo] ?? ''), 0, $max);
+                if ($d[$campo] !== '') $alguno = true;
+            }
+            if (!$alguno) {
+                echo json_encode(['ok' => false, 'error' => 'Anota al menos una constancia.']);
+                exit;
+            }
+            $ok = $this->model->guardarConstancia($hid, $id, $d);
+        }
+
+        echo json_encode(['ok' => (bool)$ok, 'error' => $ok ? '' : 'No se pudo guardar.', 'filas' => $this->model->getConstancias($hid)]);
         exit;
     }
 

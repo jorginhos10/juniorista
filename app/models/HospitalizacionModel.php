@@ -68,6 +68,29 @@ class HospitalizacionModel {
                 KEY idx_hapl_hosp (hospitalizacion_id, fecha, hora)
              ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci"
         );
+        // Segunda página de la hoja: constancias fisiológicas (TEMP, F.C., F.R., P.S.D., S.O., GLU., VOM., DEP., OR.)
+        $this->db->query(
+            "CREATE TABLE IF NOT EXISTS hospitalizacion_constancias (
+                id int(11) NOT NULL AUTO_INCREMENT,
+                hospitalizacion_id int(11) NOT NULL,
+                fecha date NOT NULL,
+                hora time NOT NULL,
+                temp varchar(12) NOT NULL DEFAULT '',
+                fc varchar(12) NOT NULL DEFAULT '',
+                fr varchar(12) NOT NULL DEFAULT '',
+                psd varchar(16) NOT NULL DEFAULT '',
+                so varchar(12) NOT NULL DEFAULT '',
+                glu varchar(12) NOT NULL DEFAULT '',
+                vom varchar(30) NOT NULL DEFAULT '',
+                dep varchar(30) NOT NULL DEFAULT '',
+                orina varchar(30) NOT NULL DEFAULT '',
+                firma varchar(100) NOT NULL DEFAULT '',
+                usuario_id int(11) DEFAULT NULL,
+                created_at timestamp NOT NULL DEFAULT current_timestamp(),
+                PRIMARY KEY (id),
+                KEY idx_hcon_hosp (hospitalizacion_id, fecha, hora)
+             ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci"
+        );
     }
 
     private const SELECT_BASE =
@@ -225,5 +248,47 @@ class HospitalizacionModel {
         $r = $this->db->query("SELECT nombre FROM productos WHERE activo = 1 ORDER BY nombre ASC LIMIT 500");
         while ($r && ($row = $r->fetch_row())) $out[$row[0]] = true;
         return array_keys($out);
+    }
+
+    // ── Constancias fisiológicas (segunda página de la hoja) ─
+
+    public function getConstancias(int $hospitalizacion_id): array {
+        $stmt = $this->db->prepare(
+            "SELECT id, DATE_FORMAT(fecha, '%Y-%m-%d') AS fecha, TIME_FORMAT(hora, '%H:%i') AS hora,
+                    temp, fc, fr, psd, so, glu, vom, dep, orina, firma
+               FROM hospitalizacion_constancias WHERE hospitalizacion_id = ? ORDER BY fecha ASC, hora ASC, id ASC"
+        );
+        $stmt->bind_param('i', $hospitalizacion_id);
+        $stmt->execute();
+        $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
+        return $rows;
+    }
+
+    public function guardarConstancia(int $hospitalizacion_id, int $id, array $d): bool {
+        if ($id > 0) {
+            $stmt = $this->db->prepare(
+                'UPDATE hospitalizacion_constancias SET fecha=?, hora=?, temp=?, fc=?, fr=?, psd=?, so=?, glu=?, vom=?, dep=?, orina=?
+                  WHERE id=? AND hospitalizacion_id=?'
+            );
+            $stmt->bind_param('sssssssssssii', $d['fecha'], $d['hora'], $d['temp'], $d['fc'], $d['fr'], $d['psd'], $d['so'], $d['glu'], $d['vom'], $d['dep'], $d['orina'], $id, $hospitalizacion_id);
+        } else {
+            $stmt = $this->db->prepare(
+                'INSERT INTO hospitalizacion_constancias (hospitalizacion_id, fecha, hora, temp, fc, fr, psd, so, glu, vom, dep, orina, firma, usuario_id)
+                 VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
+            );
+            $stmt->bind_param('issssssssssssi', $hospitalizacion_id, $d['fecha'], $d['hora'], $d['temp'], $d['fc'], $d['fr'], $d['psd'], $d['so'], $d['glu'], $d['vom'], $d['dep'], $d['orina'], $d['firma'], $d['usuario_id']);
+        }
+        $ok = $stmt->execute();
+        $stmt->close();
+        return $ok;
+    }
+
+    public function eliminarConstancia(int $hospitalizacion_id, int $id): bool {
+        $stmt = $this->db->prepare('DELETE FROM hospitalizacion_constancias WHERE id = ? AND hospitalizacion_id = ?');
+        $stmt->bind_param('ii', $id, $hospitalizacion_id);
+        $ok = $stmt->execute();
+        $stmt->close();
+        return $ok;
     }
 }
