@@ -323,7 +323,8 @@ $hoy = date('Y-m-d');
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 const $id = id => document.getElementById(id);
-const HID = <?= (int)$h['id'] ?>;
+const BASE_URL = '<?= BASE_URL ?>';
+const HID =<?= (int)$h['id'] ?>;
 const EDITABLE = <?= $editable ? 'true' : 'false' ?>;
 let filas = <?= json_encode($aplicaciones, $jsonFlags) ?>;
 let recientesPrimero = true;
