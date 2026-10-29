@@ -583,7 +583,7 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
                     <!-- Motivo y anamnésicos -->
                     <div class="hc-sec">
                         <div class="hc-sec-titulo">Motivo de la consulta</div>
-                        <textarea class="form-control" name="motivo" id="h-motivo" rows="3" maxlength="200" required style="font-size:1rem; resize:vertical"></textarea>
+                        <textarea class="form-control" name="motivo" id="h-motivo" rows="3" maxlength="900" required style="font-size:1rem; resize:vertical"></textarea>
                         <div class="sugerencias mt-1" id="sugerenciasMotivo"></div>
                         <label class="form-label mt-2">Anamnésicos</label>
                         <textarea class="form-control" name="anamnesis" id="h-anamnesis" rows="6" style="font-size:1rem; resize:vertical"
