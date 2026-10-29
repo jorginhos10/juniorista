@@ -121,7 +121,7 @@ class HistorialController {
             $registro_id = $ok ? $this->model->ultimoId : 0;
         }
 
-        // PDF adjuntos: el registro ya quedó guardado; si algún archivo falla se avisa sin perder el resto
+        // Adjuntos (PDF o imagen): el registro ya quedó guardado; si algún archivo falla se avisa sin perder el resto
         if ($ok && $registro_id > 0 && !empty($_FILES['adjuntos'])) {
             $this->guardarAdjuntos($registro_id, $mascota_id, mb_substr(trim((string)($_POST['adjuntos_descripcion'] ?? '')), 0, 255));
         }
@@ -132,7 +132,7 @@ class HistorialController {
         $this->redirect($volver);
     }
 
-    /** Guarda los PDF subidos con el formulario y deja el aviso en la sesión */
+    /** Guarda los archivos subidos con el formulario y deja el aviso en la sesión */
     private function guardarAdjuntos(int $registro_id, int $mascota_id, string $descripcion = ''): void {
         $sucursal = $this->vetModel->findById($this->veterinariaActual($this->vetModel->getAll()))['nombre'] ?? '';
         [$guardados, $errores] = AdjuntosHistorial::guardarSubidos($_FILES['adjuntos'], $sucursal, $mascota_id);
@@ -143,14 +143,14 @@ class HistorialController {
         }
         if ($guardados) {
             $_SESSION['flash_success'] = ($_SESSION['flash_success'] ?? '') . ($_SESSION['flash_success'] ?? '' ? ' ' : '')
-                . count($guardados) . ' PDF adjunto' . (count($guardados) === 1 ? '' : 's') . '.';
+                . count($guardados) . ' archivo' . (count($guardados) === 1 ? '' : 's') . ' adjunto' . (count($guardados) === 1 ? '' : 's') . '.';
         }
         if ($errores) {
             $_SESSION['flash_error'] = 'El registro se guardó, pero: ' . implode(' ', $errores);
         }
     }
 
-    /** POST: adjunta PDF a la historia de la mascota con su descripción (a un registro o en general) */
+    /** POST: adjunta PDF o imágenes a la historia de la mascota con su descripción (a un registro o en general) */
     public function adjuntar(): void {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->redirect('historial');
@@ -173,7 +173,7 @@ class HistorialController {
             $this->redirect($volver);
         }
         if (empty($_FILES['adjuntos']['name'][0] ?? '')) {
-            $_SESSION['flash_error'] = 'Elige al menos un archivo PDF (revisa que no supere el límite de subida del servidor).';
+            $_SESSION['flash_error'] = 'Elige al menos un archivo, PDF o imagen (revisa que no supere el límite de subida del servidor).';
             $this->redirect($volver);
         }
 
@@ -187,7 +187,7 @@ class HistorialController {
         $this->redirect($volver);
     }
 
-    /** GET: entrega un PDF adjunto (para verlo y para que la impresión lo dibuje); solo con sesión y de la sucursal actual */
+    /** GET: entrega un adjunto, PDF o imagen (para verlo y para que la impresión lo dibuje); solo con sesión y de la sucursal actual */
     public function adjunto(): void {
         $a = $this->model->getAdjunto((int)($_GET['id'] ?? 0));
         if (!$a) {
@@ -197,7 +197,7 @@ class HistorialController {
         AdjuntosHistorial::enviar($a['archivo'], $a['nombre']);
     }
 
-    /** POST: quita un PDF adjunto (cualquier usuario del historial; el archivo se conserva en el servidor) */
+    /** POST: quita un adjunto (cualquier usuario del historial; el archivo se conserva en el servidor) */
     public function eliminarAdjunto(): void {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->redirect('historial');

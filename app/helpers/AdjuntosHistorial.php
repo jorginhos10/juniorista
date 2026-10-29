@@ -3,42 +3,71 @@
 require_once ROOT . '/app/helpers/Comprobantes.php';
 
 /**
- * PDF adjuntos a los registros del historial clínico (resultados de laboratorio, radiografías, informes…).
+ * Adjuntos (PDF e imágenes) a los registros del historial clínico (resultados de laboratorio, radiografías, informes…).
  * Se guardan fuera de la aplicación, en la misma carpeta vecina «sistebendey» de los comprobantes:
- *     sistebendey/historial/<SUCURSAL>/mascota_<id>/<fecha_hora>_<aleatorio>.pdf
- * La carpeta no se sirve por la web: los PDF solo se entregan con sesión iniciada.
+ *     sistebendey/historial/<SUCURSAL>/mascota_<id>/<fecha_hora>_<aleatorio>.<pdf|jpg|png|gif|webp|bmp|avif>
+ * La carpeta no se sirve por la web: los archivos solo se entregan con sesión iniciada.
  */
 class AdjuntosHistorial {
 
     public const MAX_BYTES     = 15 * 1024 * 1024;   // por archivo
     public const MAX_POR_ENVIO = 10;                 // archivos en un mismo guardado
 
+    /** Tipos admitidos: extensión => tipo MIME (al entregar el archivo se usa este, nunca el que diga el navegador) */
+    public const TIPOS = [
+        'pdf'  => 'application/pdf',
+        'jpg'  => 'image/jpeg',
+        'png'  => 'image/png',
+        'gif'  => 'image/gif',
+        'webp' => 'image/webp',
+        'bmp'  => 'image/bmp',
+        'avif' => 'image/avif',
+    ];
+
+    /** Extensión real según el contenido (firma del archivo), o null si no es PDF ni una imagen admitida */
+    public static function detectarExtension(string $c): ?string {
+        if (str_starts_with($c, '%PDF-')) return 'pdf';
+        if (str_starts_with($c, "\xFF\xD8\xFF")) return 'jpg';
+        if (str_starts_with($c, "\x89PNG\r\n\x1a\n")) return 'png';
+        if (str_starts_with($c, 'GIF87a') || str_starts_with($c, 'GIF89a')) return 'gif';
+        if (substr($c, 0, 4) === 'RIFF' && substr($c, 8, 4) === 'WEBP') return 'webp';
+        if (strlen($c) > 26 && str_starts_with($c, 'BM') && substr($c, 6, 4) === "\0\0\0\0") return 'bmp';
+        if (substr($c, 4, 8) === 'ftypavif') return 'avif';
+        return null;
+    }
+
+    public static function esImagen(string $nombreOArchivo): bool {
+        $ext = strtolower(pathinfo($nombreOArchivo, PATHINFO_EXTENSION));
+        return isset(self::TIPOS[$ext]) && $ext !== 'pdf';
+    }
+
     private static function base(): string {
         return Comprobantes::base() . '/historial';
     }
 
     /**
-     * Guarda un PDF recibido como bytes. Devuelve la ruta relativa a la carpeta base de historial o un mensaje de error.
+     * Guarda un archivo (PDF o imagen) recibido como bytes. Devuelve la ruta relativa a la carpeta base de historial o un mensaje de error.
      * @return array{0: ?string, 1: string} [ruta, error]
      */
     public static function guardarBytes(string $contenido, string $sucursal, int $mascota_id): array {
         if ($contenido === '') return [null, 'El archivo está vacío.'];
         if (strlen($contenido) > self::MAX_BYTES) return [null, 'Supera el tamaño máximo de ' . (self::MAX_BYTES / 1048576) . ' MB.'];
-        // Solo PDF reales: se mira el contenido, no la extensión ni el tipo que diga el navegador
-        if (!str_starts_with($contenido, '%PDF-')) return [null, 'No es un PDF válido.'];
+        // Solo PDF o imágenes reales: se mira el contenido, no la extensión ni el tipo que diga el navegador
+        $ext = self::detectarExtension($contenido);
+        if ($ext === null) return [null, 'Formato no admitido: usa PDF o una imagen (JPG, PNG, GIF, WEBP, BMP o AVIF).'];
 
         $rel = Comprobantes::carpetaSucursal($sucursal) . '/mascota_' . $mascota_id;
         $abs = self::base() . '/' . $rel;
         if (!is_dir($abs) && !@mkdir($abs, 0775, true) && !is_dir($abs)) return [null, 'No se pudo crear la carpeta de adjuntos.'];
         self::proteger();
 
-        $nombre = date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.pdf';
+        $nombre = date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
         if (@file_put_contents($abs . '/' . $nombre, $contenido) === false) return [null, 'No se pudo guardar el archivo.'];
         return [$rel . '/' . $nombre, ''];
     }
 
     /**
-     * Guarda los PDF subidos en $_FILES['adjuntos'] (campo múltiple).
+     * Guarda los archivos subidos en $_FILES['adjuntos'] (campo múltiple).
      * @return array{0: array<int,array{nombre:string,archivo:string,tamano:int}>, 1: string[]} [guardados, errores]
      */
     public static function guardarSubidos(array $files, string $sucursal, int $mascota_id): array {
@@ -61,7 +90,7 @@ class AdjuntosHistorial {
             if (!is_uploaded_file($tmp)) { $errores[] = "«$nombre» no es una subida válida."; continue; }
             [$ruta, $msg] = self::guardarBytes((string)file_get_contents($tmp), $sucursal, $mascota_id);
             if ($ruta === null) { $errores[] = "«$nombre»: $msg"; continue; }
-            $guardados[] = ['nombre' => $nombre !== '' ? $nombre : 'adjunto.pdf', 'archivo' => $ruta, 'tamano' => (int)($files['size'][$i] ?? 0)];
+            $guardados[] = ['nombre' => $nombre !== '' ? $nombre : 'adjunto', 'archivo' => $ruta, 'tamano' => (int)($files['size'][$i] ?? 0)];
         }
         return [$guardados, $errores];
     }
@@ -74,15 +103,15 @@ class AdjuntosHistorial {
         return $abs;
     }
 
-    /** Envía el PDF al navegador (para verlo o para que la impresión lo dibuje) y termina */
+    /** Envía el archivo al navegador (para verlo o para que la impresión lo dibuje) y termina */
     public static function enviar(string $relativa, string $nombre): void {
         $abs = self::rutaAbsoluta($relativa);
         if (!$abs) {
             http_response_code(404);
             exit;
         }
-        $seguro = preg_replace('/[^A-Za-z0-9._ -]+/', '_', $nombre) ?: 'adjunto.pdf';
-        header('Content-Type: application/pdf');
+        $seguro = preg_replace('/[^A-Za-z0-9._ -]+/', '_', $nombre) ?: 'adjunto';
+        header('Content-Type: ' . (self::TIPOS[strtolower(pathinfo($abs, PATHINFO_EXTENSION))] ?? 'application/octet-stream'));
         header('Content-Length: ' . filesize($abs));
         header('Content-Disposition: inline; filename="' . $seguro . '"');
         header('Cache-Control: private, max-age=3600');

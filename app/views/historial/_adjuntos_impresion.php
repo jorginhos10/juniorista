@@ -1,9 +1,9 @@
 <?php
 /**
- * Dibuja los PDF adjuntos al final de una impresión del historial (cada página del PDF en su propia hoja).
+ * Dibuja los adjuntos al final de una impresión del historial: cada página de un PDF y cada imagen en su propia hoja.
  * Recibe $adjuntosImprimir: lista de ['id', 'nombre', 'titulo'] en el orden en que deben salir.
  * Expone window.adjuntosListos (promesa): la impresión espera a que todo esté dibujado antes de abrir el diálogo.
- * Los PDF se piden a historial/adjunto con la sesión del usuario; la biblioteca pdf.js los convierte en páginas imprimibles.
+ * Los archivos se piden a historial/adjunto con la sesión del usuario; los PDF los convierte pdf.js en páginas imprimibles y las imágenes se colocan tal cual.
  */
 $adjuntosImprimir = $adjuntosImprimir ?? [];
 ?>
@@ -12,9 +12,9 @@ $adjuntosImprimir = $adjuntosImprimir ?? [];
     .adjuntos-estado { font-size: 11px; font-weight: 600; color: #4f46e5; align-self: center; }
     .adjunto-pag { break-before: page; page-break-before: always; text-align: center; }
     .adjunto-cap { font-size: 10px; color: #6b7280; text-align: left; margin-bottom: 6px; }
-    .adjunto-pag canvas { display: block; margin: 0 auto; max-width: 100%; max-height: 232mm; width: auto; height: auto; border: 1px solid #e5e7eb; }
+    .adjunto-pag img, .adjunto-pag canvas { display: block; margin: 0 auto; max-width: 100%; max-height: 232mm; width: auto; height: auto; border: 1px solid #e5e7eb; }
     .adjunto-error { break-before: page; page-break-before: always; border: 1px dashed #dc2626; color: #dc2626; padding: 14px; font-size: 11px; }
-    @media print { .adjunto-pag canvas { border: none; } }
+    @media print { .adjunto-pag canvas, .adjunto-pag img { border: none; } }
 </style>
 
 <div id="adjuntosImpresion">
@@ -43,18 +43,36 @@ $adjuntosImprimir = $adjuntosImprimir ?? [];
 
     window.adjuntosListos = (async () => {
         const contenedor = document.getElementById('adjuntosImpresion');
-        if (typeof pdfjsLib === 'undefined') {
-            avisoError(contenedor, 'No se pudo cargar el visor de PDF (sin conexión): los adjuntos no se imprimirán.');
-            return;
-        }
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        const hayPdfjs = typeof pdfjsLib !== 'undefined';
+        if (hayPdfjs) pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
         let n = 0;
         for (const o of document.querySelectorAll('.adjunto-origen')) {
             n++;
             if (estado) estado.textContent = 'Preparando adjuntos (' + n + ' de ' + total + ')…';
             try {
-                const pdf = await pdfjsLib.getDocument({ url: o.dataset.url, withCredentials: true }).promise;
+                const resp = await fetch(o.dataset.url, { credentials: 'include' });
+                if (!resp.ok) throw new Error('http ' + resp.status);
+                const tipo = resp.headers.get('content-type') || '';
+
+                if (tipo.startsWith('image/')) {
+                    // Imagen: una hoja con la imagen completa
+                    const url = URL.createObjectURL(await resp.blob());
+                    const img = new Image();
+                    await new Promise((ok, fallo) => { img.onload = ok; img.onerror = fallo; img.src = url; });
+                    const hoja = document.createElement('div');
+                    hoja.className = 'adjunto-pag';
+                    const cap = document.createElement('div');
+                    cap.className = 'adjunto-cap';
+                    cap.textContent = o.dataset.titulo + ' · ' + o.dataset.nombre;
+                    hoja.appendChild(cap);
+                    hoja.appendChild(img);
+                    contenedor.appendChild(hoja);
+                    continue;
+                }
+
+                if (!hayPdfjs) throw new Error('sin visor de PDF');
+                const pdf = await pdfjsLib.getDocument({ data: await resp.arrayBuffer() }).promise;
                 for (let p = 1; p <= pdf.numPages; p++) {
                     const pagina = await pdf.getPage(p);
                     const ancho  = pagina.getViewport({ scale: 1 }).width;

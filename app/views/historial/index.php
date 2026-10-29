@@ -1,4 +1,6 @@
 <?php
+$esImagenAdjunto = fn($n) => (bool)preg_match('/\.(jpe?g|png|gif|webp|bmp|avif)$/i', (string)$n);
+$iconoAdjunto    = fn($n) => $esImagenAdjunto($n) ? 'bi-file-earmark-image-fill' : 'bi-file-earmark-pdf-fill';
 $iconos = ['Perro' => '🐶', 'Gato' => '🐱', 'Ave' => '🐦', 'Conejo' => '🐰', 'Roedor' => '🐹', 'Reptil' => '🦎', 'Otro' => '🐾'];
 $meses  = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 
@@ -230,8 +232,8 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
                                         <i class="bi bi-files me-1"></i>Fórmulas anteriores
                                     </a>
                                     <?php endif; ?>
-                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="abrirAdjuntar()" title="Adjuntar un PDF con su descripción">
-                                        <i class="bi bi-paperclip me-1"></i>Adjuntar PDF
+                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="abrirAdjuntar()" title="Adjuntar un PDF o una imagen con su descripción">
+                                        <i class="bi bi-paperclip me-1"></i>Adjuntar archivo
                                     </button>
                                     <?php if (Permisos::puede('hospitalizacion')): ?>
                                     <a href="<?= BASE_URL ?>/hospitalizacion?mascota=<?= $mascota['id'] ?>" class="btn btn-sm btn-outline-secondary" title="Internar al paciente y abrir su hoja ECOP">
@@ -305,7 +307,7 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
                                 <span class="badge bg-danger-subtle text-danger-emphasis ms-1"><?= count($adjuntosGenerales) ?></span></div>
                             <?php foreach ($adjuntosGenerales as $a): ?>
                             <div class="d-flex align-items-center gap-2 py-1 border-top">
-                                <i class="bi bi-file-earmark-pdf-fill text-danger fs-5"></i>
+                                <i class="bi <?= $iconoAdjunto($a['nombre']) ?> text-danger fs-5"></i>
                                 <div class="flex-grow-1 min-w-0">
                                     <a href="<?= BASE_URL ?>/historial/adjunto?id=<?= (int)$a['id'] ?>" target="_blank" class="fw-semibold text-decoration-none"><?= htmlspecialchars($a['descripcion'] ?: $a['nombre']) ?></a>
                                     <div class="small text-muted"><?= htmlspecialchars($a['nombre']) ?> · <?= $fechaCorta(substr($a['created_at'], 0, 10)) ?><?= $a['usuario_nombre'] ? ' · ' . htmlspecialchars($a['usuario_nombre']) : '' ?></div>
@@ -437,8 +439,8 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
                                         <?php foreach ($r['adjuntos'] as $a): ?>
                                         <span class="badge bg-danger-subtle text-danger-emphasis fw-semibold d-inline-flex align-items-center gap-1" style="font-size:.75rem">
                                             <a href="<?= BASE_URL ?>/historial/adjunto?id=<?= (int)$a['id'] ?>" target="_blank" class="text-decoration-none text-reset"
-                                               title="<?= htmlspecialchars($a['descripcion'] ? $a['descripcion'] . ' — ' . $a['nombre'] : 'Abrir PDF') ?>">
-                                                <i class="bi bi-file-earmark-pdf-fill me-1"></i><?= htmlspecialchars($a['descripcion'] ?: $a['nombre']) ?>
+                                               title="<?= htmlspecialchars($a['descripcion'] ? $a['descripcion'] . ' — ' . $a['nombre'] : 'Abrir archivo') ?>">
+                                                <i class="bi <?= $iconoAdjunto($a['nombre']) ?> me-1"></i><?= htmlspecialchars($a['descripcion'] ?: $a['nombre']) ?>
                                             </a>
                                             <button type="button" class="btn btn-link p-0 text-danger lh-1" title="Quitar adjunto"
                                                     onclick='quitarAdjunto(<?= (int)$a['id'] ?>, <?= json_encode($a['nombre'], $jsonFlags) ?>)'><i class="bi bi-x-circle-fill"></i></button>
@@ -771,11 +773,11 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
                         <textarea class="form-control form-control-sm" name="observaciones" id="h-observaciones" rows="2" placeholder="Notas internas, comportamiento, recomendaciones…"></textarea>
 
                         <div id="h-adjuntos-existentes" class="mt-3"></div>
-                        <label class="form-label mt-3" for="h-adjuntos"><i class="bi bi-paperclip me-1"></i>Adjuntar PDF <span class="text-muted fw-normal">(resultados, radiografías, informes…)</span></label>
-                        <input type="file" class="form-control form-control-sm" name="adjuntos[]" id="h-adjuntos" accept="application/pdf,.pdf" multiple>
+                        <label class="form-label mt-3" for="h-adjuntos"><i class="bi bi-paperclip me-1"></i>Adjuntar archivo <span class="text-muted fw-normal">(PDF o imagen: resultados, radiografías, informes…)</span></label>
+                        <input type="file" class="form-control form-control-sm" name="adjuntos[]" id="h-adjuntos" accept="application/pdf,image/jpeg,image/png,image/gif,image/webp,image/bmp,image/avif,.pdf,.jpg,.jpeg,.png,.gif,.webp,.bmp,.avif" multiple>
                         <input type="text" class="form-control form-control-sm mt-2" name="adjuntos_descripcion" maxlength="255" placeholder="Descripción de los adjuntos (ej: Hemograma del 22/10)">
                         <div id="h-adjuntos-lista" class="mt-2"></div>
-                        <div class="form-text">Puedes elegir varios a la vez o ir añadiendo más: se suman a la lista. Hasta 10 PDF de 15 MB cada uno. Al imprimir la historia clínica se imprimen también los adjuntos. Los ya adjuntos se ven en la tarjeta del registro.</div>
+                        <div class="form-text">Puedes elegir varios a la vez o ir añadiendo más: se suman a la lista. Hasta 10 archivos (PDF, JPG, PNG, GIF, WEBP, BMP o AVIF) de 15 MB cada uno. Al imprimir la historia clínica se imprimen también los adjuntos. Los ya adjuntos se ven en la tarjeta del registro.</div>
                     </div>
                 </div>
 
@@ -797,15 +799,15 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
             <form method="POST" action="<?= BASE_URL ?>/historial/adjuntar" enctype="multipart/form-data" autocomplete="off" id="formAdjuntar">
                 <input type="hidden" name="mascota_id" value="<?= $mascota['id'] ?>">
                 <div class="modal-header border-0 pb-0">
-                    <h5 class="modal-title fw-bold"><i class="bi bi-paperclip text-danger me-2"></i>Adjuntar PDF a la historia</h5>
+                    <h5 class="modal-title fw-bold"><i class="bi bi-paperclip text-danger me-2"></i>Adjuntar archivo a la historia</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label fw-semibold" for="a-archivos">Archivo PDF <span class="text-danger">*</span></label>
-                        <input type="file" class="form-control" name="adjuntos[]" id="a-archivos" accept="application/pdf,.pdf" multiple required>
+                        <label class="form-label fw-semibold" for="a-archivos">Archivo (PDF o imagen) <span class="text-danger">*</span></label>
+                        <input type="file" class="form-control" name="adjuntos[]" id="a-archivos" accept="application/pdf,image/jpeg,image/png,image/gif,image/webp,image/bmp,image/avif,.pdf,.jpg,.jpeg,.png,.gif,.webp,.bmp,.avif" multiple required>
                         <div id="a-archivos-lista" class="mt-2"></div>
-                        <div class="form-text">Elige varios a la vez o añade más: se suman a la lista. Hasta 10 PDF de 15 MB cada uno.</div>
+                        <div class="form-text">Elige varios a la vez o añade más: se suman a la lista. Hasta 10 archivos de 15 MB cada uno: PDF, JPG, PNG, GIF, WEBP, BMP o AVIF.</div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-semibold" for="a-descripcion">Descripción <span class="text-danger">*</span></label>
@@ -1007,8 +1009,8 @@ function pintarAdjuntosExistentes(lista) {
     $('h-adjuntos-existentes').innerHTML = lista && lista.length
         ? '<div class="small fw-semibold mb-1"><i class="bi bi-paperclip me-1"></i>Adjuntos de este registro</div>' + lista.map(a => `
             <div class="d-flex align-items-center gap-2 small py-1 border-bottom">
-                <i class="bi bi-file-earmark-pdf-fill text-danger"></i>
-                <a href="<?= BASE_URL ?>/historial/adjunto?id=${a.id}" target="_blank" class="flex-grow-1 text-truncate text-decoration-none" title="Abrir PDF">${h(a.descripcion || a.nombre)}</a>
+                <i class="bi ${/\.(jpe?g|png|gif|webp|bmp|avif)$/i.test(a.nombre) ? 'bi-file-earmark-image-fill' : 'bi-file-earmark-pdf-fill'} text-danger"></i>
+                <a href="<?= BASE_URL ?>/historial/adjunto?id=${a.id}" target="_blank" class="flex-grow-1 text-truncate text-decoration-none" title="Abrir archivo">${h(a.descripcion || a.nombre)}</a>
                 <button type="button" class="btn btn-link btn-sm text-danger p-0 js-quitar" title="Quitar adjunto" data-id="${a.id}" data-nombre="${h(a.nombre)}"><i class="bi bi-trash-fill"></i></button>
             </div>`).join('')
         : '';
@@ -1045,7 +1047,7 @@ function acumularArchivos(input, lista, max = 10, maxBytes = 15 * 1024 * 1024) {
     const pintar = () => {
         lista.innerHTML = [...dt.files].map((f, i) => `
             <div class="d-flex align-items-center gap-2 small py-1 border-bottom">
-                <i class="bi bi-file-earmark-pdf-fill text-danger"></i>
+                <i class="bi ${f.type.startsWith('image/') ? 'bi-file-earmark-image-fill' : 'bi-file-earmark-pdf-fill'} text-danger"></i>
                 <span class="flex-grow-1 text-truncate" title="${h(f.name)}">${h(f.name)}</span>
                 <span class="text-muted text-nowrap">${(f.size / 1048576).toFixed(1)} MB</span>
                 <button type="button" class="btn btn-link btn-sm text-danger p-0" data-i="${i}" title="Quitar" aria-label="Quitar ${h(f.name)}"><i class="bi bi-x-circle-fill"></i></button>
@@ -1055,7 +1057,7 @@ function acumularArchivos(input, lista, max = 10, maxBytes = 15 * 1024 * 1024) {
         const avisos = [];
         for (const f of input.files) {
             if ([...dt.files].some(x => clave(x) === clave(f))) continue;   // ya estaba en la lista
-            if (!/\.pdf$/i.test(f.name) && f.type !== 'application/pdf') avisos.push('«' + f.name + '» no es un PDF.');
+            if (!/\.(pdf|jpe?g|png|gif|webp|bmp|avif)$/i.test(f.name) && f.type !== 'application/pdf' && !/^image\/(jpeg|png|gif|webp|bmp|avif)$/.test(f.type)) avisos.push('«' + f.name + '» no es un PDF ni una imagen admitida (JPG, PNG, GIF, WEBP, BMP, AVIF).');
             else if (f.size > maxBytes) avisos.push('«' + f.name + '» supera los 15 MB.');
             else if (dt.files.length >= max) avisos.push('Máximo ' + max + ' archivos: «' + f.name + '» no se agregó.');
             else dt.items.add(f);
