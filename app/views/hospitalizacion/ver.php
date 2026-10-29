@@ -416,13 +416,27 @@ function cargar(f, comoNueva) {
 const repetir = id => cargar(filas.find(f => f.id === id), true);
 const editar  = id => cargar(filas.find(f => f.id === id), false);
 
-async function enviar(datos) {
+// POST a la hoja: siempre devuelve {ok, error, filas}; si el servidor no responde JSON, explica por qué
+async function postHoja(ruta, datos) {
     const fd = new FormData();
     fd.append('hospitalizacion_id', HID);
     Object.entries(datos).forEach(([k, v]) => fd.append(k, v));
-    const r = await fetch(`${BASE_URL}/hospitalizacion/aplicacion`, { method: 'POST', body: fd, headers: { 'Accept': 'application/json' } });
-    return r.json();
+    let r;
+    try {
+        r = await fetch(`${BASE_URL}/hospitalizacion/${ruta}`, { method: 'POST', body: fd, headers: { 'Accept': 'application/json' } });
+    } catch (e) {
+        return { ok: false, error: 'Sin conexión con el servidor. Revisa tu internet e intenta de nuevo.' };
+    }
+    try {
+        const j = await r.json();
+        if (!j.ok && !j.error) j.error = `El servidor respondió con un error (${r.status}).`;
+        return j;
+    } catch (e) {
+        return { ok: false, error: r.redirected || r.status === 401 ? 'La sesión expiró. Recarga la página e inicia sesión.' : `El servidor devolvió una respuesta inesperada (${r.status}). Recarga la página.` };
+    }
 }
+
+const enviar = datos => postHoja('aplicacion', datos);
 
 async function eliminar(id) {
     const f = filas.find(x => x.id === id);
@@ -454,7 +468,7 @@ if (EDITABLE) {
             accion: 'guardar', id: $id('a-id').value, fecha: $id('a-fecha').value, hora: $id('a-hora').value,
             medicamento: $id('a-med').value, dosis: $id('a-dosis').value, via: $id('a-via').value,
             frecuencia: $id('a-frec').value, observaciones: $id('a-obs').value,
-        }).catch(() => ({ ok: false, error: 'No se pudo conectar con el servidor.' }));
+        }).catch(e => ({ ok: false, error: 'Error en la página: ' + e.message }));
         btn.disabled = false;
         if (!r.ok) { $id('aError').textContent = r.error; $id('aError').classList.remove('d-none'); return; }
         const previos = new Set(filas.map(f => f.id));
@@ -523,13 +537,7 @@ function pintarConst() {
     $id('tabEcop').textContent = filas.length;
 }
 
-async function enviarConst(datos) {
-    const fd = new FormData();
-    fd.append('hospitalizacion_id', HID);
-    Object.entries(datos).forEach(([k, v]) => fd.append(k, v));
-    const r = await fetch(`${BASE_URL}/hospitalizacion/constancia`, { method: 'POST', body: fd, headers: { 'Accept': 'application/json' } });
-    return r.json();
-}
+const enviarConst = datos => postHoja('constancia', datos);
 
 async function eliminarConst(id) {
     const f = constancias.find(x => x.id === id);
@@ -569,7 +577,7 @@ if (EDITABLE) {
         const editando = $id('c-id').value !== '0';
         const datos = { accion: 'guardar', id: $id('c-id').value, fecha: $id('c-fecha').value, hora: $id('c-hora').value };
         CAMPOS_C.forEach(c => datos[c] = $id('c-' + c).value);
-        const r = await enviarConst(datos).catch(() => ({ ok: false, error: 'No se pudo conectar con el servidor.' }));
+        const r = await enviarConst(datos).catch(e => ({ ok: false, error: 'Error en la página: ' + e.message }));
         btn.disabled = false;
         if (!r.ok) { $id('cError').textContent = r.error; $id('cError').classList.remove('d-none'); return; }
         const previos = new Set(constancias.map(f => f.id));
