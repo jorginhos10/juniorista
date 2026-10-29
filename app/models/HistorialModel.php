@@ -27,7 +27,7 @@ class HistorialModel {
         'canino' => ['pvc' => 'PVC', 'triple' => 'Triple', 'rabia' => 'Rabia', 'otra' => 'Otra'],
         'felino' => ['triple' => 'Triple', 'rabia' => 'Rabia', 'otra' => 'Otra'],
     ];
-    public const ACTITUD     = ['Asténico', 'Apoplético', 'Linfático'];
+    public const ACTITUD     = ['Normal','Asténico', 'Apoplético', 'Linfático'];
     public const CONDICION   = ['Caquéctico', 'Delgado', 'Normal', 'Obeso', 'Sobrepeso'];
     public const ALIMENTACION = ['Balanceada', 'Casera', 'Mixta', 'Otra'];
     public const HABITAT     = ['Casa', 'Lote', 'Finca', 'Taller', 'Otro'];
