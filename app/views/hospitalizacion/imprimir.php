@@ -38,6 +38,8 @@ $blancosC = max(0, $minimo - count($constancias));
         .pagina2 h1 { font-size: 24px; margin-bottom: 6px; }
         .paciente-linea { text-align: center; font-size: 11px; margin-bottom: 10px; }
         .pagina2 td { height: 25px; }
+        .obs td { height: auto; vertical-align: top; padding: 5px 6px; }
+        .obs td.t { white-space: pre-wrap; }
         .no-print { position: fixed; top: 12px; right: 12px; display: flex; gap: 8px; }
         .no-print button { padding: 8px 14px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; }
         @media print { .no-print { display: none; } body { padding: 0; } }
@@ -117,6 +119,32 @@ $blancosC = max(0, $minimo - count($constancias));
             <?php endforeach; ?>
             <?php for ($i = 0; $i < $blancosC; $i++): ?>
             <tr><?php for ($j = 0; $j < 11; $j++): ?><td></td><?php endfor; ?></tr>
+            <?php endfor; ?>
+        </tbody>
+    </table>
+</div>
+
+<!-- Página 3: bitácora de observaciones -->
+<div class="pagina2">
+    <h1>BITÁCORA DE OBSERVACIONES</h1>
+    <div class="paciente-linea">
+        <b><?= $e($h['mascota_nombre']) ?></b> · <?= $e($h['especie']) ?><?= $h['raza'] ? ' · ' . $e($h['raza']) : '' ?>
+        · Ingreso <?= $fmt($h['fecha_ingreso']) ?> · <?= $e($h['diagnostico']) ?>
+    </div>
+    <table class="obs">
+        <thead><tr><th style="width:9%">Fecha</th><th style="width:6%">Hora</th><th style="width:12%">Tipo</th><th>Observación</th><th style="width:13%">Firma</th></tr></thead>
+        <tbody>
+            <?php foreach ($observaciones as $o): ?>
+            <tr>
+                <td class="c"><?= date('d/m/Y', strtotime($o['fecha'])) ?></td>
+                <td class="c"><?= $e($o['hora']) ?></td>
+                <td><?= $e($categorias[$o['categoria']][0] ?? 'Otro') ?></td>
+                <td class="t"><?= $e($o['texto']) ?></td>
+                <td style="font-size:9px"><?= $e($o['firma']) ?></td>
+            </tr>
+            <?php endforeach; ?>
+            <?php for ($i = count($observaciones); $i < 8; $i++): ?>
+            <tr><td style="height:40px"></td><td></td><td></td><td></td><td></td></tr>
             <?php endfor; ?>
         </tbody>
     </table>

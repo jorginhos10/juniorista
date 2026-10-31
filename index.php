@@ -433,6 +433,11 @@ switch ($uri) {
         (new HospitalizacionController())->constancia();
         break;
 
+    case 'hospitalizacion/observacion':
+        require_once ROOT . '/app/controllers/HospitalizacionController.php';
+        (new HospitalizacionController())->observacion();
+        break;
+
     case 'hospitalizacion/imprimir':
         require_once ROOT . '/app/controllers/HospitalizacionController.php';
         (new HospitalizacionController())->imprimir();

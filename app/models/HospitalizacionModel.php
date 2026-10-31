@@ -23,6 +23,16 @@ class HospitalizacionModel {
         'Cada 4 h', 'Cada 2 h', 'Infusión continua', 'PRN (si es necesario)',
     ];
 
+    // Tipos de nota de la bitácora: clave => [etiqueta, color de Bootstrap, ícono]
+    public const CATEGORIAS = [
+        'evolucion'    => ['Evolución',         'primary',   'graph-up-arrow'],
+        'alimentacion' => ['Alimentación',      'success',   'cup-hot'],
+        'comportamiento' => ['Comportamiento',  'info',      'emoji-smile'],
+        'procedimiento' => ['Procedimiento',    'danger',    'bandaid'],
+        'propietario'  => ['Propietario',       'warning',   'telephone'],
+        'otro'         => ['Otro',              'secondary', 'chat-left-text'],
+    ];
+
     private mysqli $db;
 
     public function __construct() {
@@ -89,6 +99,22 @@ class HospitalizacionModel {
                 created_at timestamp NOT NULL DEFAULT current_timestamp(),
                 PRIMARY KEY (id),
                 KEY idx_hcon_hosp (hospitalizacion_id, fecha, hora)
+             ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci"
+        );
+        // Bitácora: observaciones libres con fecha, hora y autor
+        $this->db->query(
+            "CREATE TABLE IF NOT EXISTS hospitalizacion_observaciones (
+                id int(11) NOT NULL AUTO_INCREMENT,
+                hospitalizacion_id int(11) NOT NULL,
+                fecha date NOT NULL,
+                hora time NOT NULL,
+                categoria varchar(20) NOT NULL DEFAULT 'evolucion',
+                texto text NOT NULL,
+                firma varchar(100) NOT NULL DEFAULT '',
+                usuario_id int(11) DEFAULT NULL,
+                created_at timestamp NOT NULL DEFAULT current_timestamp(),
+                PRIMARY KEY (id),
+                KEY idx_hobs_hosp (hospitalizacion_id, fecha, hora)
              ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci"
         );
     }
@@ -286,6 +312,45 @@ class HospitalizacionModel {
 
     public function eliminarConstancia(int $hospitalizacion_id, int $id): bool {
         $stmt = $this->db->prepare('DELETE FROM hospitalizacion_constancias WHERE id = ? AND hospitalizacion_id = ?');
+        $stmt->bind_param('ii', $id, $hospitalizacion_id);
+        $ok = $stmt->execute();
+        $stmt->close();
+        return $ok;
+    }
+
+    // ── Bitácora de observaciones ───────────────────────────
+
+    public function getObservaciones(int $hospitalizacion_id): array {
+        $stmt = $this->db->prepare(
+            "SELECT id, DATE_FORMAT(fecha, '%Y-%m-%d') AS fecha, TIME_FORMAT(hora, '%H:%i') AS hora, categoria, texto, firma
+               FROM hospitalizacion_observaciones WHERE hospitalizacion_id = ? ORDER BY fecha ASC, hora ASC, id ASC"
+        );
+        $stmt->bind_param('i', $hospitalizacion_id);
+        $stmt->execute();
+        $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
+        return $rows;
+    }
+
+    public function guardarObservacion(int $hospitalizacion_id, int $id, array $d): bool {
+        if ($id > 0) {
+            $stmt = $this->db->prepare(
+                'UPDATE hospitalizacion_observaciones SET fecha=?, hora=?, categoria=?, texto=? WHERE id=? AND hospitalizacion_id=?'
+            );
+            $stmt->bind_param('ssssii', $d['fecha'], $d['hora'], $d['categoria'], $d['texto'], $id, $hospitalizacion_id);
+        } else {
+            $stmt = $this->db->prepare(
+                'INSERT INTO hospitalizacion_observaciones (hospitalizacion_id, fecha, hora, categoria, texto, firma, usuario_id) VALUES (?,?,?,?,?,?,?)'
+            );
+            $stmt->bind_param('isssssi', $hospitalizacion_id, $d['fecha'], $d['hora'], $d['categoria'], $d['texto'], $d['firma'], $d['usuario_id']);
+        }
+        $ok = $stmt->execute();
+        $stmt->close();
+        return $ok;
+    }
+
+    public function eliminarObservacion(int $hospitalizacion_id, int $id): bool {
+        $stmt = $this->db->prepare('DELETE FROM hospitalizacion_observaciones WHERE id = ? AND hospitalizacion_id = ?');
         $stmt->bind_param('ii', $id, $hospitalizacion_id);
         $ok = $stmt->execute();
         $stmt->close();

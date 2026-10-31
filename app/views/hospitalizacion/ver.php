@@ -39,6 +39,14 @@ $hoy = date('Y-m-d');
         .ecop-tabla tr.fila-nueva { animation: resaltar 1.6s ease-out; }
         @keyframes resaltar { from { background: #bbf7d0; } to { background: transparent; } }
         .via-badge { background: #e0e7ff; color: #3730a3; border-radius: .4rem; padding: .05rem .45rem; font-size: .75rem; font-weight: 700; }
+        .bitacora { position: relative; margin-left: .6rem; padding-left: 1.4rem; border-left: 2px solid #e2e8f0; }
+        .bit-dia { margin: .9rem 0 .5rem -1.4rem; font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #475569; }
+        .bit-dia:first-child { margin-top: 0; }
+        .bit-nota { position: relative; background: #fff; border: 1px solid #e5e7eb; border-radius: .6rem; padding: .6rem .85rem; margin-bottom: .6rem; }
+        .bit-nota::before { content: ''; position: absolute; left: -1.78rem; top: .9rem; width: 12px; height: 12px; border-radius: 50%; background: var(--c, #64748b); border: 2px solid #fff; box-shadow: 0 0 0 1px #cbd5e1; }
+        .bit-nota.fila-nueva { animation: resaltar 1.6s ease-out; }
+        .bit-cab { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; font-size: .78rem; color: #64748b; margin-bottom: .25rem; }
+        .bit-texto { white-space: pre-wrap; font-size: .9rem; }
         .kpi { background: #fff; border: 1px solid #e5e7eb; border-radius: .6rem; padding: .35rem .8rem; font-size: .8rem; }
         .kpi b { font-size: .95rem; }
     </style>
@@ -129,6 +137,7 @@ $hoy = date('Y-m-d');
             <ul class="nav nav-tabs mb-3" id="paginas">
                 <li class="nav-item"><button type="button" class="nav-link active" data-pagina="ecop"><i class="bi bi-capsule me-1"></i>ECOP · medicamentos <span class="badge bg-secondary-subtle text-secondary-emphasis ms-1" id="tabEcop">0</span></button></li>
                 <li class="nav-item"><button type="button" class="nav-link" data-pagina="const"><i class="bi bi-activity me-1"></i>Constancias fisiológicas <span class="badge bg-secondary-subtle text-secondary-emphasis ms-1" id="tabConst">0</span></button></li>
+                <li class="nav-item"><button type="button" class="nav-link" data-pagina="obs"><i class="bi bi-journal-text me-1"></i>Observaciones <span class="badge bg-secondary-subtle text-secondary-emphasis ms-1" id="tabObs">0</span></button></li>
             </ul>
 
             <!-- ECOP -->
@@ -246,6 +255,49 @@ $hoy = date('Y-m-d');
                     </div>
                     <div class="text-center text-muted py-4 d-none" id="vacioConst">
                         <i class="bi bi-activity fs-2 d-block mb-1 opacity-25"></i>Aún no hay constancias registradas en esta hoja.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Observaciones (bitácora) -->
+            <div class="card border-0 shadow-sm d-none" id="cardObs">
+                <div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <h6 class="fw-bold mb-0">Bitácora <span class="text-muted fw-normal small">· observaciones del paciente</span></h6>
+                    <div class="d-flex gap-1 flex-wrap" id="filtrosObs"></div>
+                </div>
+                <div class="card-body">
+
+                    <?php if ($editable): ?>
+                    <form class="ecop-registro mb-4" id="formObs" autocomplete="off">
+                        <input type="hidden" id="o-id" value="0">
+                        <div class="row g-2 align-items-end">
+                            <div class="col-6 col-md-2"><label>Fecha</label><input type="date" class="form-control form-control-sm" id="o-fecha" required></div>
+                            <div class="col-6 col-md-2"><label>Hora</label><input type="time" class="form-control form-control-sm" id="o-hora" required></div>
+                            <div class="col-12 col-md-3"><label>Tipo</label>
+                                <select class="form-select form-select-sm" id="o-cat"><?php foreach ($categorias as $k => [$etiq]): ?><option value="<?= $k ?>"><?= $e($etiq) ?></option><?php endforeach; ?></select>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <label>Observación *</label>
+                            <textarea class="form-control" id="o-texto" rows="3" maxlength="2000" required placeholder="Evolución, apetito, actitud, curaciones, llamada al propietario…"></textarea>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-2 flex-wrap gap-2">
+                            <span class="small text-muted"><i class="bi bi-pen me-1"></i>Firma: <b><?= $e($usuario['nombre']) ?></b> · Ctrl+Enter registra</span>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-sm btn-light d-none" id="btnCancelarObs">Cancelar edición</button>
+                                <button type="button" class="btn btn-sm btn-light" id="btnAhoraObs"><i class="bi bi-clock me-1"></i>Ahora</button>
+                                <button type="submit" class="btn btn-sm btn-primary-custom" id="btnRegistrarObs"><i class="bi bi-check2-circle me-1"></i><span>Registrar</span></button>
+                            </div>
+                        </div>
+                        <div class="small text-danger mt-1 d-none" id="oError"></div>
+                    </form>
+                    <?php else: ?>
+                    <div class="alert alert-secondary py-2 small mb-3"><i class="bi bi-lock me-1"></i>La hoja está cerrada (<?= $e(strtolower($etq)) ?>).</div>
+                    <?php endif; ?>
+
+                    <div class="bitacora" id="bitacora"></div>
+                    <div class="text-center text-muted py-4 d-none" id="vacioObs">
+                        <i class="bi bi-journal-text fs-2 d-block mb-1 opacity-25"></i>Aún no hay observaciones en la bitácora.
                     </div>
                 </div>
             </div>
@@ -492,8 +544,9 @@ pintar();
 function irPagina(p) {
     $id('cardEcop').classList.toggle('d-none', p !== 'ecop');
     $id('cardConst').classList.toggle('d-none', p !== 'const');
+    $id('cardObs').classList.toggle('d-none', p !== 'obs');
     document.querySelectorAll('#paginas .nav-link').forEach(b => b.classList.toggle('active', b.dataset.pagina === p));
-    history.replaceState(null, '', p === 'const' ? '#constancias' : location.pathname + location.search);
+    history.replaceState(null, '', p === 'const' ? '#constancias' : p === 'obs' ? '#observaciones' : location.pathname + location.search);
 }
 document.querySelectorAll('#paginas .nav-link').forEach(b => b.addEventListener('click', () => irPagina(b.dataset.pagina)));
 
@@ -593,6 +646,108 @@ if (EDITABLE) {
 $id('btnOrden').addEventListener('click', pintarConst);
 pintarConst();
 if (location.hash === '#constancias') irPagina('const');
+
+// ── Bitácora de observaciones ───────────────────────────
+let observaciones = <?= json_encode($observaciones, $jsonFlags) ?>;
+const CATEGORIAS = <?= json_encode($categorias, $jsonFlags) ?>;   // clave => [etiqueta, color bootstrap, ícono]
+const COLOR_CAT = { primary: '#4f46e5', success: '#16a34a', info: '#0891b2', danger: '#dc2626', warning: '#d97706', secondary: '#64748b' };
+let filtroObs = '';
+let ultimaObs = 0;
+
+function pintarObs() {
+    // filtros por tipo (solo los que tienen notas)
+    const usadas = [...new Set(observaciones.map(o => o.categoria))];
+    $id('filtrosObs').innerHTML = usadas.length > 1
+        ? [['', 'Todas'], ...usadas.map(k => [k, (CATEGORIAS[k] || CATEGORIAS.otro)[0]])].map(([k, t]) =>
+            `<button type="button" class="btn btn-sm ${filtroObs === k ? 'btn-primary' : 'btn-light'}" data-cat="${k}">${escHtml(t)}</button>`).join('')
+        : '';
+
+    const lista = observaciones.filter(o => !filtroObs || o.categoria === filtroObs);
+    if (recientesPrimero) lista.reverse();
+    let html = '', dia = null;
+    lista.forEach(o => {
+        if (o.fecha !== dia) { dia = o.fecha; html += `<div class="bit-dia">${escHtml(nombreDia(o.fecha))}</div>`; }
+        const [etq, color, icono] = CATEGORIAS[o.categoria] || CATEGORIAS.otro;
+        html += `<div class="bit-nota ${o.id === ultimaObs ? 'fila-nueva' : ''}" style="--c:${COLOR_CAT[color] || '#64748b'}">
+            <div class="bit-cab">
+                <b class="text-dark">${escHtml(o.hora)}</b>
+                <span class="badge bg-${color}-subtle text-${color}-emphasis"><i class="bi bi-${icono} me-1"></i>${escHtml(etq)}</span>
+                <span>${escHtml(o.firma)}</span>
+                ${EDITABLE ? `<span class="ms-auto text-nowrap">
+                    <button class="btn btn-sm btn-link text-secondary p-0 me-2" title="Editar" onclick="editarObs(${o.id})"><i class="bi bi-pencil"></i></button>
+                    <button class="btn btn-sm btn-link text-danger p-0" title="Eliminar" onclick="eliminarObs(${o.id})"><i class="bi bi-trash"></i></button>
+                </span>` : ''}
+            </div>
+            <div class="bit-texto">${escHtml(o.texto)}</div>
+        </div>`;
+    });
+    $id('bitacora').innerHTML = html;
+    $id('bitacora').classList.toggle('d-none', !observaciones.length);
+    $id('vacioObs').classList.toggle('d-none', observaciones.length > 0);
+    $id('tabObs').textContent = observaciones.length;
+}
+
+$id('filtrosObs').addEventListener('click', e => {
+    const b = e.target.closest('button[data-cat]');
+    if (b) { filtroObs = b.dataset.cat; pintarObs(); }
+});
+
+const enviarObs = datos => postHoja('observacion', datos);
+
+async function eliminarObs(id) {
+    if (!confirm('¿Eliminar esta observación de la bitácora?')) return;
+    const r = await enviarObs({ accion: 'eliminar', id });
+    if (r.ok) { observaciones = r.filas; ultimaObs = 0; pintarObs(); } else alert(r.error);
+}
+
+if (EDITABLE) {
+    const ahoraObs = () => { $id('o-fecha').value = hoyISO(); $id('o-hora').value = ahoraHM(); };
+    const limpiarObs = () => {
+        $id('o-id').value = 0;
+        $id('o-texto').value = '';
+        ahoraObs();
+        $id('formObs').classList.remove('editando');
+        $id('btnRegistrarObs').querySelector('span').textContent = 'Registrar';
+        $id('btnCancelarObs').classList.add('d-none');
+        $id('oError').classList.add('d-none');
+    };
+    window.editarObs = id => {
+        const o = observaciones.find(x => x.id === id);
+        $id('o-id').value = o.id; $id('o-fecha').value = o.fecha; $id('o-hora').value = o.hora;
+        $id('o-cat').value = o.categoria; $id('o-texto').value = o.texto;
+        $id('formObs').classList.add('editando');
+        $id('btnRegistrarObs').querySelector('span').textContent = 'Guardar cambios';
+        $id('btnCancelarObs').classList.remove('d-none');
+        $id('formObs').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        $id('o-texto').focus();
+    };
+    ahoraObs();
+    $id('btnAhoraObs').addEventListener('click', ahoraObs);
+    $id('btnCancelarObs').addEventListener('click', limpiarObs);
+    $id('o-texto').addEventListener('keydown', e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); $id('formObs').requestSubmit(); } });
+    $id('formObs').addEventListener('submit', async e => {
+        e.preventDefault();
+        const btn = $id('btnRegistrarObs');
+        btn.disabled = true;
+        const editando = $id('o-id').value !== '0';
+        const r = await enviarObs({
+            accion: 'guardar', id: $id('o-id').value, fecha: $id('o-fecha').value, hora: $id('o-hora').value,
+            categoria: $id('o-cat').value, texto: $id('o-texto').value,
+        }).catch(err => ({ ok: false, error: 'Error en la página: ' + err.message }));
+        btn.disabled = false;
+        if (!r.ok) { $id('oError').textContent = r.error; $id('oError').classList.remove('d-none'); return; }
+        const previos = new Set(observaciones.map(o => o.id));
+        observaciones = r.filas;
+        ultimaObs = editando ? Number($id('o-id').value) : (observaciones.find(o => !previos.has(o.id)) || {}).id || 0;
+        limpiarObs();
+        pintarObs();
+        $id('o-texto').focus();
+    });
+}
+
+$id('btnOrden').addEventListener('click', pintarObs);
+pintarObs();
+if (location.hash === '#observaciones') irPagina('obs');
 </script>
 </body>
 </html>

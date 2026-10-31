@@ -68,6 +68,8 @@ class HospitalizacionController {
             'h'             => $h,
             'aplicaciones'  => $this->model->getAplicaciones((int)$h['id']),
             'constancias'   => $this->model->getConstancias((int)$h['id']),
+            'observaciones' => $this->model->getObservaciones((int)$h['id']),
+            'categorias'    => HospitalizacionModel::CATEGORIAS,
             'rangos'        => HistorialModel::RANGOS[$h['especie']] ?? null,
             'medicamentos'  => $this->model->sugerenciasMedicamentos(),
             'vias'          => HospitalizacionModel::VIAS,
@@ -85,6 +87,8 @@ class HospitalizacionController {
         $empresa      = (new FacturacionModel())->getSucursal((int)$h['veterinaria_id']);
         $aplicaciones = $this->model->getAplicaciones((int)$h['id']);
         $constancias  = $this->model->getConstancias((int)$h['id']);
+        $observaciones = $this->model->getObservaciones((int)$h['id']);
+        $categorias   = HospitalizacionModel::CATEGORIAS;
         require ROOT . '/app/views/hospitalizacion/imprimir.php';
     }
 
@@ -239,6 +243,48 @@ class HospitalizacionController {
         }
 
         echo json_encode(['ok' => (bool)$ok, 'error' => $ok ? '' : 'No se pudo guardar.', 'filas' => $this->model->getConstancias($hid)]);
+        exit;
+    }
+
+    /** POST (AJAX): agrega, edita o elimina una nota de la bitácora y devuelve la bitácora completa */
+    public function observacion(): void {
+        header('Content-Type: application/json; charset=utf-8');
+        $h = $this->model->find((int)($_POST['hospitalizacion_id'] ?? 0));
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !$h) {
+            http_response_code(404);
+            echo json_encode(['ok' => false, 'error' => 'No se encontró la hoja.']);
+            exit;
+        }
+        if ($h['estado'] !== 'internado') {
+            echo json_encode(['ok' => false, 'error' => 'La hoja está cerrada. Reábrela para registrar más observaciones.']);
+            exit;
+        }
+
+        $hid = (int)$h['id'];
+        $id  = (int)($_POST['id'] ?? 0);
+
+        if (($_POST['accion'] ?? '') === 'eliminar') {
+            $ok = $id > 0 && $this->model->eliminarObservacion($hid, $id);
+        } else {
+            $fecha = DateTime::createFromFormat('Y-m-d', $_POST['fecha'] ?? '');
+            $hora  = DateTime::createFromFormat('H:i', $_POST['hora'] ?? '');
+            $categoria = $_POST['categoria'] ?? '';
+            $d = [
+                'fecha'     => $fecha ? $fecha->format('Y-m-d') : date('Y-m-d'),
+                'hora'      => $hora ? $hora->format('H:i:s') : date('H:i:s'),
+                'categoria' => isset(HospitalizacionModel::CATEGORIAS[$categoria]) ? $categoria : 'otro',
+                'texto'     => mb_substr(trim($_POST['texto'] ?? ''), 0, 2000),
+                'firma'     => mb_substr((string)$_SESSION['usuario_nombre'], 0, 100),
+                'usuario_id' => (int)$_SESSION['usuario_id'],
+            ];
+            if ($d['texto'] === '') {
+                echo json_encode(['ok' => false, 'error' => 'Escribe la observación.']);
+                exit;
+            }
+            $ok = $this->model->guardarObservacion($hid, $id, $d);
+        }
+
+        echo json_encode(['ok' => (bool)$ok, 'error' => $ok ? '' : 'No se pudo guardar.', 'filas' => $this->model->getObservaciones($hid)]);
         exit;
     }
 
