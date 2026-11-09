@@ -36,10 +36,12 @@ class IngresoModel {
             $stmt = $this->db->prepare(
                 'SELECT i.*, v.nombre AS veterinaria_nombre,
                         COUNT(d.id)     AS total_lineas,
-                        SUM(d.cantidad) AS total_unidades
+                        SUM(d.cantidad) AS total_unidades,
+                        COALESCE(SUM(d.cantidad * COALESCE(NULLIF(d.precio_venta, 0), p.precio_venta, 0)), 0) AS total_venta
                  FROM ingresos i
                  JOIN veterinarias v ON v.id = i.veterinaria_id
                  LEFT JOIN ingreso_detalles d ON d.ingreso_id = i.id
+                 LEFT JOIN productos p ON p.id = d.producto_id
                  WHERE i.veterinaria_id = ?
                  GROUP BY i.id ORDER BY i.created_at DESC'
             );
@@ -51,10 +53,12 @@ class IngresoModel {
             $result = $this->db->query(
                 'SELECT i.*, v.nombre AS veterinaria_nombre,
                         COUNT(d.id)     AS total_lineas,
-                        SUM(d.cantidad) AS total_unidades
+                        SUM(d.cantidad) AS total_unidades,
+                        COALESCE(SUM(d.cantidad * COALESCE(NULLIF(d.precio_venta, 0), p.precio_venta, 0)), 0) AS total_venta
                  FROM ingresos i
                  JOIN veterinarias v ON v.id = i.veterinaria_id
                  LEFT JOIN ingreso_detalles d ON d.ingreso_id = i.id
+                 LEFT JOIN productos p ON p.id = d.producto_id
                  GROUP BY i.id ORDER BY i.created_at DESC'
             );
         }
@@ -97,12 +101,13 @@ class IngresoModel {
             "SELECT
                 COUNT(DISTINCT i.id)                                             AS total_ingresos,
                 COALESCE(SUM(d.cantidad), 0)                                     AS total_unidades,
-                COALESCE(SUM(i.total), 0)                                        AS valor_total,
-                COALESCE(SUM(CASE WHEN MONTH(i.created_at) = MONTH(NOW())
+                COALESCE(SUM(CASE WHEN COALESCE(i.tipo, '') = 'transferencia_salida' THEN 0 ELSE d.cantidad * COALESCE(NULLIF(d.precio_venta, 0), p.precio_venta, 0) END), 0) AS valor_total,
+                COALESCE(SUM(CASE WHEN COALESCE(i.tipo, '') <> 'transferencia_salida' AND MONTH(i.created_at) = MONTH(NOW())
                                    AND YEAR(i.created_at)  = YEAR(NOW())
-                              THEN i.total ELSE 0 END), 0)                       AS valor_mes
+                              THEN d.cantidad * COALESCE(NULLIF(d.precio_venta, 0), p.precio_venta, 0) ELSE 0 END), 0)       AS valor_mes
              FROM ingresos i
              LEFT JOIN ingreso_detalles d ON d.ingreso_id = i.id
+             LEFT JOIN productos p ON p.id = d.producto_id
              $where"
         );
         return $result ? ($result->fetch_assoc() ?? []) : [];

@@ -100,7 +100,7 @@
                         </div>
                         <div>
                             <div class="stat-value">$<?= number_format($totales['valor_total'] ?? 0, 2) ?></div>
-                            <div class="stat-label">Valor total</div>
+                            <div class="stat-label">Valor total (precio de venta)</div>
                         </div>
                     </div>
                 </div>
@@ -111,7 +111,7 @@
                         </div>
                         <div>
                             <div class="stat-value">$<?= number_format($totales['valor_mes'] ?? 0, 2) ?></div>
-                            <div class="stat-label">Este mes</div>
+                            <div class="stat-label">Este mes (precio de venta)</div>
                         </div>
                     </div>
                 </div>
@@ -216,7 +216,8 @@
                                         </span>
                                     </td>
                                     <td class="text-end fw-bold <?= $esSalida ? 'text-danger' : '' ?>">
-                                        $<?= number_format($ing['total'], 2) ?>
+                                        $<?= number_format($ing['total_venta'] ?? 0, 2) ?>
+                                        <div class="text-muted fw-normal" style="font-size:.7rem" title="Lo que costó (precio de compra)">Costo $<?= number_format($ing['total'], 2) ?></div>
                                     </td>
                                     <td class="text-muted small" style="max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
                                         <?= $esTransfer ? '—' : htmlspecialchars($ing['notas'] ?: '—') ?>
@@ -271,7 +272,7 @@
                 <div class="card-footer bg-white border-0 text-muted small d-flex justify-content-between">
                     <span>Total de registros: <?= count($ingresos) ?></span>
                     <span class="fw-semibold text-body">
-                        Valor total: $<?= number_format(array_sum(array_column($ingresos, 'total')), 2) ?>
+                        Valor total a precio de venta: $<?= number_format(array_sum(array_map(fn($i) => ($i['tipo'] ?? '') === 'transferencia_salida' ? 0 : (float)$i['total_venta'], $ingresos)), 2) ?>
                     </span>
                 </div>
                 <?php endif; ?>
