@@ -6,7 +6,7 @@
     <title>PetControl &mdash; Pérdidas</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="<?= BASE_URL ?>/assets/css/style.css" rel="stylesheet">
+    <link href="<?= BASE_URL ?>/assets/css/style.css?v=<?= (int)@filemtime(ROOT . '/assets/css/style.css') ?>" rel="stylesheet">
 </head>
 <body class="dashboard-body">
 <div class="app-layout">
@@ -326,7 +326,7 @@ const MOTIVOS_P   = <?= json_encode($motivos) ?>;
 const BASE_URL    = '<?= BASE_URL ?>';
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="<?= BASE_URL ?>/assets/js/autocomplete.js"></script>
-<script src="<?= BASE_URL ?>/assets/js/perdidas.js"></script>
+<script src="<?= BASE_URL ?>/assets/js/autocomplete.js?v=<?= (int)@filemtime(ROOT . '/assets/js/autocomplete.js') ?>"></script>
+<script src="<?= BASE_URL ?>/assets/js/perdidas.js?v=<?= (int)@filemtime(ROOT . '/assets/js/perdidas.js') ?>"></script>
 </body>
 </html>

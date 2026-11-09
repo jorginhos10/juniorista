@@ -55,8 +55,8 @@ $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
     <title>PetControl &mdash; Historial médico</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="<?= BASE_URL ?>/assets/css/style.css" rel="stylesheet">
-    <link href="<?= BASE_URL ?>/assets/css/historial.css" rel="stylesheet">
+    <link href="<?= BASE_URL ?>/assets/css/style.css?v=<?= (int)@filemtime(ROOT . '/assets/css/style.css') ?>" rel="stylesheet">
+    <link href="<?= BASE_URL ?>/assets/css/historial.css?v=<?= (int)@filemtime(ROOT . '/assets/css/historial.css') ?>" rel="stylesheet">
 </head>
 <body class="dashboard-body">
 

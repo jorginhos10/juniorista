@@ -6,7 +6,7 @@
     <title>PetControl &mdash; Almacén</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="<?= BASE_URL ?>/assets/css/style.css" rel="stylesheet">
+    <link href="<?= BASE_URL ?>/assets/css/style.css?v=<?= (int)@filemtime(ROOT . '/assets/css/style.css') ?>" rel="stylesheet">
 </head>
 <body class="dashboard-body">
 
@@ -428,7 +428,7 @@
     .rel-vacio { padding: .5rem .75rem; font-size: .82rem; color: #94a3b8; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="<?= BASE_URL ?>/assets/js/app.js"></script>
+<script src="<?= BASE_URL ?>/assets/js/app.js?v=<?= (int)@filemtime(ROOT . '/assets/js/app.js') ?>"></script>
 <script>
 // Buscador en tabla
 document.getElementById('buscador').addEventListener('input', function () {

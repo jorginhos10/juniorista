@@ -22,7 +22,7 @@ $atajos = [
     <title>PetControl &mdash; Fórmula médica</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="<?= BASE_URL ?>/assets/css/style.css" rel="stylesheet">
+    <link href="<?= BASE_URL ?>/assets/css/style.css?v=<?= (int)@filemtime(ROOT . '/assets/css/style.css') ?>" rel="stylesheet">
     <style>
         .rx-num { font-family: Consolas, monospace; font-size: .8rem; color: #4338ca; background: #eef2ff; border-radius: 999px; padding: .1rem .55rem; white-space: nowrap; }
         .rx-lista { max-width: 380px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

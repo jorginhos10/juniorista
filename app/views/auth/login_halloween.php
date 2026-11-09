@@ -13,7 +13,7 @@ $check   = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-wi
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Creepster&display=swap" rel="stylesheet">
-    <link href="<?= BASE_URL ?>/assets/css/login-halloween.css" rel="stylesheet">
+    <link href="<?= BASE_URL ?>/assets/css/login-halloween.css?v=<?= (int)@filemtime(ROOT . '/assets/css/login-halloween.css') ?>" rel="stylesheet">
 </head>
 <body class="hwl-body">
 <div class="hwl">

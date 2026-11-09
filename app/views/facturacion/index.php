@@ -24,7 +24,7 @@ $url = fn(array $cambios) => BASE_URL . '/facturacion?' . http_build_query(array
     <title>PetControl &mdash; Facturación</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="<?= BASE_URL ?>/assets/css/style.css" rel="stylesheet">
+    <link href="<?= BASE_URL ?>/assets/css/style.css?v=<?= (int)@filemtime(ROOT . '/assets/css/style.css') ?>" rel="stylesheet">
     <style>
         .tipo-card { display: block; text-decoration: none; color: inherit; height: 100%; }
         .tipo-card .stat-card { height: 100%; border: 2px solid transparent; transition: border-color .15s; }

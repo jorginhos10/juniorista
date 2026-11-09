@@ -22,7 +22,7 @@ $hoy = date('Y-m-d');
     <title>PetControl &mdash; ECOP <?= $e($h['mascota_nombre']) ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="<?= BASE_URL ?>/assets/css/style.css" rel="stylesheet">
+    <link href="<?= BASE_URL ?>/assets/css/style.css?v=<?= (int)@filemtime(ROOT . '/assets/css/style.css') ?>" rel="stylesheet">
     <style>
         .ficha { display: flex; gap: 1rem; align-items: flex-start; flex-wrap: wrap; }
         .ficha-ico { width: 56px; height: 56px; border-radius: 14px; background: #fef3c7; display: flex; align-items: center; justify-content: center; font-size: 1.9rem; flex-shrink: 0; }

@@ -6,7 +6,7 @@ $veterinaria_id = $veterinaria_id ?? 0;
 $_tema = $_SESSION['tema'] ?? 'original';
 ?>
 <?php if ($_tema === 'halloween'): ?>
-<link href="<?= BASE_URL ?>/assets/css/theme-halloween.css" rel="stylesheet">
+<link href="<?= BASE_URL ?>/assets/css/theme-halloween.css?v=<?= (int)@filemtime(ROOT . '/assets/css/theme-halloween.css') ?>" rel="stylesheet">
 <script>document.body.classList.add('tema-halloween');</script>
 <div class="hw-murcielagos" aria-hidden="true"><span>🦇</span><span>🦇</span><span>🦇</span></div>
 <?php endif; ?>
