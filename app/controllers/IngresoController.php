@@ -219,21 +219,22 @@ class IngresoController {
             ['Registrado por', $cab['usuario_nombre'] ?? ''],
             ['Notas', $cab['notas'] ?? ''],
             [],
-            ['#', 'Producto', 'Código', 'Lote', 'Vencimiento', 'Cantidad', 'Unidad', 'P. Unitario', 'Subtotal'],
+            ['#', 'Producto', 'Código', 'Lote', 'Vencimiento', 'Cantidad', 'Unidad', 'P. Compra', 'P. Venta', 'Subtotal (venta)'],
         ];
-        $total = 0; $unidades = 0;
+        $total = 0; $unidades = 0; $costo = 0;
         foreach ($d['lineas'] as $i => $l) {
-            $sub = (float)$l['subtotal'];
-            $total += $sub; $unidades += (int)$l['cantidad'];
+            $sub = (int)$l['cantidad'] * (float)$l['venta_unitaria'];
+            $total += $sub; $unidades += (int)$l['cantidad']; $costo += (float)$l['subtotal'];
             $filas[] = [
                 $i + 1, $l['producto_nombre'], (string)($l['codigo'] ?? ''), (string)($l['lote'] ?? ''),
                 self::fechaCorta($l['fecha_vencimiento'] ?? null), (int)$l['cantidad'], (string)($l['unidad'] ?? ''),
-                (float)$l['precio_unitario'], $sub,
+                (float)$l['precio_unitario'], (float)$l['venta_unitaria'], $sub,
             ];
         }
-        $filas[] = ['', 'TOTAL', '', '', '', $unidades, '', '', $total];
+        $filas[] = ['', 'TOTAL (precio de venta)', '', '', '', $unidades, '', '', '', $total];
+        $filas[] = ['', 'Costo (precio de compra)', '', '', '', '', '', '', '', $costo];
 
-        ExcelExport::descargar(VeterinariaModel::nombreArchivo($cab['veterinaria_nombre'], 'ingreso_' . $d['radicado']), 'Ingreso', ['INGRESO DE PRODUCTOS', ''], $filas, [16, 48, 20, 16, 14, 11, 10, 13, 14]);
+        ExcelExport::descargar(VeterinariaModel::nombreArchivo($cab['veterinaria_nombre'], 'ingreso_' . $d['radicado']), 'Ingreso', ['INGRESO DE PRODUCTOS', ''], $filas, [16, 48, 20, 16, 14, 11, 10, 13, 13, 16]);
         exit;
     }
 
@@ -246,7 +247,7 @@ class IngresoController {
         $pdf = new PdfSimple();
         $izq = 36; $der = PdfSimple::ANCHO - 36;
         // Columnas: x de inicio (o de fin si va alineada a la derecha)
-        $col = ['n' => $izq + 4, 'prod' => $izq + 28, 'lote' => 318, 'vence' => 384, 'cant' => 446, 'precio' => 498, 'sub' => $der - 4];
+        $col = ['n' => $izq + 4, 'prod' => $izq + 28, 'lote' => 256, 'vence' => 304, 'cant' => 378, 'precio' => 428, 'venta' => 490, 'sub' => $der - 4];
         $dinero = fn($v) => '$' . number_format((float)$v, 2, '.', ',');
         $generado = 'Generado el ' . date('d/m/Y H:i');
 
@@ -257,7 +258,8 @@ class IngresoController {
             $pdf->texto($col['lote'], $y + 11, 'LOTE', 8, true);
             $pdf->texto($col['vence'], $y + 11, 'VENCE', 8, true);
             $pdf->texto($col['cant'], $y + 11, 'CANT.', 8, true, 'R');
-            $pdf->texto($col['precio'], $y + 11, 'P. UNIT.', 8, true, 'R');
+            $pdf->texto($col['precio'], $y + 11, 'P. COMPRA', 8, true, 'R');
+            $pdf->texto($col['venta'], $y + 11, 'P. VENTA', 8, true, 'R');
             $pdf->texto($col['sub'], $y + 11, 'SUBTOTAL', 8, true, 'R');
             return $y + 16;
         };
@@ -287,15 +289,15 @@ class IngresoController {
         }
 
         $y = $encabezadoTabla($y + 6);
-        $total = 0; $unidades = 0;
+        $total = 0; $unidades = 0; $costo = 0;
         foreach ($d['lineas'] as $i => $l) {
             if ($y > PdfSimple::ALTO - 70) {
                 $pie();
                 $pdf->nuevaPagina();
                 $y = $encabezadoTabla(40);
             }
-            $sub = (float)$l['subtotal'];
-            $total += $sub; $unidades += (int)$l['cantidad'];
+            $sub = (int)$l['cantidad'] * (float)$l['venta_unitaria'];
+            $total += $sub; $unidades += (int)$l['cantidad']; $costo += (float)$l['subtotal'];
             $venc = $l['fecha_vencimiento'] ?? null;
             $vencido = $venc && $venc < date('Y-m-d');
 
@@ -303,16 +305,17 @@ class IngresoController {
             $nombre = $l['producto_nombre'] . (!empty($l['codigo']) ? '  (' . $l['codigo'] . ')' : '');
             $pdf->texto($col['n'], $y + 10.5, (string)($i + 1), 8, false, 'L', 0.45);
             $pdf->texto($col['prod'], $y + 10.5, $pdf->ajustar($nombre, $col['lote'] - $col['prod'] - 8, 8), 8);
-            $pdf->texto($col['lote'], $y + 10.5, $pdf->ajustar((string)($l['lote'] ?? ''), 62, 8), 8);
+            $pdf->texto($col['lote'], $y + 10.5, $pdf->ajustar((string)($l['lote'] ?? ''), 44, 8), 8);
             $pdf->texto($col['vence'], $y + 10.5, self::fechaCorta($venc) . ($vencido ? ' *' : ''), 8, $vencido);
             $pdf->texto($col['cant'], $y + 10.5, (string)(int)$l['cantidad'], 8, false, 'R');
-            $pdf->texto($col['precio'], $y + 10.5, $dinero($l['precio_unitario']), 8, false, 'R');
+            $pdf->texto($col['precio'], $y + 10.5, $dinero($l['precio_unitario']), 8, false, 'R', 0.45);
+            $pdf->texto($col['venta'], $y + 10.5, $dinero($l['venta_unitaria']), 8, false, 'R');
             $pdf->texto($col['sub'], $y + 10.5, $dinero($sub), 8, false, 'R');
             $y += 15;
         }
 
         // Totales (en la misma página si caben)
-        if ($y > PdfSimple::ALTO - 90) {
+        if ($y > PdfSimple::ALTO - 110) {
             $pie();
             $pdf->nuevaPagina();
             $y = 40;
@@ -320,9 +323,13 @@ class IngresoController {
         $pdf->linea($izq, $y + 2, $der, $y + 2, 0.3);
         $pdf->texto($col['prod'], $y + 17, count($d['lineas']) . ' producto(s)', 9, true);
         $pdf->texto($col['cant'], $y + 17, (string)$unidades, 9, true, 'R');
-        $pdf->texto($col['lote'], $y + 17, 'TOTAL', 9, true);
+        $pdf->texto($col['venta'], $y + 17, 'TOTAL VENTA', 9, true, 'R');
         $pdf->texto($col['sub'], $y + 17, $dinero($total), 10, true, 'R');
-        $pdf->texto($izq, $y + 34, '* Producto con fecha de vencimiento ya cumplida.', 7.5, false, 'L', 0.45);
+        $pdf->texto($col['venta'], $y + 31, 'Costo (precio de compra)', 8, false, 'R', 0.45);
+        $pdf->texto($col['sub'], $y + 31, $dinero($costo), 8, false, 'R', 0.45);
+        $pdf->texto($col['venta'], $y + 44, 'Ganancia proyectada', 8, true, 'R');
+        $pdf->texto($col['sub'], $y + 44, $dinero($total - $costo), 8, true, 'R');
+        $pdf->texto($izq, $y + 62, '* Producto con fecha de vencimiento ya cumplida.', 7.5, false, 'L', 0.45);
         $pie();
 
         $pdf->descargar(VeterinariaModel::nombreArchivo($cab['veterinaria_nombre'], 'ingreso_' . $d['radicado']));

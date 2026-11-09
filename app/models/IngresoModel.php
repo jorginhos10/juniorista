@@ -83,7 +83,8 @@ class IngresoModel {
 
     public function getDetalles(int $ingreso_id): array {
         $stmt = $this->db->prepare(
-            'SELECT d.*, p.nombre AS producto_nombre, p.codigo, p.unidad
+            'SELECT d.*, p.nombre AS producto_nombre, p.codigo, p.unidad,
+                    COALESCE(NULLIF(d.precio_venta, 0), p.precio_venta, 0) AS venta_unitaria   -- la del ingreso o, si no tiene, la actual del producto
              FROM ingreso_detalles d
              JOIN productos p ON p.id = d.producto_id
              WHERE d.ingreso_id = ?'
