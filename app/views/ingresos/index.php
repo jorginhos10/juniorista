@@ -338,10 +338,11 @@
                     </div>
 
                     <!-- Cabecera fija de columnas -->
-                    <div class="linea-header d-none d-md-grid">
+                    <div class="linea-header linea-con-venta d-none d-md-grid">
                         <span>Producto</span>
                         <span class="text-center">Cantidad</span>
-                        <span class="text-center">P. Unitario</span>
+                        <span class="text-center">P. Compra</span>
+                        <span class="text-center" title="Al guardar, pasa a ser el precio de venta del producto">P. Venta</span>
                         <span class="text-end">Subtotal</span>
                         <span></span>
                     </div>

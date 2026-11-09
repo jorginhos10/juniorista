@@ -54,6 +54,7 @@ class IngresoController {
         $ids      = $_POST['producto_id']     ?? [];
         $cantidades = $_POST['cantidad']      ?? [];
         $precios    = $_POST['precio_unitario'] ?? [];
+        $ventas     = $_POST['precio_venta']    ?? [];
         $lotes      = $_POST['lote']              ?? [];
         $vencimientos = $_POST['fecha_vencimiento'] ?? [];
 
@@ -70,6 +71,7 @@ class IngresoController {
                     'producto_id'     => $pid,
                     'cantidad'        => $cant,
                     'precio_unitario' => $precio,
+                    'precio_venta'    => max(0, round((float)($ventas[$i] ?? 0), 2)),
                 ] + $this->datosLote($lotes[$i] ?? '', $vencimientos[$i] ?? '');
                 $total += $cant * $precio;
             }
@@ -121,6 +123,7 @@ class IngresoController {
         $ids      = $_POST['producto_id']      ?? [];
         $cantidades = $_POST['cantidad']        ?? [];
         $precios    = $_POST['precio_unitario'] ?? [];
+        $ventas     = $_POST['precio_venta']    ?? [];
         $lotes      = $_POST['lote']              ?? [];
         $vencimientos = $_POST['fecha_vencimiento'] ?? [];
 
@@ -132,7 +135,8 @@ class IngresoController {
             $cant = (int)($cantidades[$i] ?? 0);
             $prec = (float)($precios[$i]  ?? 0);
             if ($pid > 0 && $cant > 0) {
-                $lineas[] = ['producto_id' => $pid, 'cantidad' => $cant, 'precio_unitario' => $prec]
+                $lineas[] = ['producto_id' => $pid, 'cantidad' => $cant, 'precio_unitario' => $prec,
+                             'precio_venta' => max(0, round((float)($ventas[$i] ?? 0), 2))]
                           + $this->datosLote($lotes[$i] ?? '', $vencimientos[$i] ?? '');
                 $total   += $cant * $prec;
             }

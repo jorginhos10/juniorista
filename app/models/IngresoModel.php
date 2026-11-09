@@ -14,6 +14,10 @@ class IngresoModel {
     // Cada línea de un ingreso es un lote: puede llevar (opcional) número de lote y fecha de vencimiento.
     // Un mismo producto cargado varias veces queda con un lote/vencimiento distinto por cada carga.
     private function asegurarColumnasLote(): void {
+        // Precio de venta fijado en el ingreso (se aplica al producto al guardar)
+        if (!$this->db->query("SHOW COLUMNS FROM ingreso_detalles LIKE 'precio_venta'")->num_rows) {
+            $this->db->query('ALTER TABLE ingreso_detalles ADD COLUMN precio_venta decimal(10,2) DEFAULT NULL AFTER precio_unitario');
+        }
         $r = $this->db->query("SHOW COLUMNS FROM ingreso_detalles LIKE 'fecha_vencimiento'");
         if ($r && $r->num_rows === 0) {
             $this->db->query(
@@ -112,7 +116,7 @@ class IngresoModel {
     public function getProductos(int $veterinaria_id = 0): array {
         if ($veterinaria_id > 0) {
             $stmt = $this->db->prepare(
-                'SELECT p.id, p.nombre, p.codigo, p.unidad, p.precio_compra,
+                'SELECT p.id, p.nombre, p.codigo, p.unidad, p.precio_compra, p.precio_venta,
                         COALESCE(inv.stock, 0) AS stock
                  FROM productos p
                  LEFT JOIN inventario inv ON inv.producto_id = p.id
@@ -126,7 +130,7 @@ class IngresoModel {
             $stmt->close();
         } else {
             $result = $this->db->query(
-                'SELECT id, nombre, codigo, unidad, precio_compra, stock
+                'SELECT id, nombre, codigo, unidad, precio_compra, precio_venta, stock
                  FROM productos WHERE activo = 1 ORDER BY nombre ASC'
             );
         }
@@ -240,6 +244,18 @@ class IngresoModel {
         $stmt->close();
     }
 
+    /** El precio de venta escrito en el ingreso pasa a ser el precio de venta del producto (si se dejó vacío o en 0, no cambia) */
+    private function aplicarPrecioVenta(array $lineas): void {
+        $stmt = $this->db->prepare('UPDATE productos SET precio_venta = ? WHERE id = ?');
+        foreach ($lineas as $l) {
+            if (!isset($l['precio_venta']) || $l['precio_venta'] <= 0) continue;
+            $v = (float)$l['precio_venta']; $pid = (int)$l['producto_id'];
+            $stmt->bind_param('di', $v, $pid);
+            $stmt->execute();
+        }
+        $stmt->close();
+    }
+
     // Solo retrocede el precio de los productos cuyo precio vigente era el de la línea que se quitó;
     // si ya tenían otro precio más reciente (producto u otro ingreso), no se toca.
     private function revertirPrecioSiVigente(array $producto_ids, array $precioQuitado): void {
@@ -303,8 +319,8 @@ class IngresoModel {
             $stmt->close();
 
             $ins = $this->db->prepare(
-                'INSERT INTO ingreso_detalles (ingreso_id, producto_id, cantidad, precio_unitario, lote, fecha_vencimiento)
-                 VALUES (?, ?, ?, ?, ?, ?)'
+                'INSERT INTO ingreso_detalles (ingreso_id, producto_id, cantidad, precio_unitario, precio_venta, lote, fecha_vencimiento)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)'
             );
             foreach ($lineas as $l) {
                 $pid  = (int)$l['producto_id'];
@@ -312,12 +328,14 @@ class IngresoModel {
                 $prec = (float)$l['precio_unitario'];
                 $lote = $l['lote'] ?? null;
                 $vence = $l['fecha_vencimiento'] ?? null;
-                $ins->bind_param('iiidss', $ingreso_id, $pid, $cant, $prec, $lote, $vence);
+                $venta = isset($l['precio_venta']) && $l['precio_venta'] > 0 ? (float)$l['precio_venta'] : null;
+                $ins->bind_param('iiiddss', $ingreso_id, $pid, $cant, $prec, $venta, $lote, $vence);
                 $ins->execute();
                 $this->upsertStock($cabecera['veterinaria_id'], $pid, $cant);
             }
             $ins->close();
             $this->aplicarPrecioLineas($lineas);
+            $this->aplicarPrecioVenta($lineas);
 
             $this->db->commit();
             return true;
@@ -337,10 +355,12 @@ class IngresoModel {
             // Revertir stock de líneas anteriores
             $afectados = [];
             $precioAnterior = [];   // producto => precio que tenía en este ingreso antes de editarlo
+            $ventaAnterior  = [];   // producto => precio de venta que tenía en este ingreso
             foreach ($this->getDetalles($id) as $d) {
                 $this->decrementarStock($vet, $d['producto_id'], $d['cantidad']);
                 $afectados[] = $d['producto_id'];
                 $precioAnterior[(int)$d['producto_id']] = (float)$d['precio_unitario'];
+                $ventaAnterior[(int)$d['producto_id']]  = (float)($d['precio_venta'] ?? 0);
             }
 
             // Borrar líneas antiguas
@@ -357,7 +377,7 @@ class IngresoModel {
 
             // Insertar nuevas líneas y actualizar stock
             $ins = $this->db->prepare(
-                'INSERT INTO ingreso_detalles (ingreso_id, producto_id, cantidad, precio_unitario, lote, fecha_vencimiento) VALUES (?,?,?,?,?,?)'
+                'INSERT INTO ingreso_detalles (ingreso_id, producto_id, cantidad, precio_unitario, precio_venta, lote, fecha_vencimiento) VALUES (?,?,?,?,?,?,?)'
             );
             foreach ($lineas as $l) {
                 $pid  = (int)$l['producto_id'];
@@ -365,7 +385,8 @@ class IngresoModel {
                 $prec = (float)$l['precio_unitario'];
                 $lote = $l['lote'] ?? null;
                 $vence = $l['fecha_vencimiento'] ?? null;
-                $ins->bind_param('iiidss', $id, $pid, $cant, $prec, $lote, $vence);
+                $venta = isset($l['precio_venta']) && $l['precio_venta'] > 0 ? (float)$l['precio_venta'] : null;
+                $ins->bind_param('iiiddss', $id, $pid, $cant, $prec, $venta, $lote, $vence);
                 $ins->execute();
                 $this->upsertStock($vet, $pid, $cant);
             }
@@ -377,6 +398,11 @@ class IngresoModel {
             $this->aplicarPrecioLineas(array_filter($lineas, function ($l) use ($precioAnterior) {
                 $pid = (int)$l['producto_id'];
                 return !isset($precioAnterior[$pid]) || abs($precioAnterior[$pid] - (float)$l['precio_unitario']) > 0.004;
+            }));
+            // Igual con el precio de venta: solo las líneas en las que se cambió
+            $this->aplicarPrecioVenta(array_filter($lineas, function ($l) use ($ventaAnterior) {
+                $pid = (int)$l['producto_id'];
+                return !isset($ventaAnterior[$pid]) || abs($ventaAnterior[$pid] - (float)($l['precio_venta'] ?? 0)) > 0.004;
             }));
 
             $this->db->commit();

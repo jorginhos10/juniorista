@@ -15,7 +15,7 @@ function agregarLinea() {
     const idx  = lineaIdx++;
 
     const div = document.createElement('div');
-    div.className = 'linea-row';
+    div.className = 'linea-row linea-con-venta';
     div.id = `linea-${idx}`;
     div.innerHTML = `
         <div class="linea-col linea-col-producto">
@@ -46,13 +46,22 @@ function agregarLinea() {
             </div>
         </div>
         <div class="linea-col linea-col-precio">
-            <label class="linea-lbl d-md-none">P. Unitario</label>
+            <label class="linea-lbl d-md-none">P. Compra</label>
             <div class="input-group input-group-sm">
                 <span class="input-group-text px-2">$</span>
                 <input type="number" class="form-control" name="precio_unitario[]"
                        id="precio-${idx}" step="0.01" min="0" value="0.00"
                        oninput="recalcularLinea(${idx})">
             </div>
+        </div>
+        <div class="linea-col linea-col-venta">
+            <label class="linea-lbl d-md-none">P. Venta</label>
+            <div class="input-group input-group-sm">
+                <span class="input-group-text px-2">$</span>
+                <input type="number" class="form-control" name="precio_venta[]" id="venta-${idx}" step="0.01" min="0" value=""
+                       title="Al guardar el ingreso, pasa a ser el precio de venta del producto" oninput="marcarCambioVenta(${idx})">
+            </div>
+            <div class="linea-venta-cambio" id="venta-aviso-${idx}"></div>
         </div>
         <div class="linea-col linea-col-sub">
             <label class="linea-lbl d-md-none">Subtotal</label>
@@ -70,13 +79,21 @@ function agregarLinea() {
     initAutocomplete(
         div.querySelector(`#ac-${idx}`),
         PRODUCTOS,
-        ({ precio, unidad }) => {
+        ({ id, precio, unidad }) => {
             document.getElementById(`precio-${idx}`).value       = precio.toFixed(2);
+            // Precio de venta actual del producto: si se cambia, se actualiza al guardar
+            const prod = PRODUCTOS.find(p => String(p.id) === String(id));
+            const venta = document.getElementById(`venta-${idx}`);
+            venta.value = prod ? parseFloat(prod.precio_venta || 0).toFixed(2) : '';
+            venta.dataset.actual = venta.value;
+            marcarCambioVenta(idx);
             document.getElementById(`unidad-${idx}`).textContent = unidad || 'u.';
             recalcularLinea(idx);
         },
         () => {
             document.getElementById(`precio-${idx}`).value       = '0.00';
+            document.getElementById(`venta-${idx}`).value        = '';
+            marcarCambioVenta(idx);
             document.getElementById(`unidad-${idx}`).textContent = 'u.';
             recalcularLinea(idx);
         },
@@ -86,6 +103,14 @@ function agregarLinea() {
 
     actualizarUI();
     div.querySelector('.prod-ac-input').focus();
+}
+
+// Aviso bajo el precio de venta cuando se cambió respecto al actual del producto
+function marcarCambioVenta(idx) {
+    const inp = document.getElementById(`venta-${idx}`), aviso = document.getElementById(`venta-aviso-${idx}`);
+    if (!inp || !aviso) return;
+    const actual = parseFloat(inp.dataset.actual || 0), nuevo = parseFloat(inp.value || 0);
+    aviso.textContent = nuevo > 0 && Math.abs(nuevo - actual) > 0.004 ? 'Antes: $' + actual.toLocaleString('es-CO') : '';
 }
 
 function recalcularLinea(idx) {
@@ -173,6 +198,10 @@ function editarIngreso(id, proveedor, notas) {
                 document.getElementById(`unidad-${idx}`).textContent = l.unidad || 'u.';
                 document.getElementById(`cant-${idx}`).value          = l.cantidad;
                 document.getElementById(`precio-${idx}`).value        = parseFloat(l.precio_unitario).toFixed(2);
+                const venta = document.getElementById(`venta-${idx}`);
+                venta.dataset.actual = prod ? parseFloat(prod.precio_venta || 0).toFixed(2) : '';
+                venta.value = l.precio_venta !== null && l.precio_venta !== undefined ? parseFloat(l.precio_venta).toFixed(2) : venta.dataset.actual;
+                marcarCambioVenta(idx);
                 document.getElementById(`lote-${idx}`).value          = l.lote || '';
                 document.getElementById(`vence-${idx}`).value         = l.fecha_vencimiento || '';
                 recalcularLinea(idx);

@@ -955,3 +955,16 @@
     min-height: 0;
     overflow: hidden;
 }
+
+/* Ingresos: columna extra «P. Venta» (actualiza el precio de venta del producto) */
+.linea-header.linea-con-venta,
+.linea-row.linea-con-venta { grid-template-columns: 1fr 110px 125px 125px 100px 40px; }
+.linea-col-venta .form-control { font-weight: 600; }
+.linea-venta-cambio { font-size: .68rem; color: #b45309; margin-top: .15rem; text-align: center; }
+@media (max-width: 767px) {
+    .linea-row.linea-con-venta {
+        grid-template-columns: 1fr 1fr;
+        grid-template-areas: "prod prod" "cant precio" "venta sub" "del del";
+    }
+    .linea-col-venta { grid-area: venta; }
+}
