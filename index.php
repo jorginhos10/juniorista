@@ -759,6 +759,35 @@ switch ($uri) {
         (new ArqueoController())->registrar();
         break;
 
+    case 'stock-global':
+        // Consulta de stock de todos los productos en todas las sucursales (cualquier usuario con sesión)
+        header('Content-Type: application/json; charset=utf-8');
+        if (!isset($_SESSION['usuario_id'])) {
+            http_response_code(401);
+            echo json_encode(['error' => 'Sesión expirada.']);
+            exit;
+        }
+        require_once ROOT . '/config/Database.php';
+        $db = Database::getInstance()->getConnection();
+        $sucursales = $db->query('SELECT id, nombre FROM veterinarias WHERE activo = 1 ORDER BY id')->fetch_all(MYSQLI_ASSOC);
+        $stocks = [];
+        foreach ($db->query('SELECT producto_id, veterinaria_id, stock FROM inventario')->fetch_all(MYSQLI_NUM) as [$pid, $vid, $st]) {
+            $stocks[(int)$pid][(int)$vid] = (int)$st;
+        }
+        $productos = [];
+        foreach ($db->query('SELECT id, nombre, codigo, categoria FROM productos WHERE activo = 1 ORDER BY nombre ASC')->fetch_all(MYSQLI_ASSOC) as $p) {
+            $s = [];
+            $total = 0;
+            foreach ($sucursales as $v) {
+                $n = $stocks[(int)$p['id']][(int)$v['id']] ?? 0;
+                $s[] = $n;
+                $total += $n;
+            }
+            $productos[] = ['n' => $p['nombre'], 'c' => $p['codigo'], 'k' => $p['categoria'], 's' => $s, 't' => $total];
+        }
+        echo json_encode(['sucursales' => $sucursales, 'productos' => $productos], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+        exit;
+
     case 'set_vet':
         if (!isset($_SESSION['usuario_id'])) {
             header('Location: ' . BASE_URL . '/login');

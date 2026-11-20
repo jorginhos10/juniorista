@@ -176,3 +176,5 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 </script>
+
+<?php require ROOT . '/app/views/layouts/stock_global.php'; ?>
