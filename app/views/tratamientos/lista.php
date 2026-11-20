@@ -373,6 +373,24 @@ $Su = ucfirst($S);
                             <label class="form-label fw-semibold">Fecha</label>
                             <input type="date" class="form-control" name="fecha" id="n-fecha" max="<?= $hoy ?>" value="<?= $hoy ?>" required>
                         </div>
+                        <?php if ($conCatalogo): ?>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold">Valor de inversión</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="text" class="form-control bg-light" id="n-inversion" value="0.00" readonly tabindex="-1">
+                            </div>
+                            <div class="form-text">Costo del laboratorio (suma de los exámenes elegidos).</div>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold">Ganancia</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="text" class="form-control bg-light fw-semibold text-success" id="n-ganancia" value="0.00" readonly tabindex="-1">
+                            </div>
+                            <div class="form-text">Valor total − inversión. Es lo que se registra en el reporte.</div>
+                        </div>
+                        <?php endif; ?>
                         <div class="col-12">
                             <div class="border rounded-3 p-3 bg-light">
                                 <div class="fw-semibold small mb-2"><i class="bi bi-cash-coin text-success me-1"></i>Primer abono <span class="text-muted fw-normal">(opcional)</span></div>
@@ -785,6 +803,9 @@ function prepararExamenes(p) {
     function pintar() {
         const c = Math.round(costo() * 100) / 100, v = parseFloat(valor.value) || 0;
         valor.min = Math.max(c, abonado);
+        const eInv = $id(p + '-inversion'), eGan = $id(p + '-ganancia');
+        if (eInv) eInv.value = c.toFixed(2);
+        if (eGan) eGan.value = Math.max(0, Math.round((v - c) * 100) / 100).toFixed(2);
         chips.innerHTML = elegidos.map(x => `<span class="vinc-chip" title="${escV(x.nombre)}">${escV(x.codigo)} · ${money(x.costo)}
             <button type="button" data-id="${x.id}" aria-label="Quitar ${escV(x.codigo)}">&times;</button></span>`).join('');
         ocultos.innerHTML = elegidos.map(x => `<input type="hidden" name="examenes[]" value="${x.id}">`).join('');
