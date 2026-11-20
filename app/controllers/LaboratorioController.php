@@ -60,21 +60,18 @@ class LaboratorioController extends TratamientoController {
             if (!$o || $o['estado'] !== 'pendiente') return 'Esa orden ya fue atendida o anulada.';
         }
 
-        // Con abonos ya registrados, el valor y el costo quedan fijos: el reporte reconoce el costo en proporcion
-        // a lo abonado, asi que cambiarlos despues alteraria con efecto retroactivo la ganancia de periodos ya cerrados.
-        if ($id > 0 && ($actual = $this->model->getConSaldo($id, $veterinaria_id)) && (float)$actual['abonado'] > 0) {
-            if (abs($datos['valor'] - (float)$actual['valor']) > 0.001) {
-                return 'Este examen ya tiene abonos: el valor ($' . number_format((float)$actual['valor'], 2) . ') no se puede cambiar. Si hay un error, anula los abonos y corrige el valor.';
+        // Al editar solo se cambia la ganancia: el costo (de los exámenes del catálogo) queda fijo y el valor total
+        // es costo + ganancia (el costo no se puede alterar editando).
+        if ($id > 0 && ($actual = $this->model->getConSaldo($id, $veterinaria_id))) {
+            $costo = round((float)$actual['costo'], 2);
+            if (isset($_POST['ganancia'])) {
+                $ganancia = round((float)str_replace(',', '.', (string)$_POST['ganancia']), 2);
+                if ($ganancia < 0) return 'La ganancia no puede ser negativa.';
+                $datos['valor'] = round($costo + $ganancia, 2);
+            } else {
+                $datos['valor'] = round((float)$actual['valor'], 2);   // petición sin ganancia: no se toca el valor
             }
-            $ids = array_map('intval', (array)($_POST['examenes'] ?? []));
-            if ($ids) {
-                $sel = $this->model->getExamenesPorIds($veterinaria_id, $ids);
-                $costoNuevo = round(array_sum(array_map(fn($e) => (float)$e['costo'], $sel)), 2);
-                if (abs($costoNuevo - (float)$actual['costo']) > 0.001) {
-                    return 'Este examen ya tiene abonos: los examenes y su costo ($' . number_format((float)$actual['costo'], 2) . ') no se pueden cambiar.';
-                }
-            }
-            $datos['costo'] = (float)$actual['costo'];
+            $datos['costo'] = $costo;
             return '';
         }
 
