@@ -267,6 +267,12 @@ $Su = ucfirst($S);
                                                 <i class="bi bi-x-lg"></i>
                                             </button>
                                             <?php endif; ?>
+                                            <?php if ($conCatalogo && $esAdmin): ?>
+                                            <button class="btn btn-sm btn-danger btn-accion" title="Eliminar laboratorio (administrador)"
+                                                    onclick='eliminarLab(<?= (int)$t['id'] ?>, <?= json_encode($t['nombre'] . ' · ' . $t['descripcion'], $jsonFlags) ?>, <?= json_encode($money((float)$t['abonado']), $jsonFlags) ?>)'>
+                                                <i class="bi bi-trash-fill"></i>
+                                            </button>
+                                            <?php endif; ?>
                                         </div>
                                     </td>
                                 </tr>
@@ -583,6 +589,33 @@ $Su = ucfirst($S);
     <input type="hidden" name="id">
     <input type="hidden" name="tab" class="js-tab">
 </form>
+<?php if ($esAdmin && $conCatalogo): ?>
+<!-- Eliminar un laboratorio completo (solo administrador): hay que escribir «confirmo» -->
+<div class="modal fade" id="modalEliminarLab" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <form method="POST" action="<?= $R ?>/eliminar" id="formEliminarLab" autocomplete="off">
+                <input type="hidden" name="id">
+                <input type="hidden" name="tab" class="js-tab">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>Eliminar laboratorio</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-2 fw-semibold" id="el-texto"></p>
+                    <p class="small text-muted" id="el-aviso"></p>
+                    <label class="form-label small fw-semibold" for="el-confirmo">Para continuar escribe <strong>confirmo</strong></label>
+                    <input type="text" class="form-control" name="confirmacion" id="el-confirmo" placeholder="confirmo" required>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Volver</button>
+                    <button type="submit" class="btn btn-danger" id="el-enviar" disabled><i class="bi bi-trash me-1"></i>Eliminar laboratorio</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
 <?php if ($esAdmin): ?>
 <!-- Anular un abono (solo administrador): hay que escribir «confirmo» -->
 <div class="modal fade" id="modalAnularAbono" tabindex="-1" aria-hidden="true">
@@ -987,6 +1020,21 @@ $id('ab-mitad').addEventListener('click', () => { $id('ab-monto').value = (Math.
 $id('formAbono').addEventListener('submit', e => {
     if ((parseFloat($id('ab-monto').value) || 0) > saldoActual + 0.001) { e.preventDefault(); $id('ab-monto').focus(); }
 });
+
+function eliminarLab(id, texto, abonado) {
+    if (!ES_ADMIN) return;
+    $id('formEliminarLab').id.value = id;
+    $id('el-texto').textContent = texto;
+    $id('el-aviso').textContent = 'Se elimina el examen y sus abonos (' + abonado + ') dejan de contar en facturación, cierres y reportes.';
+    $id('el-confirmo').value = '';
+    $id('el-enviar').disabled = true;
+    modal('modalEliminarLab').show();
+    setTimeout(() => $id('el-confirmo').focus(), 300);
+}
+if (ES_ADMIN && $id('el-confirmo')) {
+    $id('el-confirmo').addEventListener('input', () => { $id('el-enviar').disabled = $id('el-confirmo').value.trim().toLowerCase() !== 'confirmo'; });
+    $id('formEliminarLab').addEventListener('submit', e => { if ($id('el-enviar').disabled) e.preventDefault(); });
+}
 
 function anularAbono(id, tratamientoId, monto) {
     if (!ES_ADMIN) return;
