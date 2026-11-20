@@ -137,26 +137,39 @@ class LaboratorioModel extends TratamientoModel {
     }
 
     /**
-     * Reparto de lo cobrado en un rango: ['cantidad' (exámenes con cobros), 'total' (abonos), 'costo', 'negocio' (ganancia)].
-     * El costo se reconoce en proporción a lo abonado: un abono del 40 % del valor cubre el 40 % del costo.
+     * Ganancia de laboratorios en un rango: por cada examen registrado en el periodo (no cancelado),
+     * ganancia = valor − inversión (costo). Devuelve ['cantidad' (exámenes), 'total' (valor de los exámenes),
+     * 'costo' (inversión), 'negocio' (ganancia total), 'cobrado' (abonos recibidos en el rango)].
+     * La ganancia no depende de cuánto se haya abonado ni de cuándo, así que editar abonos no la altera.
      */
     public function getReparto(int $veterinaria_id, string $desde, string $hasta): array {
         $stmt = $this->db->prepare(
-            'SELECT COUNT(DISTINCT t.id) AS cantidad, COALESCE(SUM(a.monto), 0) AS total,
-                    COALESCE(SUM(ROUND(a.monto * LEAST(t.costo, t.valor) / NULLIF(t.valor, 0), 2)), 0) AS costo
-               FROM laboratorio_abonos a
-               JOIN laboratorios t ON t.id = a.tratamiento_id AND t.activo = 1
-              WHERE a.activo = 1 AND a.veterinaria_id = ? AND a.fecha BETWEEN ? AND ?'
+            "SELECT COUNT(*) AS cantidad, COALESCE(SUM(valor), 0) AS total,
+                    COALESCE(SUM(LEAST(costo, valor)), 0) AS costo
+               FROM laboratorios
+              WHERE activo = 1 AND estado <> 'cancelado' AND veterinaria_id = ? AND fecha BETWEEN ? AND ?"
         );
         $stmt->bind_param('iss', $veterinaria_id, $desde, $hasta);
         $stmt->execute();
         $r = $stmt->get_result()->fetch_assoc();
         $stmt->close();
+
+        $stmt = $this->db->prepare(
+            'SELECT COALESCE(SUM(a.monto), 0)
+               FROM laboratorio_abonos a JOIN laboratorios t ON t.id = a.tratamiento_id AND t.activo = 1
+              WHERE a.activo = 1 AND a.veterinaria_id = ? AND a.fecha BETWEEN ? AND ?'
+        );
+        $stmt->bind_param('iss', $veterinaria_id, $desde, $hasta);
+        $stmt->execute();
+        $cobrado = (float)$stmt->get_result()->fetch_row()[0];
+        $stmt->close();
+
         return [
             'cantidad' => (int)$r['cantidad'],
             'total'    => (float)$r['total'],
             'costo'    => (float)$r['costo'],
             'negocio'  => round((float)$r['total'] - (float)$r['costo'], 2),
+            'cobrado'  => $cobrado,
         ];
     }
 
