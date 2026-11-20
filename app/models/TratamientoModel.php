@@ -173,6 +173,55 @@ class TratamientoModel {
     }
 
     public function actualizar(int $id, array $d): bool {
+        // Con abonos, cambiar la fecha del registro mueve sus abonos la misma cantidad de dias: asi ningun abono queda
+        // anterior al registro ni el dinero se queda contado en el periodo viejo.
+        if ($this->conAbonos) {
+            $this->db->begin_transaction();
+            $err = $this->moverAbonosConFecha($id, (int)$d['veterinaria_id'], (string)$d['fecha']);
+            if ($err !== '') {
+                $this->db->rollback();
+                $this->errorActualizar = $err;
+                return false;
+            }
+            $ok = $this->actualizarCampos($id, $d);
+            $ok ? $this->db->commit() : $this->db->rollback();
+            return $ok;
+        }
+        return $this->actualizarCampos($id, $d);
+    }
+
+    /** Motivo por el que actualizar() devolvio false (vacio si fue un error generico) */
+    public string $errorActualizar = '';
+
+    /** Desplaza los abonos activos los mismos dias que se movio la fecha del registro. Devuelve '' o el error. */
+    private function moverAbonosConFecha(int $id, int $veterinaria_id, string $nuevaFecha): string {
+        $stmt = $this->db->prepare("SELECT fecha FROM {$this->tabla} WHERE id = ? AND veterinaria_id = ? AND activo = 1 FOR UPDATE");
+        $stmt->bind_param('ii', $id, $veterinaria_id);
+        $stmt->execute();
+        $actual = $stmt->get_result()->fetch_row()[0] ?? null;
+        $stmt->close();
+        if ($actual === null || $actual === $nuevaFecha) return '';
+
+        $dias = (int)round((strtotime($nuevaFecha) - strtotime($actual)) / 86400);
+        $stmt = $this->db->prepare("SELECT MAX(fecha) FROM {$this->tablaAbonos} WHERE tratamiento_id = ? AND activo = 1");
+        $stmt->bind_param('i', $id);
+        $stmt->execute();
+        $ultimo = $stmt->get_result()->fetch_row()[0] ?? null;
+        $stmt->close();
+        if ($ultimo === null) return '';   // sin abonos: nada que mover
+
+        $nuevoUltimo = date('Y-m-d', strtotime("$ultimo $dias days"));
+        if ($nuevoUltimo > date('Y-m-d')) {
+            return 'No se puede mover la fecha: el ultimo abono quedaria el ' . date('d/m/Y', strtotime($nuevoUltimo)) . ' (fecha futura).';
+        }
+        $stmt = $this->db->prepare("UPDATE {$this->tablaAbonos} SET fecha = DATE_ADD(fecha, INTERVAL ? DAY) WHERE tratamiento_id = ? AND activo = 1");
+        $stmt->bind_param('ii', $dias, $id);
+        $ok = $stmt->execute();
+        $stmt->close();
+        return $ok ? '' : 'No se pudieron mover los abonos.';
+    }
+
+    private function actualizarCampos(int $id, array $d): bool {
         $stmt = $this->db->prepare(
             "UPDATE {$this->tabla} SET fecha=?, nombre=?, especie=?, descripcion=?, valor=?" . (array_key_exists('cliente_id', $d) ? ', cliente_id=NULLIF(?, 0), mascota_id=NULLIF(?, 0)' : '') . "
               WHERE id=? AND veterinaria_id=? AND activo=1"

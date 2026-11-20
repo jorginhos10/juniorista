@@ -141,7 +141,7 @@ class TratamientoController {
             $ok = $this->model->actualizar($id, $datos);
             $_SESSION[$ok ? 'flash_success' : 'flash_error'] = $ok
                 ? ucfirst($this->modulo['singular']) . ' actualizado.'
-                : 'Error al actualizar el ' . $this->modulo['singular'] . '.';
+                : ($this->model->errorActualizar ?: 'Error al actualizar el ' . $this->modulo['singular'] . '.');
         } else {
             $datos['usuario_id'] = (int)$_SESSION['usuario_id'];
             $nuevoId = $this->model->crear($datos, $datos['abono_inicial'], $datos['nota_abono']);
