@@ -363,20 +363,11 @@ $Su = ucfirst($S);
                             <input type="text" class="form-control" name="descripcion" id="n-descripcion" maxlength="255" required placeholder="<?= htmlspecialchars($modulo['placeholder']) ?>">
                         </div>
                         <div class="col-6">
-                            <?php if ($conCatalogo): ?>
-                            <label class="form-label fw-semibold">Valor ganancia <span class="text-danger">*</span></label>
-                            <div class="input-group">
-                                <span class="input-group-text">$</span>
-                                <input type="number" class="form-control" name="ganancia" id="n-ganancia" step="0.01" min="0" required placeholder="0.00">
-                            </div>
-                            <input type="hidden" name="valor" id="n-valor" value="0">
-                            <?php else: ?>
-                            <label class="form-label fw-semibold">Valor total <span class="text-danger">*</span></label>
+                            <label class="form-label fw-semibold">Valor total a cobrar<?= $conCatalogo ? ' (ganancia)' : '' ?> <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <span class="input-group-text">$</span>
                                 <input type="number" class="form-control" name="valor" id="n-valor" step="0.01" min="0" required placeholder="0.00">
                             </div>
-                            <?php endif; ?>
                         </div>
                         <div class="col-6">
                             <label class="form-label fw-semibold">Fecha</label>
@@ -456,35 +447,17 @@ $Su = ucfirst($S);
                             </div>
                             <input type="hidden" name="cliente_id" id="e-cliente_id" value="0">
                         </div>
-                        <?php if ($conCatalogo): ?>
-                        <div class="col-12">
-                            <div class="d-flex justify-content-between align-items-center rounded border bg-light px-3 py-2">
-                                <span class="small text-muted"><i class="bi bi-lock-fill me-1"></i>Costo del laboratorio (no editable)</span>
-                                <strong id="e-costo-fijo">$0.00</strong>
-                            </div>
-                        </div>
-                        <?php endif; ?>
                         <div class="col-12">
                             <label class="form-label fw-semibold">Descripción <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" name="descripcion" id="e-descripcion" maxlength="255" required>
                         </div>
                         <div class="col-6">
-                            <?php if ($conCatalogo): ?>
-                            <label class="form-label fw-semibold">Ganancia <span class="text-danger">*</span></label>
-                            <div class="input-group">
-                                <span class="input-group-text">$</span>
-                                <input type="number" class="form-control" name="ganancia" id="e-ganancia" step="0.01" min="0" required>
-                            </div>
-                            <input type="hidden" name="valor" id="e-valor" value="0">
-                            <div class="form-text" id="e-hint"></div>
-                            <?php else: ?>
-                            <label class="form-label fw-semibold">Valor total <span class="text-danger">*</span></label>
+                            <label class="form-label fw-semibold">Valor total a cobrar<?= $conCatalogo ? ' (ganancia)' : '' ?> <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <span class="input-group-text">$</span>
                                 <input type="number" class="form-control" name="valor" id="e-valor" step="0.01" min="0" required>
                             </div>
                             <div class="form-text" id="e-hint"></div>
-                            <?php endif; ?>
                         </div>
                         <div class="col-6">
                             <label class="form-label fw-semibold">Fecha</label>
@@ -791,21 +764,13 @@ function prepararExamenes(p) {
     let elegidos = [], costoBase = 0, abonado = 0;
     const costo = () => elegidos.length ? elegidos.reduce((t, x) => t + x.costo, 0) : costoBase;
 
-    // Nuevo laboratorio: se escribe solo la ganancia; el valor total (campo oculto) = inversión + ganancia
-    const gan = p === 'n' ? $id('n-ganancia') : null;
     function pintar() {
-        if (gan) valor.value = (Math.round((costo() + (parseFloat(gan.value) || 0)) * 100) / 100).toFixed(2);
         const c = Math.round(costo() * 100) / 100, v = parseFloat(valor.value) || 0;
-        valor.min = Math.max(c, abonado);
+        valor.min = abonado;
         chips.innerHTML = elegidos.map(x => `<span class="vinc-chip" title="${escV(x.nombre)}">${escV(x.codigo)} · ${money(x.costo)}
             <button type="button" data-id="${x.id}" aria-label="Quitar ${escV(x.codigo)}">&times;</button></span>`).join('');
         ocultos.innerHTML = elegidos.map(x => `<input type="hidden" name="examenes[]" value="${x.id}">`).join('');
-        hint.innerHTML = !EXAMENES.length && !c
-            ? 'Aún no hay exámenes en el catálogo. <a href="' + BASE_URL_CFG + '">Agrégalos en Configuración</a>.'
-            : !c ? '<span class="text-muted">Elige los exámenes para calcular el costo mínimo.</span>'
-            : v && v + 0.001 < c ? `<span class="text-danger"><i class="bi bi-exclamation-circle-fill me-1"></i>Costo ${money(c)}: el valor no puede ser menor.</span>`
-            : v ? `<span class="text-muted">Costo ${money(c)} · <strong class="text-success">Ganancia ${money(v - c)}</strong></span>`
-            : `<span class="text-muted">Costo ${money(c)}: el valor mínimo a cobrar.</span>`;
+        hint.innerHTML = !EXAMENES.length ? 'Aún no hay exámenes en el catálogo. <a href="' + BASE_URL_CFG + '">Agrégalos en Configuración</a>.' : '';
     }
     function elegir(x) {
         if (!elegidos.some(e => e.id === x.id)) elegidos.push(x);
@@ -813,7 +778,6 @@ function prepararExamenes(p) {
         // La descripción se arma con las siglas (HH+PHR+CDV) y sigue siendo editable
         desc.value = elegidos.map(e => e.codigo).join('+');
         const c = costo(), v = parseFloat(valor.value) || 0;
-        if (!gan && v < c) valor.value = c.toFixed(2);
         valor.dispatchEvent(new Event('input'));
         pintar();
     }
@@ -836,8 +800,6 @@ function prepararExamenes(p) {
         if (elegidos.length) desc.value = elegidos.map(x => x.codigo).join('+');
         pintar();
     });
-    if (gan) gan.addEventListener('input', () => { pintar(); valor.dispatchEvent(new Event('input')); });
-    else valor.addEventListener('input', pintar);
 
     return {
         cargar(costoGuardado, yaAbonado) {
@@ -850,7 +812,6 @@ function prepararExamenes(p) {
         precargar(ids, descripcion) {
             elegidos = EXAMENES.filter(x => ids.includes(x.id));
             if (descripcion) desc.value = descripcion;
-            if (!gan && !(parseFloat(valor.value) > 0)) valor.value = costo().toFixed(2);
             pintar();
         },
     };
@@ -905,24 +866,8 @@ $id('n-abono').addEventListener('input', () => { abonoTocado = true; actualizarH
 function editar(t) {
     ['id', 'nombre', 'especie', 'descripcion', 'valor', 'fecha'].forEach(c => $id('e-' + c).value = t[c] ?? '');
     vincEditar.cargar(t.mascota_id, t.cliente_id);
-    if (CON_CATALOGO) {
-        // Laboratorio: el costo es fijo; solo se edita la ganancia y el valor total = costo + ganancia
-        const costoFijo = Number(t.costo) || 0, abonado = Number(t.abonado) || 0, g = $id('e-ganancia');
-        $id('e-costo-fijo').textContent = money(costoFijo);
-        g.value = Math.max(0, Math.round((Number(t.valor) - costoFijo) * 100) / 100).toFixed(2);
-        g.min = Math.max(0, Math.round((abonado - costoFijo) * 100) / 100);
-        const sync = () => {
-            const gan = parseFloat(g.value) || 0;
-            $id('e-valor').value = (Math.round((costoFijo + gan) * 100) / 100).toFixed(2);
-            $id('e-hint').innerHTML = 'Valor total a cobrar: <strong>' + money(costoFijo + gan) + '</strong>'
-                + (abonado > 0 ? ' · ya abonado ' + money(abonado) : '');
-        };
-        g.oninput = sync;
-        sync();
-    } else {
-        $id('e-valor').min = t.abonado;
-        $id('e-hint').textContent = Number(t.abonado) > 0 ? 'Ya abonado: ' + money(t.abonado) + ' (el valor no puede ser menor).' : '';
-    }
+    $id('e-valor').min = t.abonado;
+    $id('e-hint').textContent = Number(t.abonado) > 0 ? 'Ya abonado: ' + money(t.abonado) + ' (el valor no puede ser menor).' : '';
     modal('modalEditar').show();
 }
 

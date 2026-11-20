@@ -60,42 +60,14 @@ class LaboratorioController extends TratamientoController {
             if (!$o || $o['estado'] !== 'pendiente') return 'Esa orden ya fue atendida o anulada.';
         }
 
-        // Al editar solo se cambia la ganancia: el costo (de los exámenes del catálogo) queda fijo y el valor total
-        // es costo + ganancia (el costo no se puede alterar editando).
-        if ($id > 0 && ($actual = $this->model->getConSaldo($id, $veterinaria_id))) {
-            $costo = round((float)$actual['costo'], 2);
-            if (isset($_POST['ganancia'])) {
-                $ganancia = round((float)str_replace(',', '.', (string)$_POST['ganancia']), 2);
-                if ($ganancia < 0) return 'La ganancia no puede ser negativa.';
-                $datos['valor'] = round($costo + $ganancia, 2);
-            } else {
-                $datos['valor'] = round((float)$actual['valor'], 2);   // petición sin ganancia: no se toca el valor
-            }
-            $datos['costo'] = $costo;
-            return '';
-        }
-
+        // El valor total a cobrar ES la ganancia del negocio: el costo del laboratorio externo no se suma ni se resta,
+        // así que se guarda en 0 y el reporte cuenta el valor completo.
         $ids = array_map('intval', (array)($_POST['examenes'] ?? []));
         if ($ids) {
             $seleccion = $this->model->getExamenesPorIds($veterinaria_id, $ids);
             if ($error = $this->model->validarSeleccion($seleccion)) return $error;
-            $costo = round(array_sum(array_map(fn($e) => (float)$e['costo'], $seleccion)), 2);
-        } else {
-            $costo = $id > 0 ? $this->model->getCosto($id, $veterinaria_id) : 0.0;
         }
-
-        // Nuevo examen: se registra la ganancia y el valor total es inversión + ganancia (se recalcula aquí)
-        if ($id === 0 && isset($_POST['ganancia'])) {
-            $ganancia = round((float)str_replace(',', '.', (string)$_POST['ganancia']), 2);
-            if ($ganancia < 0) return 'La ganancia no puede ser negativa.';
-            $datos['valor'] = round($costo + $ganancia, 2);
-            if ($datos['abono_inicial'] > $datos['valor'] + 0.001) return 'El abono inicial no puede superar el valor total ($' . number_format($datos['valor'], 2) . ').';
-        }
-
-        if ($datos['valor'] + 0.001 < $costo) {
-            return 'El valor no puede ser menor al costo del laboratorio ($' . number_format($costo, 2) . ').';
-        }
-        $datos['costo'] = $costo;
+        $datos['costo'] = 0.0;
         return '';
     }
 }
