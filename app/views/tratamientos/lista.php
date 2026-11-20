@@ -583,11 +583,34 @@ $Su = ucfirst($S);
     <input type="hidden" name="id">
     <input type="hidden" name="tab" class="js-tab">
 </form>
-<form method="POST" action="<?= $R ?>/abono/eliminar" id="formAnularAbono" class="d-none">
-    <input type="hidden" name="id">
-    <input type="hidden" name="tratamiento_id">
-    <input type="hidden" name="tab" class="js-tab">
-</form>
+<?php if ($esAdmin): ?>
+<!-- Anular un abono (solo administrador): hay que escribir «confirmo» -->
+<div class="modal fade" id="modalAnularAbono" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <form method="POST" action="<?= $R ?>/abono/eliminar" id="formAnularAbono" autocomplete="off">
+                <input type="hidden" name="id">
+                <input type="hidden" name="tratamiento_id">
+                <input type="hidden" name="tab" class="js-tab">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>Confirmar el abono</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-2" id="aa-texto"></p>
+                    <p class="small text-muted">Dejará de contar en los cierres y reportes, y el saldo volverá a quedar pendiente.</p>
+                    <label class="form-label small fw-semibold" for="aa-confirmo">Para continuar escribe <strong>confirmo</strong></label>
+                    <input type="text" class="form-control" name="confirmacion" id="aa-confirmo" placeholder="confirmo" required>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Volver</button>
+                    <button type="submit" class="btn btn-danger" id="aa-enviar" disabled><i class="bi bi-trash me-1"></i>Eliminar abono</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
@@ -966,11 +989,20 @@ $id('formAbono').addEventListener('submit', e => {
 });
 
 function anularAbono(id, tratamientoId, monto) {
-    if (!confirm('¿Anular el abono de ' + monto + '? Dejará de contar en los cierres y el saldo volverá a quedar pendiente.')) return;
+    if (!ES_ADMIN) return;
     const f = $id('formAnularAbono');
     f.id.value = id;
     f.tratamiento_id.value = tratamientoId;
-    f.submit();
+    $id('aa-texto').textContent = '¿Confirmar la anulación del abono de ' + monto + '?';
+    $id('aa-confirmo').value = '';
+    $id('aa-enviar').disabled = true;
+    modal('modalAnularAbono').show();
+    setTimeout(() => $id('aa-confirmo').focus(), 300);
+}
+if (ES_ADMIN) {
+    const habilitar = () => { $id('aa-enviar').disabled = $id('aa-confirmo').value.trim().toLowerCase() !== 'confirmo'; };
+    $id('aa-confirmo').addEventListener('input', habilitar);
+    $id('formAnularAbono').addEventListener('submit', e => { if ($id('aa-enviar').disabled) e.preventDefault(); });
 }
 
 // Tras registrar un abono o un tratamiento con abono, se reabre su detalle

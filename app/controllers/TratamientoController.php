@@ -215,6 +215,8 @@ class TratamientoController {
         $tratamiento_id = (int)($_POST['tratamiento_id'] ?? 0);
         if (($_SESSION['usuario_rol'] ?? '') !== 'admin') {
             $_SESSION['flash_error'] = 'Solo un administrador puede anular abonos.';
+        } elseif (mb_strtolower(trim((string)($_POST['confirmacion'] ?? ''))) !== 'confirmo') {
+            $_SESSION['flash_error'] = 'Para anular el abono debes escribir «confirmo».';
         } else {
             $veterinaria_id = $this->veterinariaActual($this->vetModel->getAll());
             $ok = $this->model->eliminarAbono((int)($_POST['id'] ?? 0), $veterinaria_id);

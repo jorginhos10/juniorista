@@ -40,6 +40,19 @@ class LaboratorioController extends TratamientoController {
         if ($orden > 0) $this->model->cambiarEstadoOrden($orden, (int)$datos['veterinaria_id'], 'atendida', $id);
     }
 
+    /** Eliminar un laboratorio: solo administrador y con la palabra «confirmo» */
+    public function eliminar(): void {
+        if (($_SESSION['usuario_rol'] ?? '') !== 'admin') {
+            $_SESSION['flash_error'] = 'Solo un administrador puede eliminar laboratorios.';
+            $this->redirect('laboratorio');
+        }
+        if (mb_strtolower(trim((string)($_POST['confirmacion'] ?? ''))) !== 'confirmo') {
+            $_SESSION['flash_error'] = 'Para eliminar debes escribir «confirmo».';
+            $this->redirect('laboratorio');
+        }
+        parent::eliminar();
+    }
+
     /** POST: caja descarta una orden del doctor (no genera cobro) */
     public function descartarOrden(): void {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') $this->redirect('laboratorio');
