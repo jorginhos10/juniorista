@@ -115,7 +115,7 @@ class IngresoModel {
     }
 
     public function getVeterinarias(): array {
-        $result = $this->db->query('SELECT id, nombre FROM veterinarias WHERE activo = 1 ORDER BY nombre ASC');
+        $result = $this->db->query('SELECT id, nombre, logo FROM veterinarias WHERE activo = 1 ORDER BY nombre ASC');
         return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
     }
 

@@ -4,6 +4,25 @@ $activePage   = $activePage ?? '';
 $veterinarias = $veterinarias ?? [];
 $veterinaria_id = $veterinaria_id ?? 0;
 $_tema = $_SESSION['tema'] ?? 'original';
+
+// Logo de la sucursal activa (se muestra en la cabecera de la barra lateral)
+$_vetLogo = '';
+$_vetNombreLogo = '';
+foreach ($veterinarias as $_vs) {
+    if ((int)$_vs['id'] === (int)$veterinaria_id) {
+        $_vetNombreLogo = $_vs['nombre'] ?? '';
+        $_vetLogo = array_key_exists('logo', $_vs) ? (string)$_vs['logo'] : '';
+        if (!array_key_exists('logo', $_vs)) {   // la lista no trae el logo: se consulta aparte
+            $_st = Database::getInstance()->getConnection()->prepare('SELECT logo FROM veterinarias WHERE id = ?');
+            $_vid = (int)$veterinaria_id;
+            $_st->bind_param('i', $_vid);
+            $_st->execute();
+            $_vetLogo = (string)($_st->get_result()->fetch_row()[0] ?? '');
+            $_st->close();
+        }
+        break;
+    }
+}
 ?>
 <?php if ($_tema === 'halloween'): ?>
 <link href="<?= BASE_URL ?>/assets/css/theme-halloween.css?v=<?= (int)@filemtime(ROOT . '/assets/css/theme-halloween.css') ?>" rel="stylesheet">
@@ -14,9 +33,15 @@ $_tema = $_SESSION['tema'] ?? 'original';
 
     <!-- Logo -->
     <div class="sidebar-brand">
+        <?php if ($_vetLogo !== ''): ?>
+        <div class="sidebar-brand-icon sidebar-brand-logo">
+            <img src="<?= BASE_URL ?>/<?= htmlspecialchars($_vetLogo) ?>" alt="<?= htmlspecialchars($_vetNombreLogo) ?>">
+        </div>
+        <?php else: ?>
         <div class="sidebar-brand-icon">
             <i class="bi bi-heart-pulse-fill"></i>
         </div>
+        <?php endif; ?>
         <span class="sidebar-brand-name">PetControl</span>
     </div>
 
@@ -124,31 +149,29 @@ document.addEventListener('DOMContentLoaded', function () {
     var sel = document.getElementById('vet-selector');
     if (!sel) return;
 
-    sel.addEventListener('change', function () {
-        var newVet  = this.value;
-        var prevVet = this.dataset.current;
-        var vetName = this.options[this.selectedIndex].text;
-        var el      = this;
+    sel.querySelectorAll('.vet-item').forEach(function (item) {
+        item.addEventListener('click', function (e) {
+            e.preventDefault();
+            var newVet  = this.dataset.id;
+            var vetName = this.dataset.nombre;
+            if (newVet === sel.dataset.current) return;
 
-        if (newVet === prevVet) return;
-
-        Swal.fire({
-            title: '¿Cambiar de veterinaria?',
-            html: '¿Está seguro que desea cambiar a <b>' + vetName + '</b>?',
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonColor: '#4f46e5',
-            cancelButtonColor:  '#6c757d',
-            confirmButtonText:  'Sí, cambiar',
-            cancelButtonText:   'Cancelar',
-            reverseButtons: true
-        }).then(function (result) {
-            if (result.isConfirmed) {
-                window.location.href = '<?= BASE_URL ?>/set_vet?vet=' + newVet
-                    + '&back=' + encodeURIComponent(window.location.pathname);
-            } else {
-                el.value = prevVet;
-            }
+            Swal.fire({
+                title: '¿Cambiar de veterinaria?',
+                html: '¿Está seguro que desea cambiar a <b>' + vetName + '</b>?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#4f46e5',
+                cancelButtonColor:  '#6c757d',
+                confirmButtonText:  'Sí, cambiar',
+                cancelButtonText:   'Cancelar',
+                reverseButtons: true
+            }).then(function (result) {
+                if (result.isConfirmed) {
+                    window.location.href = '<?= BASE_URL ?>/set_vet?vet=' + newVet
+                        + '&back=' + encodeURIComponent(window.location.pathname);
+                }
+            });
         });
     });
 });

@@ -5,29 +5,42 @@ require_once ROOT . '/app/helpers/Permisos.php';
 $_permitidas = Permisos::sucursalesPermitidas();
 $_opciones   = array_values(array_filter($veterinarias, fn($v) => in_array((int)$v['id'], $_permitidas, true)));
 $_nomVet     = '';
+$_logoVet    = '';
 foreach ($_opciones as $_v) {
-    if ((int)$_v['id'] === (int)$veterinaria_id) { $_nomVet = $_v['nombre']; break; }
+    if ((int)$_v['id'] === (int)$veterinaria_id) { $_nomVet = $_v['nombre']; $_logoVet = $_v['logo'] ?? ''; break; }
 }
+// Logo de la sucursal (o el icono por defecto si no tiene)
+$_logoImg = function (?string $logo, string $nombre): string {
+    if (!empty($logo)) {
+        return '<img class="vet-logo" src="' . BASE_URL . '/' . htmlspecialchars($logo) . '" alt="' . htmlspecialchars($nombre) . '">';
+    }
+    return '<i class="bi bi-building text-primary vet-logo-ico"></i>';
+};
 ?>
 <?php if (count($_opciones) > 1): ?>
-<div class="input-group vet-selector">
-    <span class="input-group-text bg-white border-end-0">
-        <i class="bi bi-building text-primary"></i>
-    </span>
-    <select id="vet-selector" class="form-select border-start-0 ps-0 fw-semibold"
-            data-current="<?= (int)$veterinaria_id ?>">
+<div class="dropdown vet-selector" id="vet-selector" data-current="<?= (int)$veterinaria_id ?>">
+    <button class="btn vet-selector-btn d-flex align-items-center gap-2 w-100" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+        <?= $_logoImg($_logoVet, $_nomVet) ?>
+        <span class="text-truncate fw-semibold flex-grow-1 text-start"><?= htmlspecialchars($_nomVet) ?></span>
+        <i class="bi bi-chevron-down" style="font-size:.75rem;"></i>
+    </button>
+    <ul class="dropdown-menu w-100 shadow-sm">
         <?php foreach ($_opciones as $_v): ?>
-        <option value="<?= (int)$_v['id'] ?>" <?= (int)$veterinaria_id === (int)$_v['id'] ? 'selected' : '' ?>>
-            <?= htmlspecialchars($_v['nombre']) ?>
-        </option>
+        <li>
+            <a class="dropdown-item d-flex align-items-center gap-2 vet-item <?= (int)$veterinaria_id === (int)$_v['id'] ? 'active' : '' ?>"
+               href="#" data-id="<?= (int)$_v['id'] ?>" data-nombre="<?= htmlspecialchars($_v['nombre']) ?>">
+                <?= $_logoImg($_v['logo'] ?? '', $_v['nombre']) ?>
+                <span class="text-truncate"><?= htmlspecialchars($_v['nombre']) ?></span>
+            </a>
+        </li>
         <?php endforeach; ?>
-    </select>
+    </ul>
 </div>
 <?php else: ?>
 <div class="vet-fija d-flex align-items-center gap-1 px-3 border fw-semibold text-truncate"
      style="background:#f0f4ff; border-color:#c7d4f5 !important; cursor:default;"
      title="Sucursal asignada — no modificable">
-    <i class="bi bi-building text-primary" style="font-size:.85rem; flex-shrink:0;"></i>
+    <?= $_logoImg($_logoVet, $_nomVet) ?>
     <span class="text-truncate" style="color:#3730a3;"><?= htmlspecialchars($_nomVet) ?></span>
     <i class="bi bi-lock-fill ms-1" style="font-size:.7rem; color:#6b7280; flex-shrink:0;"></i>
 </div>

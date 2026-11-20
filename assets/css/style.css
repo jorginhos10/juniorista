@@ -274,6 +274,9 @@
     flex-shrink: 0;
 }
 
+.sidebar-brand-logo { background: #fff; padding: 2px; overflow: hidden; flex-shrink: 0; }
+.sidebar-brand-logo img { width: 100%; height: 100%; object-fit: contain; border-radius: 8px; }
+
 .sidebar-brand-name {
     font-size: 1rem;
     font-weight: 700;
@@ -495,24 +498,22 @@
 /* Selector de sucursal: misma altura, letra y radio que los botones de la topbar */
 .vet-selector {
     width: 250px;
+    min-width: 200px;
     height: var(--topbar-ctrl-h);
     flex-wrap: nowrap;
 }
-.vet-selector .input-group-text,
-.vet-selector .form-select {
+.vet-selector-btn {
     height: 100%;
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
     font-size: .875rem;
-}
-.vet-selector .input-group-text {
-    border-radius: 8px 0 0 8px;
     padding: 0 .75rem;
 }
-.vet-selector .form-select {
-    border-radius: 0 8px 8px 0;
-    padding-top: 0;
-    padding-bottom: 0;
-    text-overflow: ellipsis;
-}
+.vet-selector .dropdown-menu { font-size: .875rem; max-height: 320px; overflow-y: auto; }
+.vet-selector .dropdown-item.active { background: #ede9fe; color: #3730a3; }
+.vet-logo { width: 28px; height: 28px; object-fit: contain; border-radius: 5px; background: #fff; flex-shrink: 0; }
+.vet-logo-ico { font-size: .95rem; flex-shrink: 0; }
 .vet-fija {
     height: var(--topbar-ctrl-h);
     max-width: 250px;
