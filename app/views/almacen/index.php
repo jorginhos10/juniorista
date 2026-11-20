@@ -161,6 +161,7 @@
                                 <tr>
                                     <th class="ps-3">#</th>
                                     <th>Nombre</th>
+                                    <th>Código</th>
                                     <th>Categoría</th>
                                     <th>Unidad</th>
                                     <th class="text-end">P. Compra</th>
@@ -172,7 +173,7 @@
                             <tbody>
                                 <?php if (empty($productos)): ?>
                                 <tr>
-                                    <td colspan="8" class="text-center text-muted py-5">
+                                    <td colspan="9" class="text-center text-muted py-5">
                                         <i class="bi bi-box-seam fs-2 d-block mb-2 opacity-25"></i>
                                         No hay productos registrados.
                                     </td>
@@ -205,6 +206,7 @@
                                         </div>
                                         </div>
                                     </td>
+                                    <td class="small <?= $bloqueado ? 'text-muted' : '' ?>" style="white-space:nowrap;"><?= htmlspecialchars((string)($p['codigo'] ?? '')) ?></td>
                                     <td>
                                         <span class="badge categoria-badge <?= $bloqueado ? 'opacity-50' : '' ?>">
                                             <?= htmlspecialchars($p['categoria'] ?: 'Sin categoría') ?>
