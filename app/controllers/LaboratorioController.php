@@ -84,6 +84,14 @@ class LaboratorioController extends TratamientoController {
             $costo = $id > 0 ? $this->model->getCosto($id, $veterinaria_id) : 0.0;
         }
 
+        // Nuevo examen: se registra la ganancia y el valor total es inversión + ganancia (se recalcula aquí)
+        if ($id === 0 && isset($_POST['ganancia'])) {
+            $ganancia = round((float)str_replace(',', '.', (string)$_POST['ganancia']), 2);
+            if ($ganancia < 0) return 'La ganancia no puede ser negativa.';
+            $datos['valor'] = round($costo + $ganancia, 2);
+            if ($datos['abono_inicial'] > $datos['valor'] + 0.001) return 'El abono inicial no puede superar el valor total ($' . number_format($datos['valor'], 2) . ').';
+        }
+
         if ($datos['valor'] + 0.001 < $costo) {
             return 'El valor no puede ser menor al costo del laboratorio ($' . number_format($costo, 2) . ').';
         }
