@@ -550,5 +550,28 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// Los totales (ingresos, laboratorios, gastos…) se refrescan solos: cada 15 s y al volver a esta pestaña,
+// para ver al instante los abonos o valores que se cambian en otra pantalla. No toca el resto de la página.
+(function () {
+    var ocupado = false;
+    function refrescar() {
+        var fila = document.querySelector('.ing-fila');
+        if (ocupado || !fila || document.hidden) return;
+        ocupado = true;
+        fetch(location.href, {credentials: 'same-origin', cache: 'no-store'})
+            .then(function (r) { return r.ok ? r.text() : Promise.reject(); })
+            .then(function (html) {
+                var nueva = new DOMParser().parseFromString(html, 'text/html').querySelector('.ing-fila');
+                if (nueva && nueva.innerHTML !== fila.innerHTML) fila.innerHTML = nueva.innerHTML;
+            })
+            .catch(function () {})
+            .then(function () { ocupado = false; });
+    }
+    setInterval(refrescar, 15000);
+    document.addEventListener('visibilitychange', refrescar);
+    window.addEventListener('focus', refrescar);
+})();
+</script>
 </body>
 </html>
