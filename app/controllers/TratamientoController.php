@@ -61,6 +61,10 @@ class TratamientoController {
             $datos['tratamientos'] = $this->model->getTodos($veterinaria_id);
             $datos['clientes']     = $this->model->getClientesSucursal($veterinaria_id);
             $datos['mascotas']     = $this->model->getMascotasSucursal($veterinaria_id);
+            if ($this->modulo['ruta'] === 'tratamiento') {   // sugerencias del catálogo (Configuración)
+                require_once ROOT . '/app/models/CatalogoModel.php';
+                $datos['catalogoTrat'] = (new CatalogoModel())->getAll($veterinaria_id, 'tratamiento');
+            }
             $datos['pestana']      = in_array($_GET['tab'] ?? '', self::PESTANAS, true) ? $_GET['tab'] : 'pendientes';
             $datos['abrir']        = (int)($_GET['ver'] ?? 0);
             $datos += $this->datosExtraLista($veterinaria_id);

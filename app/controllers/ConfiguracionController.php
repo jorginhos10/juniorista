@@ -194,6 +194,107 @@ class ConfiguracionController {
         $this->redirect('configuracion/laboratorios');
     }
 
+    /** Cirugías y tratamientos: catálogo de nombres (y precio sugerido) que se ofrece en los formularios */
+    public function catalogo(): void {
+        require_once ROOT . '/app/models/CatalogoModel.php';
+        $veterinarias   = $this->vetModel->getAll();
+        $veterinaria_id = (int)($_SESSION['veterinaria_id'] ?? 0);
+        if ($veterinaria_id === 0 && !empty($veterinarias)) {
+            $veterinaria_id = (int)$veterinarias[0]['id'];
+            $_SESSION['veterinaria_id'] = $veterinaria_id;
+        }
+        $actual = null;
+        foreach ($veterinarias as $v) {
+            if ((int)$v['id'] === $veterinaria_id) { $actual = $v; break; }
+        }
+        $tipo = $_GET['tipo'] ?? ($_SESSION['flash_tipo'] ?? 'cirugia');
+        if (!isset(CatalogoModel::TIPOS[$tipo])) $tipo = 'cirugia';
+
+        $modelo = new CatalogoModel();
+        $datos = [
+            'activePage'     => 'configuracion',
+            'veterinarias'   => $veterinarias,
+            'veterinaria_id' => $veterinaria_id,
+            'sucursal'       => $actual,
+            'tipo'           => $tipo,
+            'tipos'          => CatalogoModel::TIPOS,
+            'items'          => $modelo->getAll($veterinaria_id, $tipo),
+            'esAdmin'        => ($_SESSION['usuario_rol'] ?? '') === 'admin',
+            'usuario' => [
+                'nombre' => $_SESSION['usuario_nombre'],
+                'email'  => $_SESSION['usuario_email'],
+                'rol'    => $_SESSION['usuario_rol'],
+            ],
+            'success' => $_SESSION['flash_success'] ?? '',
+            'error'   => $_SESSION['flash_error']   ?? '',
+        ];
+        unset($_SESSION['flash_success'], $_SESSION['flash_error'], $_SESSION['flash_tipo']);
+        $this->render('configuracion/catalogo', $datos);
+    }
+
+    public function guardarCatalogo(): void {
+        require_once ROOT . '/app/models/CatalogoModel.php';
+        $tipo = $_POST['tipo'] ?? 'cirugia';
+        if (!isset(CatalogoModel::TIPOS[$tipo])) $tipo = 'cirugia';
+        $_SESSION['flash_tipo'] = $tipo;
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect('configuracion/catalogo');
+        }
+        if (($_SESSION['usuario_rol'] ?? '') !== 'admin') {
+            $_SESSION['flash_error'] = 'Solo un administrador puede cambiar el catálogo.';
+            $this->redirect('configuracion/catalogo');
+        }
+
+        $veterinaria_id = (int)($_SESSION['veterinaria_id'] ?? 0);
+        $id     = (int)($_POST['id'] ?? 0);
+        $nombre = mb_substr(trim(preg_replace('/\s+/', ' ', (string)($_POST['nombre'] ?? ''))), 0, 150);
+        $precio = round((float)str_replace(',', '.', (string)($_POST['precio'] ?? '0')), 2);
+        $modelo = new CatalogoModel();
+        $etq    = CatalogoModel::TIPOS[$tipo][1];
+
+        if ($nombre === '') {
+            $_SESSION['flash_error'] = 'Escribe el nombre.';
+        } elseif ($precio < 0 || $precio > 99999999) {
+            $_SESSION['flash_error'] = 'El precio no es válido.';
+        } elseif ($modelo->existe($veterinaria_id, $tipo, $nombre, $id)) {
+            $_SESSION['flash_error'] = '«' . $nombre . '» ya está en el catálogo.';
+        } else {
+            $antes = $id > 0 ? $modelo->find($id, $veterinaria_id) : null;
+            if ($modelo->guardar($id, $veterinaria_id, $tipo, $nombre, $precio)) {
+                $_SESSION['flash_success'] = $etq . ' «' . $nombre . '» guardado.';
+                // Cambio de precio: solo esta sucursal o también las demás (se elige al guardar)
+                if ($antes && abs((float)$antes['precio'] - $precio) > 0.001 && ($_POST['alcance'] ?? '') === 'todas') {
+                    $n = $modelo->precioEnOtrasSucursales($veterinaria_id, $tipo, $antes['nombre'], $precio);
+                    $_SESSION['flash_success'] .= $n > 0
+                        ? ' Precio aplicado también en ' . $n . ' sucursal' . ($n === 1 ? '' : 'es') . ' más.'
+                        : ' Ninguna otra sucursal lo tiene en su catálogo.';
+                }
+            } else {
+                $_SESSION['flash_error'] = 'No se pudo guardar.';
+            }
+        }
+        $this->redirect('configuracion/catalogo');
+    }
+
+    public function eliminarCatalogo(): void {
+        require_once ROOT . '/app/models/CatalogoModel.php';
+        $tipo = $_POST['tipo'] ?? 'cirugia';
+        if (!isset(CatalogoModel::TIPOS[$tipo])) $tipo = 'cirugia';
+        $_SESSION['flash_tipo'] = $tipo;
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect('configuracion/catalogo');
+        }
+        if (($_SESSION['usuario_rol'] ?? '') !== 'admin') {
+            $_SESSION['flash_error'] = 'Solo un administrador puede cambiar el catálogo.';
+            $this->redirect('configuracion/catalogo');
+        }
+        $ok = (new CatalogoModel())->eliminar((int)($_POST['id'] ?? 0), (int)($_SESSION['veterinaria_id'] ?? 0));
+        $_SESSION[$ok ? 'flash_success' : 'flash_error'] = $ok
+            ? 'Quitado del catálogo. Lo ya registrado conserva su texto.'
+            : 'No se pudo quitar.';
+        $this->redirect('configuracion/catalogo');
+    }
+
     public const TEMAS = ['original', 'halloween'];
 
     public function apariencia(): void {

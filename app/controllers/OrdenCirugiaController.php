@@ -37,7 +37,7 @@ class OrdenCirugiaController {
             'hoy'            => date('Y-m-d'),
             'ordenes'        => $this->model->getAll(),
             'estados'        => OrdenCirugiaModel::ESTADOS,
-            'procedimientos' => OrdenCirugiaModel::PROCEDIMIENTOS,
+            'procedimientos' => $this->procedimientosSucursal($veterinaria_id),
             'mascotas'       => $this->historial->getMascotas(),
             'mascotaInicial' => (int)($_GET['mascota'] ?? 0),   // viene del Historial: abre la orden con la mascota elegida
             'veterinarios'   => $this->historial->getVeterinarios(),
@@ -118,6 +118,12 @@ class OrdenCirugiaController {
             'empresa'     => (new FacturacionModel())->getSucursal((int)$orden['veterinaria_id']),
         ]);
         require ROOT . '/app/views/ordenes_cirugia/consentimiento.php';
+    }
+
+    /** Cirugías del catálogo de la sucursal (Configuración); si por algún motivo está vacío, la tarifa base */
+    private function procedimientosSucursal(int $veterinaria_id): array {
+        require_once ROOT . '/app/models/CatalogoModel.php';
+        return (new CatalogoModel())->nombres($veterinaria_id, 'cirugia') ?: OrdenCirugiaModel::PROCEDIMIENTOS;
     }
 
     private function redirect(string $ruta): void {

@@ -371,6 +371,9 @@
                            placeholder="Ej: Consulta general, baño y corte, cirugía de esterilización…">
                 </div>
                 <datalist id="srvSugerencias">
+                    <?php foreach ($catalogoServicios ?? [] as $c): ?>
+                    <option value="<?= htmlspecialchars($c['nombre']) ?>" label="<?= htmlspecialchars($c['tipo']) ?>" data-precio="<?= (float)$c['precio'] ?>">
+                    <?php endforeach; ?>
                     <?php foreach ([
                         'Consulta general','Consulta de urgencia','Consulta a domicilio','Control / revisión','Vacunación','Desparasitación',
                         'Baño','Baño y corte','Corte de uñas','Limpieza de oídos','Limpieza dental (profilaxis)','Peluquería',

@@ -11,6 +11,19 @@ class VentaController {
         $this->model = new VentaModel();
     }
 
+    /** Cirugías y tratamientos del catálogo de la sucursal, con su precio sugerido, para el servicio en modo cotización */
+    private function catalogoServicios(int $veterinaria_id): array {
+        require_once ROOT . '/app/models/CatalogoModel.php';
+        $c = new CatalogoModel();
+        $out = [];
+        foreach (['cirugia' => 'Cirugía', 'tratamiento' => 'Tratamiento'] as $tipo => $etq) {
+            foreach ($c->getAll($veterinaria_id, $tipo) as $r) {
+                $out[] = ['nombre' => $r['nombre'], 'precio' => (float)$r['precio'], 'tipo' => $etq];
+            }
+        }
+        return $out;
+    }
+
     public function index(): void {
         $veterinarias   = $this->model->getVeterinarias();
         $veterinaria_id = (int)($_SESSION['veterinaria_id'] ?? 0);
@@ -59,6 +72,7 @@ class VentaController {
             'ventas'         => $this->model->getAll($veterinaria_id),
             'totales'        => $this->model->getTotales($veterinaria_id),
             'productos'      => $productos,
+            'catalogoServicios' => $this->catalogoServicios($veterinaria_id),
             'clientes'       => $this->model->getClientes($veterinaria_id),
             'relacionados'   => $this->mapaRelacionados(),
             // El administrador siempre puede dar descuento; los demás, solo con la autorización de la app

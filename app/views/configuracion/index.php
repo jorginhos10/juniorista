@@ -239,6 +239,19 @@
                 </div>
 
                 <div class="col-sm-6 col-xl-4">
+                    <a class="cfg-item" href="<?= BASE_URL ?>/configuracion/catalogo">
+                        <div class="cfg-item-icon" style="background:#e0f2fe;">
+                            <i class="bi bi-bandaid" style="color:#0ea5e9;"></i>
+                        </div>
+                        <div>
+                            <div class="cfg-item-title">Cirugías y tratamientos</div>
+                            <p class="cfg-item-desc">Catálogo con nombres y precios sugeridos</p>
+                        </div>
+                        <i class="bi bi-chevron-right cfg-item-arrow"></i>
+                    </a>
+                </div>
+
+                <div class="col-sm-6 col-xl-4">
                     <a class="cfg-item" href="<?= BASE_URL ?>/configuracion/apariencia">
                         <div class="cfg-item-icon" style="background:#ffedd5;">
                             <i class="bi bi-palette-fill" style="color:#ea580c;"></i>

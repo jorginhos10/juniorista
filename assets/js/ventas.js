@@ -511,6 +511,15 @@ function abrirServicio() {
 }
 
 const formServicio = document.getElementById('formServicio');
+// Servicio elegido del catálogo (cirugía o tratamiento): propone su precio si aún no se escribió uno
+const srvTextoEl = document.getElementById('srvTexto');
+if (srvTextoEl) {
+    srvTextoEl.addEventListener('change', () => {
+        const op = [...document.querySelectorAll('#srvSugerencias option')].find(o => o.value === srvTextoEl.value);
+        const p = document.getElementById('srvPrecio');
+        if (op && p && !p.value && Number(op.dataset.precio) > 0) p.value = op.dataset.precio;
+    });
+}
 if (formServicio) {
     formServicio.addEventListener('submit', e => {
         e.preventDefault();

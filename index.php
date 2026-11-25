@@ -558,6 +558,21 @@ switch ($uri) {
         (new ConfiguracionController())->eliminarExamenLab();
         break;
 
+    case 'configuracion/catalogo':
+        require_once ROOT . '/app/controllers/ConfiguracionController.php';
+        (new ConfiguracionController())->catalogo();
+        break;
+
+    case 'configuracion/catalogo/guardar':
+        require_once ROOT . '/app/controllers/ConfiguracionController.php';
+        (new ConfiguracionController())->guardarCatalogo();
+        break;
+
+    case 'configuracion/catalogo/eliminar':
+        require_once ROOT . '/app/controllers/ConfiguracionController.php';
+        (new ConfiguracionController())->eliminarCatalogo();
+        break;
+
     case 'configuracion/apariencia':
         require_once ROOT . '/app/controllers/ConfiguracionController.php';
         (new ConfiguracionController())->apariencia();

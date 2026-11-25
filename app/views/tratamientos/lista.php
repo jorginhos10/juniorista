@@ -366,7 +366,12 @@ $Su = ucfirst($S);
                         <?php endif; ?>
                         <div class="col-12">
                             <label class="form-label fw-semibold">Descripción <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" name="descripcion" id="n-descripcion" maxlength="255" required placeholder="<?= htmlspecialchars($modulo['placeholder']) ?>">
+                            <?php if (!empty($catalogoTrat)): ?>
+                            <datalist id="catTratamientos">
+                                <?php foreach ($catalogoTrat as $c): ?><option value="<?= htmlspecialchars($c['nombre']) ?>" data-precio="<?= (float)$c['precio'] ?>"><?php endforeach; ?>
+                            </datalist>
+                            <?php endif; ?>
+                            <input type="text" class="form-control" name="descripcion" id="n-descripcion" maxlength="255" required <?= !empty($catalogoTrat) ? 'list="catTratamientos"' : '' ?> placeholder="<?= htmlspecialchars($modulo['placeholder']) ?>">
                         </div>
                         <div class="col-6">
                             <label class="form-label fw-semibold">Valor total a cobrar<?= $conCatalogo ? ' (ganancia)' : '' ?> <span class="text-danger">*</span></label>
@@ -455,7 +460,7 @@ $Su = ucfirst($S);
                         </div>
                         <div class="col-12">
                             <label class="form-label fw-semibold">Descripción <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" name="descripcion" id="e-descripcion" maxlength="255" required>
+                            <input type="text" class="form-control" name="descripcion" id="e-descripcion" maxlength="255" required <?= !empty($catalogoTrat) ? 'list="catTratamientos"' : '' ?>>
                         </div>
                         <div class="col-6">
                             <label class="form-label fw-semibold">Valor total a cobrar<?= $conCatalogo ? ' (ganancia)' : '' ?> <span class="text-danger">*</span></label>
@@ -653,6 +658,14 @@ const ES_ADMIN = <?= $esAdmin ? 'true' : 'false' ?>;
 const ABRIR    = <?= (int)$abrir ?>;
 const TXT      = <?= json_encode(['s' => $S, 'p' => $P, 'S' => $Su], $jsonFlags | JSON_UNESCAPED_UNICODE) ?>;
 const $id      = id => document.getElementById(id);
+(function () {   // tratamiento elegido del catálogo: propone su precio si aún no hay valor
+    const dl = document.getElementById('catTratamientos'), campo = document.getElementById('n-descripcion');
+    if (!dl || !campo) return;
+    campo.addEventListener('change', () => {
+        const op = [...dl.options].find(o => o.value === campo.value), v = document.getElementById('n-valor');
+        if (op && v && !v.value && Number(op.dataset.precio) > 0) v.value = op.dataset.precio;
+    });
+})();
 const money    = n => '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const esc      = s => String(s ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 const fmtFecha = f => f.split('-').reverse().join('/');
