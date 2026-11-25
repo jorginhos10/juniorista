@@ -197,13 +197,13 @@ class VentaController {
             $ok = $this->model->actualizar($venta_id, $cabecera, $lineas['items']);
             $_SESSION[$ok ? 'flash_success' : 'flash_error'] = $ok
                 ? 'Venta actualizada. El stock se ajustó con los cambios.'
-                : 'Error al actualizar la venta. No se guardaron cambios.';
+                : ($this->model->error !== '' ? 'No se guardaron cambios. Stock insuficiente: ' . $this->model->error : 'Error al actualizar la venta. No se guardaron cambios.');
         } else {
             $ok = $this->model->crear($cabecera, $lineas['items']);
             $venta_id = $ok ? $this->model->ultimaVenta : 0;
             $_SESSION[$ok ? 'flash_success' : 'flash_error'] = $ok
                 ? 'Venta registrada correctamente. Stock actualizado.'
-                : 'Error al registrar la venta.';
+                : ($this->model->error !== '' ? 'No se registró la venta. Stock insuficiente: ' . $this->model->error : 'Error al registrar la venta.');
         }
 
         if ($ok && $consumeAutorizacion) {

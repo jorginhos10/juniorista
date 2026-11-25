@@ -440,16 +440,19 @@ class VentaModel {
 
     public function validarStock(array $lineas, int $veterinaria_id, int $excluirVentaId = 0): array {
         $errores = [];
+        // Si el mismo producto viene en varias líneas, se valida la suma (no cada línea por separado)
+        $porProducto = [];
         foreach ($lineas as $l) {
-            $pid  = (int)$l['producto_id'];
-            $cant = (int)$l['cantidad'];
-
+            $pid = (int)$l['producto_id'];
+            $porProducto[$pid] = ($porProducto[$pid] ?? 0) + (int)$l['cantidad'];
+        }
+        foreach ($porProducto as $pid => $cant) {
             $cantOriginal = 0;
             if ($excluirVentaId > 0) {
                 $r = $this->db->query(
-                    "SELECT cantidad FROM venta_detalles WHERE venta_id = $excluirVentaId AND producto_id = $pid"
+                    "SELECT COALESCE(SUM(cantidad), 0) AS c FROM venta_detalles WHERE venta_id = $excluirVentaId AND producto_id = $pid"
                 );
-                if ($r && $row = $r->fetch_assoc()) $cantOriginal = (int)$row['cantidad'];
+                if ($r && $row = $r->fetch_assoc()) $cantOriginal = (int)$row['c'];
             }
 
             $r = $this->db->query(
@@ -458,8 +461,11 @@ class VentaModel {
                  LEFT JOIN inventario inv ON inv.producto_id = pr.id AND inv.veterinaria_id = $veterinaria_id
                  WHERE pr.id = $pid"
             );
-            if (!$r) continue;
-            $prod = $r->fetch_assoc();
+            $prod = $r ? $r->fetch_assoc() : null;
+            if (!$prod) {
+                $errores[] = "Producto $pid no existe.";
+                continue;
+            }
             $disp = (int)$prod['stock'] + $cantOriginal;
 
             if ($cant <= 0) {
@@ -475,12 +481,39 @@ class VentaModel {
 
     // ── ESCRITURA ─────────────────────────────────────────
 
-    private function decrementarStock(int $veterinaria_id, int $producto_id, int $cantidad): void {
-        $this->db->query(
-            "INSERT INTO inventario (veterinaria_id, producto_id, stock)
-             VALUES ($veterinaria_id, $producto_id, 0)
-             ON DUPLICATE KEY UPDATE stock = GREATEST(0, stock - $cantidad)"
+    /** Motivo del último fallo de crear()/actualizar() cuando fue por stock (vacío si no) */
+    public string $error = '';
+
+    /**
+     * Descuenta del inventario lo vendido, DENTRO de la transacción de la venta y sin permitir stock negativo:
+     * el UPDATE solo se aplica si alcanza (stock >= cantidad) y bloquea la fila, así dos ventas simultáneas no pasan
+     * las dos. Si algún producto no alcanza lanza una excepción y la venta completa se revierte (nunca queda una
+     * venta registrada sin su descargo). Las líneas repetidas del mismo producto se suman.
+     */
+    private function descontarStock(int $veterinaria_id, array $lineas): void {
+        $porProducto = [];
+        foreach ($lineas as $l) {
+            $pid = (int)$l['producto_id'];
+            $porProducto[$pid] = ($porProducto[$pid] ?? 0) + (int)$l['cantidad'];
+        }
+        ksort($porProducto);   // mismo orden siempre: evita bloqueos cruzados entre ventas simultáneas
+
+        $upd = $this->db->prepare(
+            'UPDATE inventario SET stock = stock - ? WHERE veterinaria_id = ? AND producto_id = ? AND stock >= ?'
         );
+        foreach ($porProducto as $pid => $cant) {
+            $upd->bind_param('iiii', $cant, $veterinaria_id, $pid, $cant);
+            $upd->execute();
+            if ($upd->affected_rows !== 1) {
+                $upd->close();
+                $r = $this->db->query("SELECT nombre FROM productos WHERE id = $pid");
+                $nombre = $r ? ($r->fetch_row()[0] ?? "producto $pid") : "producto $pid";
+                $r = $this->db->query("SELECT stock FROM inventario WHERE veterinaria_id = $veterinaria_id AND producto_id = $pid");
+                $disp = $r ? (int)($r->fetch_row()[0] ?? 0) : 0;
+                throw new RuntimeException("«{$nombre}»: stock insuficiente (solicitado {$cant}, disponible {$disp}).");
+            }
+        }
+        $upd->close();
     }
 
     private function incrementarStock(int $veterinaria_id, int $producto_id, int $cantidad): void {
@@ -496,6 +529,7 @@ class VentaModel {
 
     public function crear(array $cabecera, array $lineas): bool {
         $this->ultimaVenta = 0;
+        $this->error = '';
         $this->db->begin_transaction();
         try {
             $stmt = $this->db->prepare(
@@ -529,14 +563,16 @@ class VentaModel {
                 $desc = (float)($l['descuento'] ?? 0);
                 $ins->bind_param('iiids', $venta_id, $pid, $cant, $prec, $desc);
                 $ins->execute();
-                $this->decrementarStock($cabecera['veterinaria_id'], $pid, $cant);
             }
             $ins->close();
+            $this->descontarStock((int)$cabecera['veterinaria_id'], $lineas);   // si no alcanza, revierte la venta
 
             $this->db->commit();
             return true;
         } catch (Exception $e) {
             $this->db->rollback();
+            $this->ultimaVenta = 0;
+            $this->error = ($e instanceof RuntimeException && !($e instanceof mysqli_sql_exception)) ? $e->getMessage() : '';
             return false;
         }
     }
@@ -571,6 +607,7 @@ class VentaModel {
      * anteriores vuelve al inventario y se descuenta el de las nuevas, como si se anulara y se registrara de nuevo.
      */
     public function actualizar(int $id, array $cabecera, array $lineas): bool {
+        $this->error = '';
         $this->db->begin_transaction();
         try {
             $r   = $this->db->query("SELECT veterinaria_id, estado FROM ventas WHERE id = $id FOR UPDATE");
@@ -597,9 +634,9 @@ class VentaModel {
                 $desc = (float)($l['descuento'] ?? 0);
                 $ins->bind_param('iiidd', $id, $pid, $cant, $prec, $desc);
                 $ins->execute();
-                $this->decrementarStock($vet, $pid, $cant);
             }
             $ins->close();
+            $this->descontarStock($vet, $lineas);   // si no alcanza, revierte toda la edición (incluida la devolución de lo anterior)
 
             $clienteId = $cabecera['cliente_id'] ?: null;
             $fecha     = $cabecera['fecha'] ?? null;   // null = se conserva la fecha original
@@ -619,24 +656,36 @@ class VentaModel {
             return true;
         } catch (Exception $e) {
             $this->db->rollback();
+            $this->error = ($e instanceof RuntimeException && !($e instanceof mysqli_sql_exception)) ? $e->getMessage() : '';
             return false;
         }
     }
 
     public function anular(int $id): bool {
-        $r   = $this->db->query("SELECT veterinaria_id, estado FROM ventas WHERE id = $id");
-        $row = $r->fetch_assoc();
-        if (!$row || $row['estado'] === 'anulada') return false;
+        // En una transacción y bloqueando la venta: dos clics (o dos usuarios) no devuelven el stock dos veces
+        $this->db->begin_transaction();
+        try {
+            $r   = $this->db->query("SELECT veterinaria_id, estado FROM ventas WHERE id = $id FOR UPDATE");
+            $row = $r ? $r->fetch_assoc() : null;
+            if (!$row || $row['estado'] === 'anulada') {
+                $this->db->rollback();
+                return false;
+            }
 
-        $vet = (int)$row['veterinaria_id'];
-        foreach ($this->getDetalles($id) as $d) {
-            $this->incrementarStock($vet, $d['producto_id'], $d['cantidad']);
+            $vet = (int)$row['veterinaria_id'];
+            foreach ($this->getDetalles($id) as $d) {
+                $this->incrementarStock($vet, (int)$d['producto_id'], (int)$d['cantidad']);
+            }
+
+            $stmt = $this->db->prepare("UPDATE ventas SET estado = 'anulada' WHERE id = ?");
+            $stmt->bind_param('i', $id);
+            $ok = $stmt->execute();
+            $stmt->close();
+            $ok ? $this->db->commit() : $this->db->rollback();
+            return $ok;
+        } catch (Exception $e) {
+            $this->db->rollback();
+            return false;
         }
-
-        $stmt = $this->db->prepare("UPDATE ventas SET estado = 'anulada' WHERE id = ?");
-        $stmt->bind_param('i', $id);
-        $ok = $stmt->execute();
-        $stmt->close();
-        return $ok;
     }
 }
