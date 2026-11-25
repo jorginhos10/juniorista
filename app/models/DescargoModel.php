@@ -46,7 +46,7 @@ class DescargoModel {
                 }
                 $ins = $this->db->prepare(
                     'INSERT INTO descargos (grupo, veterinaria_id, producto_id, fecha, cantidad, precio_unitario, motivo, motivo_detalle, usuario_id)
-                     SELECT NULLIF(?, 0), ?, id, ?, ?, precio_compra, ?, NULLIF(?, \'\'), ? FROM productos WHERE id = ?'
+                     SELECT NULLIF(?, 0), ?, id, ?, ?, IF(precio_venta > 0, precio_venta, precio_compra), ?, NULLIF(?, \'\'), ? FROM productos WHERE id = ?'
                 );
                 $ins->bind_param('iisissii', $grupo, $comun['veterinaria_id'], $comun['fecha'], $cant, $comun['motivo'],
                     $comun['motivo_detalle'], $comun['usuario_id'], $pid);
@@ -73,7 +73,7 @@ class DescargoModel {
         $ids = array_slice($ids, 0, 300);
         $marcas = implode(',', array_fill(0, count($ids), '?'));
         $stmt = $this->db->prepare(
-            "SELECT d.*, (d.cantidad * d.precio_unitario) AS subtotal, p.nombre AS producto_nombre, p.codigo, p.unidad,
+            "SELECT d.*, (d.cantidad * IF(d.precio_unitario <= 1 AND p.precio_venta > 1, p.precio_venta, d.precio_unitario)) AS subtotal, IF(d.precio_unitario <= 1 AND p.precio_venta > 1, p.precio_venta, d.precio_unitario) AS precio_unitario, p.nombre AS producto_nombre, p.codigo, p.unidad,
                     u.nombre AS usuario_nombre
                FROM descargos d
                JOIN productos p ON p.id = d.producto_id
@@ -91,7 +91,7 @@ class DescargoModel {
     /** Productos de un acta de descargo (de la sucursal en sesión) con su producto y quien la registró */
     public function getActa(int $grupo, int $veterinaria_id): array {
         $stmt = $this->db->prepare(
-            'SELECT d.*, (d.cantidad * d.precio_unitario) AS subtotal, p.nombre AS producto_nombre, p.codigo, p.unidad,
+            'SELECT d.*, (d.cantidad * IF(d.precio_unitario <= 1 AND p.precio_venta > 1, p.precio_venta, d.precio_unitario)) AS subtotal, IF(d.precio_unitario <= 1 AND p.precio_venta > 1, p.precio_venta, d.precio_unitario) AS precio_unitario, p.nombre AS producto_nombre, p.codigo, p.unidad,
                     u.nombre AS usuario_nombre
                FROM descargos d
                JOIN productos p ON p.id = d.producto_id
@@ -130,7 +130,7 @@ class DescargoModel {
     }
 
     public function getRango(int $veterinaria_id, string $desde, string $hasta, string $motivo = ''): array {
-        $sql = 'SELECT d.*, (d.cantidad * d.precio_unitario) AS subtotal,
+        $sql = 'SELECT d.*, (d.cantidad * IF(d.precio_unitario <= 1 AND p.precio_venta > 1, p.precio_venta, d.precio_unitario)) AS subtotal, IF(d.precio_unitario <= 1 AND p.precio_venta > 1, p.precio_venta, d.precio_unitario) AS precio_unitario,
                        p.nombre AS producto_nombre, p.codigo, p.unidad, u.nombre AS usuario_nombre
                   FROM descargos d
                   JOIN productos p ON p.id = d.producto_id
@@ -177,7 +177,7 @@ class DescargoModel {
 
             $ins = $this->db->prepare(
                 'INSERT INTO descargos (veterinaria_id, producto_id, fecha, cantidad, precio_unitario, motivo, motivo_detalle, usuario_id)
-                 SELECT ?, id, ?, ?, precio_compra, ?, NULLIF(?, \'\'), ? FROM productos WHERE id = ?'
+                 SELECT ?, id, ?, ?, IF(precio_venta > 0, precio_venta, precio_compra), ?, NULLIF(?, \'\'), ? FROM productos WHERE id = ?'
             );
             $ins->bind_param('isissii',
                 $d['veterinaria_id'], $d['fecha'], $d['cantidad'], $d['motivo'], $d['motivo_detalle'], $d['usuario_id'], $d['producto_id']
