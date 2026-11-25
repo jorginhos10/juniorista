@@ -26,6 +26,10 @@
                 <!-- Veterinaria -->
                 <?php require ROOT . '/app/views/layouts/vet_selector.php'; ?>
 
+                <button type="button" class="btn btn-outline-primary btn-sm" id="btnIngresoUnidad">
+                    <i class="bi bi-list-ul me-1"></i> Ingreso por unidad
+                </button>
+
                 <button class="btn btn-primary-custom btn-sm" data-bs-toggle="modal" data-bs-target="#modalIngreso">
                     <i class="bi bi-box-arrow-in-down-right me-1"></i> Nuevo ingreso
                 </button>
@@ -404,6 +408,83 @@
 const PRODUCTOS = <?= json_encode($productos) ?>;
 const BASE_URL  = '<?= BASE_URL ?>';
 </script>
+<!-- Ingreso por unidad: todas las entradas de la sucursal, una fila por producto -->
+<div class="modal fade" id="modalIngresoUnidad" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-0 pb-2 flex-wrap gap-2">
+                <h5 class="modal-title fw-bold me-auto"><i class="bi bi-list-ul text-primary me-2"></i>Ingreso por unidad</h5>
+                <input type="text" class="form-control form-control-sm" id="iu-buscar" style="max-width:340px" placeholder="Buscar producto, código, proveedor, radicado…" autocomplete="off">
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body pt-0 px-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 small" style="table-layout:fixed;min-width:760px">
+                        <thead class="table-light" style="position:sticky;top:0;z-index:1">
+                            <tr>
+                                <th class="ps-3" style="width:130px">Fecha</th>
+                                <th style="width:150px">Radicado</th>
+                                <th>Producto</th>
+                                <th style="width:150px">Proveedor</th>
+                                <th class="text-center" style="width:80px">Unidades</th>
+                                <th class="text-end pe-3" style="width:110px">Costo unit.</th>
+                            </tr>
+                        </thead>
+                        <tbody id="iu-filas"><tr><td colspan="6" class="text-center text-muted py-4">Cargando…</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer border-0 pt-0 justify-content-between">
+                <span class="small text-muted" id="iu-info"></span>
+                <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+(function () {
+    let datos = null;
+    const $ = id => document.getElementById(id);
+    const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const norm = t => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const TIPO = { transferencia_entrada: 'Transferencia recibida', transferencia_salida: 'Transferencia enviada' };
+    const money = n => '$' + Number(n).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+    function pintar() {
+        if (!datos) return;
+        const partes = norm($('iu-buscar').value).trim().split(/\s+/).filter(Boolean);
+        let n = 0, unidades = 0;
+        const html = datos.filter(r => {
+            if (!partes.length) return true;
+            const t = norm([r.n, r.c, r.v, r.r, r.l, TIPO[r.t] || ''].join(' '));
+            return partes.every(p => t.includes(p));
+        }).map(r => {
+            n++; unidades += r.u;
+            const salida = r.t === 'transferencia_salida';
+            return '<tr><td class="ps-3 text-nowrap">' + esc(r.f) + '</td>' +
+                '<td><code class="small">' + esc(r.r) + '</code></td>' +
+                '<td class="text-break">' + esc(r.n) + '<div class="text-muted" style="font-size:.75rem">' + esc(r.c || '') + (r.l ? ' · Lote ' + esc(r.l) : '') + '</div></td>' +
+                '<td class="text-break">' + (TIPO[r.t] ? '<span class="badge bg-info-subtle text-info-emphasis">' + TIPO[r.t] + '</span>' : esc(r.v || '—')) + '</td>' +
+                '<td class="text-center fw-semibold ' + (salida ? 'text-danger' : 'text-success') + '">' + (salida ? '−' : '+') + r.u + '</td>' +
+                '<td class="text-end pe-3">' + money(r.k) + '</td></tr>';
+        }).join('');
+        $('iu-filas').innerHTML = html || '<tr><td colspan="6" class="text-center text-muted py-4">Sin resultados</td></tr>';
+        $('iu-info').textContent = n + ' registro' + (n === 1 ? '' : 's') + ' · ' + unidades.toLocaleString('en-US') + ' unidades';
+    }
+
+    $('btnIngresoUnidad').addEventListener('click', () => {
+        bootstrap.Modal.getOrCreateInstance($('modalIngresoUnidad')).show();
+        $('iu-buscar').value = '';
+        if (datos) { pintar(); return; }
+        fetch('<?= BASE_URL ?>/ingresos/por-unidad', {headers: {'Accept': 'application/json'}, credentials: 'same-origin'})
+            .then(r => r.json())
+            .then(d => { datos = d.filas || []; pintar(); })
+            .catch(() => { $('iu-filas').innerHTML = '<tr><td colspan="6" class="text-center text-danger py-4">No se pudo cargar el listado.</td></tr>'; });
+    });
+    $('iu-buscar').addEventListener('input', pintar);
+})();
+</script>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="<?= BASE_URL ?>/assets/js/autocomplete.js?v=<?= (int)@filemtime(ROOT . '/assets/js/autocomplete.js') ?>"></script>
 <script src="<?= BASE_URL ?>/assets/js/ingresos.js?v=<?= (int)@filemtime(ROOT . '/assets/js/ingresos.js') ?>"></script>

@@ -336,6 +336,30 @@ class IngresoController {
         exit;
     }
 
+    /** GET JSON: todos los ingresos de la sucursal activa, uno por unidad de producto */
+    public function porUnidad(): void {
+        require_once ROOT . '/app/models/VeterinariaModel.php';
+        $veterinaria_id = (int)($_SESSION['veterinaria_id'] ?? 0);
+        $sucursal = (new VeterinariaModel())->findById($veterinaria_id)['nombre'] ?? '';
+        $filas = [];
+        foreach ($this->model->getPorUnidad($veterinaria_id) as $r) {
+            $filas[] = [
+                'f' => date('d/m/Y H:i', strtotime($r['created_at'])),
+                'r' => VeterinariaModel::serialIngreso($sucursal, (int)$r['ingreso_id'], $r['created_at']),
+                't' => $r['tipo'] ?? 'compra',
+                'v' => $r['proveedor'],
+                'n' => $r['producto'],
+                'c' => $r['codigo'],
+                'u' => (int)$r['cantidad'],
+                'k' => (float)$r['precio_unitario'],
+                'l' => $r['lote'],
+            ];
+        }
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['filas' => $filas], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+        exit;
+    }
+
     public function eliminar(): void {
         $id  = (int)($_GET['id']  ?? 0);
         $vet = (int)($_GET['vet'] ?? 0);

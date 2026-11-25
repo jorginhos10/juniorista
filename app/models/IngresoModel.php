@@ -65,6 +65,25 @@ class IngresoModel {
         return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
     }
 
+    /** Todas las líneas de ingreso de la sucursal, una por producto y por ingreso (para el listado «Ingreso por unidad») */
+    public function getPorUnidad(int $veterinaria_id): array {
+        if ($veterinaria_id <= 0) return [];
+        $stmt = $this->db->prepare(
+            "SELECT i.id AS ingreso_id, i.created_at, i.tipo, i.proveedor,
+                    p.nombre AS producto, p.codigo, d.cantidad, d.precio_unitario, d.lote, d.fecha_vencimiento
+               FROM ingreso_detalles d
+               JOIN ingresos  i ON i.id = d.ingreso_id
+               JOIN productos p ON p.id = d.producto_id
+              WHERE i.veterinaria_id = ?
+           ORDER BY i.created_at DESC, i.id DESC, p.nombre ASC"
+        );
+        $stmt->bind_param('i', $veterinaria_id);
+        $stmt->execute();
+        $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
+        return $rows;
+    }
+
     /** Cabecera de un ingreso con el nombre de la sucursal y de quien lo registró */
     public function getCabecera(int $id): ?array {
         $stmt = $this->db->prepare(

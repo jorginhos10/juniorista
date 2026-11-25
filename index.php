@@ -608,6 +608,11 @@ switch ($uri) {
         (new IngresoController())->pdf();
         break;
 
+    case 'ingresos/por-unidad':
+        require_once ROOT . '/app/controllers/IngresoController.php';
+        (new IngresoController())->porUnidad();
+        break;
+
     case 'ingresos/excel':
         require_once ROOT . '/app/controllers/IngresoController.php';
         (new IngresoController())->excel();
