@@ -367,9 +367,20 @@
             <div class="modal-body">
                 <div class="mb-3">
                     <label class="form-label fw-semibold" for="srvTexto">Descripción <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control" id="srvTexto" maxlength="200" required
+                    <input type="text" class="form-control" id="srvTexto" maxlength="200" required list="srvSugerencias"
                            placeholder="Ej: Consulta general, baño y corte, cirugía de esterilización…">
                 </div>
+                <datalist id="srvSugerencias">
+                    <?php foreach ([
+                        'Consulta general','Consulta de urgencia','Consulta a domicilio','Control / revisión','Vacunación','Desparasitación',
+                        'Baño','Baño y corte','Corte de uñas','Limpieza de oídos','Limpieza dental (profilaxis)','Peluquería',
+                        'Cirugía de esterilización','Cirugía de castración','Cirugía de tejidos blandos','Cirugía ortopédica','Cesárea','Extracción de tumor','Anestesia',
+                        'Laboratorio: hemograma','Laboratorio: química sanguínea','Laboratorio: parcial de orina','Laboratorio: coprológico','Laboratorio: prueba de parvovirus','Laboratorio: raspado de piel',
+                        'Ecografía','Radiografía','Electrocardiograma','Hospitalización (por día)','Observación','Aplicación de inyectable','Sueroterapia','Curación','Eutanasia','Certificado de salud','Microchip','Guardería (por día)'
+                    ] as $s): ?>
+                    <option value="<?= htmlspecialchars($s) ?>">
+                    <?php endforeach; ?>
+                </datalist>
                 <div class="row g-3">
                     <div class="col-7">
                         <label class="form-label fw-semibold" for="srvPrecio">Precio <span class="text-danger">*</span></label>
