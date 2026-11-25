@@ -74,7 +74,7 @@ class PerdidaController {
         $ok = $this->model->crear($cabecera, $lineas['items']);
         $_SESSION[$ok ? 'flash_success' : 'flash_error'] = $ok
             ? 'Pérdida registrada y stock descontado correctamente.'
-            : 'Error al registrar la pérdida.';
+            : ($this->model->error !== '' ? 'No se registró. ' . $this->model->error : 'Error al registrar la pérdida.');
 
         $this->redirect('perdidas' . $vetQuery);
     }
@@ -108,7 +108,7 @@ class PerdidaController {
         $ok = $this->model->actualizar($id, $cabecera, $lineas['items']);
         $_SESSION[$ok ? 'flash_success' : 'flash_error'] = $ok
             ? 'Pérdida actualizada correctamente.'
-            : 'Error al actualizar.';
+            : ($this->model->error !== '' ? 'No se guardaron cambios. ' . $this->model->error : 'Error al actualizar.');
 
         $this->redirect('perdidas' . $vetQuery);
     }

@@ -156,7 +156,7 @@ class IngresoController {
         if ($this->model->actualizar($id, $cabecera, $lineas)) {
             $_SESSION['flash_success'] = 'Ingreso actualizado correctamente.';
         } else {
-            $_SESSION['flash_error'] = 'Error al actualizar el ingreso.';
+            $_SESSION['flash_error'] = $this->model->error !== '' ? 'No se guardaron cambios. ' . $this->model->error : 'Error al actualizar el ingreso.';
         }
 
         $this->redirect('ingresos' . $vetQuery);
@@ -341,8 +341,11 @@ class IngresoController {
         $vet = (int)($_GET['vet'] ?? 0);
 
         if ($id > 0 && Seguridad::esDeLaSucursal('ingresos', $id)) {
-            $this->model->eliminar($id);
-            $_SESSION['flash_success'] = 'Ingreso eliminado y stock revertido.';
+            if ($this->model->eliminar($id)) {
+                $_SESSION['flash_success'] = 'Ingreso eliminado y stock revertido.';
+            } else {
+                $_SESSION['flash_error'] = $this->model->error !== '' ? 'No se eliminó el ingreso. ' . $this->model->error : 'No se pudo eliminar el ingreso.';
+            }
         } elseif ($id > 0) {
             $_SESSION['flash_error'] = 'El ingreso no pertenece a esta sucursal.';
         }

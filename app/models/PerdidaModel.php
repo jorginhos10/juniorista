@@ -196,12 +196,29 @@ class PerdidaModel {
 
     // ── ESCRITURA ─────────────────────────────────────────
 
+    /** Motivo del último fallo por stock (vacío si no fue por stock) */
+    public string $error = '';
+
+    /**
+     * Resta stock SIN permitir que quede negativo ni ocultar el faltante: el UPDATE solo se aplica si alcanza.
+     * Si no alcanza lanza una excepción (la transacción completa se revierte). Antes se usaba GREATEST(0, …),
+     * que dejaba el stock en 0 en vez de fallar y, al volver a sumar, inflaba el inventario.
+     */
     private function decrementarStock(int $veterinaria_id, int $producto_id, int $cantidad): void {
-        $this->db->query(
-            "INSERT INTO inventario (veterinaria_id, producto_id, stock)
-             VALUES ($veterinaria_id, $producto_id, 0)
-             ON DUPLICATE KEY UPDATE stock = GREATEST(0, stock - $cantidad)"
+        $upd = $this->db->prepare(
+            'UPDATE inventario SET stock = stock - ? WHERE veterinaria_id = ? AND producto_id = ? AND stock >= ?'
         );
+        $upd->bind_param('iiii', $cantidad, $veterinaria_id, $producto_id, $cantidad);
+        $upd->execute();
+        $afectadas = $upd->affected_rows;
+        $upd->close();
+        if ($afectadas !== 1) {
+            $r = $this->db->query("SELECT nombre FROM productos WHERE id = $producto_id");
+            $nombre = $r ? ($r->fetch_row()[0] ?? "producto $producto_id") : "producto $producto_id";
+            $r = $this->db->query("SELECT stock FROM inventario WHERE veterinaria_id = $veterinaria_id AND producto_id = $producto_id");
+            $disp = $r ? (int)($r->fetch_row()[0] ?? 0) : 0;
+            throw new RuntimeException("«{$nombre}»: stock insuficiente (se necesitan {$cantidad}, hay {$disp}). Parte de esas unidades ya se vendió o salió del inventario.");
+        }
     }
 
     private function incrementarStock(int $veterinaria_id, int $producto_id, int $cantidad): void {
@@ -213,6 +230,7 @@ class PerdidaModel {
     }
 
     public function crear(array $cabecera, array $lineas): bool {
+        $this->error = '';
         $this->db->begin_transaction();
         try {
             $stmt = $this->db->prepare(
@@ -246,11 +264,13 @@ class PerdidaModel {
             return true;
         } catch (Exception $e) {
             $this->db->rollback();
+            $this->error = ($e instanceof RuntimeException && !($e instanceof mysqli_sql_exception)) ? $e->getMessage() : '';
             return false;
         }
     }
 
     public function actualizar(int $id, array $cabecera, array $lineas): bool {
+        $this->error = '';
         $this->db->begin_transaction();
         try {
             $r   = $this->db->query("SELECT veterinaria_id FROM perdidas WHERE id = $id");
@@ -293,6 +313,7 @@ class PerdidaModel {
             return true;
         } catch (Exception $e) {
             $this->db->rollback();
+            $this->error = ($e instanceof RuntimeException && !($e instanceof mysqli_sql_exception)) ? $e->getMessage() : '';
             return false;
         }
     }

@@ -153,15 +153,33 @@ class IngresoModel {
         );
     }
 
+    /** Motivo del último fallo por stock (vacío si no fue por stock) */
+    public string $error = '';
+
+    /**
+     * Resta stock SIN permitir que quede negativo ni ocultar el faltante: el UPDATE solo se aplica si alcanza.
+     * Si no alcanza lanza una excepción (la transacción completa se revierte). Antes se usaba GREATEST(0, …),
+     * que dejaba el stock en 0 en vez de fallar y, al volver a sumar, inflaba el inventario.
+     */
     private function decrementarStock(int $veterinaria_id, int $producto_id, int $cantidad): void {
-        $this->db->query(
-            "INSERT INTO inventario (veterinaria_id, producto_id, stock)
-             VALUES ($veterinaria_id, $producto_id, 0)
-             ON DUPLICATE KEY UPDATE stock = GREATEST(0, stock - $cantidad)"
+        $upd = $this->db->prepare(
+            'UPDATE inventario SET stock = stock - ? WHERE veterinaria_id = ? AND producto_id = ? AND stock >= ?'
         );
+        $upd->bind_param('iiii', $cantidad, $veterinaria_id, $producto_id, $cantidad);
+        $upd->execute();
+        $afectadas = $upd->affected_rows;
+        $upd->close();
+        if ($afectadas !== 1) {
+            $r = $this->db->query("SELECT nombre FROM productos WHERE id = $producto_id");
+            $nombre = $r ? ($r->fetch_row()[0] ?? "producto $producto_id") : "producto $producto_id";
+            $r = $this->db->query("SELECT stock FROM inventario WHERE veterinaria_id = $veterinaria_id AND producto_id = $producto_id");
+            $disp = $r ? (int)($r->fetch_row()[0] ?? 0) : 0;
+            throw new RuntimeException("«{$nombre}»: stock insuficiente (se necesitan {$cantidad}, hay {$disp}). Parte de esas unidades ya se vendió o salió del inventario.");
+        }
     }
 
     public function transferir(int $origen_id, int $destino_id, array $lineas, int $usuario_id): bool {
+        $this->error = '';
         if (empty($lineas) || $origen_id === $destino_id) return false;
 
         $this->db->begin_transaction();
@@ -228,6 +246,7 @@ class IngresoModel {
             return true;
         } catch (Exception $e) {
             $this->db->rollback();
+            $this->error = ($e instanceof RuntimeException && !($e instanceof mysqli_sql_exception)) ? $e->getMessage() : '';
             return false;
         }
     }
@@ -352,6 +371,7 @@ class IngresoModel {
     }
 
     public function actualizar(int $id, array $cabecera, array $lineas): bool {
+        $this->error = '';
         $this->db->begin_transaction();
         try {
             // Obtener veterinaria_id del ingreso original
@@ -362,8 +382,12 @@ class IngresoModel {
             $afectados = [];
             $precioAnterior = [];   // producto => precio que tenía en este ingreso antes de editarlo
             $ventaAnterior  = [];   // producto => precio de venta que tenía en este ingreso
+            // El stock se ajusta solo por la DIFERENCIA entre lo anterior y lo nuevo de cada producto (no se resta todo
+            // y se vuelve a sumar): así lo que ya se vendió de este ingreso no se "recupera" por error.
+            $cantAntes = [];
+            $cantAhora = [];
             foreach ($this->getDetalles($id) as $d) {
-                $this->decrementarStock($vet, $d['producto_id'], $d['cantidad']);
+                $cantAntes[(int)$d['producto_id']] = ($cantAntes[(int)$d['producto_id']] ?? 0) + (int)$d['cantidad'];
                 $afectados[] = $d['producto_id'];
                 $precioAnterior[(int)$d['producto_id']] = (float)$d['precio_unitario'];
                 $ventaAnterior[(int)$d['producto_id']]  = (float)($d['precio_venta'] ?? 0);
@@ -394,9 +418,16 @@ class IngresoModel {
                 $venta = isset($l['precio_venta']) && $l['precio_venta'] > 0 ? (float)$l['precio_venta'] : null;
                 $ins->bind_param('iiiddss', $id, $pid, $cant, $prec, $venta, $lote, $vence);
                 $ins->execute();
-                $this->upsertStock($vet, $pid, $cant);
+                $cantAhora[$pid] = ($cantAhora[$pid] ?? 0) + $cant;
             }
             $ins->close();
+            $productos = array_unique(array_merge(array_keys($cantAntes), array_keys($cantAhora)));
+            sort($productos);
+            foreach ($productos as $pid) {
+                $neto = ($cantAhora[$pid] ?? 0) - ($cantAntes[$pid] ?? 0);
+                if ($neto > 0)      $this->upsertStock($vet, (int)$pid, $neto);
+                elseif ($neto < 0)  $this->decrementarStock($vet, (int)$pid, -$neto);   // falla si ya se vendió parte
+            }
             // Productos que se quitaron de este ingreso: vuelven al precio del último ingreso que quede
             $this->revertirPrecioSiVigente(array_diff($afectados, array_column($lineas, 'producto_id')), $precioAnterior);
             // Solo se aplica el precio de las líneas que cambiaron: guardar un ingreso viejo sin tocar
@@ -415,29 +446,43 @@ class IngresoModel {
             return true;
         } catch (Exception $e) {
             $this->db->rollback();
+            $this->error = ($e instanceof RuntimeException && !($e instanceof mysqli_sql_exception)) ? $e->getMessage() : '';
             return false;
         }
     }
 
     public function eliminar(int $id): bool {
-        $r   = $this->db->query("SELECT veterinaria_id FROM ingresos WHERE id = $id");
-        $vet = (int)($r->fetch_assoc()['veterinaria_id'] ?? 0);
+        $this->error = '';
+        $this->db->begin_transaction();
+        try {
+            $r   = $this->db->query("SELECT veterinaria_id FROM ingresos WHERE id = $id FOR UPDATE");
+            $vet = (int)($r->fetch_assoc()['veterinaria_id'] ?? 0);
 
-        $afectados = [];
-        $precioAnterior = [];
-        foreach ($this->getDetalles($id) as $d) {
-            $this->decrementarStock($vet, $d['producto_id'], $d['cantidad']);
-            $afectados[] = $d['producto_id'];
-            $precioAnterior[(int)$d['producto_id']] = (float)$d['precio_unitario'];
+            $afectados = [];
+            $precioAnterior = [];
+            foreach ($this->getDetalles($id) as $d) {
+                $this->decrementarStock($vet, (int)$d['producto_id'], (int)$d['cantidad']);   // falla si ya se vendió parte
+                $afectados[] = $d['producto_id'];
+                $precioAnterior[(int)$d['producto_id']] = (float)$d['precio_unitario'];
+            }
+
+            $stmt = $this->db->prepare('DELETE FROM ingresos WHERE id = ?');
+            $stmt->bind_param('i', $id);
+            $ok = $stmt->execute();
+            $stmt->close();
+            if (!$ok) {
+                $this->db->rollback();
+                return false;
+            }
+            $this->db->commit();
+            // Si el precio vigente era el de este ingreso, vuelve al del ingreso anterior que quede
+            $this->revertirPrecioSiVigente($afectados, $precioAnterior);
+            return true;
+        } catch (Exception $e) {
+            $this->db->rollback();
+            $this->error = ($e instanceof RuntimeException && !($e instanceof mysqli_sql_exception)) ? $e->getMessage() : '';
+            return false;
         }
-
-        $stmt = $this->db->prepare('DELETE FROM ingresos WHERE id = ?');
-        $stmt->bind_param('i', $id);
-        $ok = $stmt->execute();
-        $stmt->close();
-        // Si el precio vigente era el de este ingreso, vuelve al del ingreso anterior que quede
-        if ($ok) $this->revertirPrecioSiVigente($afectados, $precioAnterior);
-        return $ok;
     }
 
     // ── Reporte de ingresos ──────────────────────────────────────────
