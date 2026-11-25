@@ -279,6 +279,7 @@
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content border-0 shadow">
             <form method="POST" action="<?= BASE_URL ?>/almacen/agregar" id="formProducto" enctype="multipart/form-data">
+                <input type="hidden" name="alcance_precio" id="alcancePrecio" value="todas">
                 <input type="hidden" name="veterinaria_id" value="<?= $veterinaria_id ?>">
 
                 <div class="modal-header border-0 pb-0">
@@ -429,6 +430,27 @@
     .rel-codigo { color: #94a3b8; font-size: .75rem; white-space: nowrap; }
     .rel-vacio { padding: .5rem .75rem; font-size: .82rem; color: #94a3b8; }
 </style>
+<!-- Cambio de precio de venta: ¿esta veterinaria, todas o cancelar? -->
+<div class="modal fade" id="modalAlcancePrecio" tabindex="-1" aria-hidden="true" style="z-index:1100">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-body text-center p-4">
+                <i class="bi bi-currency-dollar fs-1 text-primary"></i>
+                <h6 class="fw-bold mt-2">Cambio de precio de venta</h6>
+                <p class="small text-muted mb-3">
+                    De <strong id="alc-antes"></strong> a <strong id="alc-ahora"></strong>.<br>
+                    ¿Dónde se aplica?
+                </p>
+                <div class="d-grid gap-2">
+                    <button type="button" class="btn btn-primary-custom" onclick="elegirAlcancePrecio('sucursal')">Cambiar en la veterinaria actual</button>
+                    <button type="button" class="btn btn-outline-primary" onclick="elegirAlcancePrecio('todas')">Cambiar en todas</button>
+                    <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="<?= BASE_URL ?>/assets/js/app.js?v=<?= (int)@filemtime(ROOT . '/assets/js/app.js') ?>"></script>
 <script>
@@ -483,8 +505,30 @@ function verFoto(url, nombre) {
     bootstrap.Modal.getOrCreateInstance(document.getElementById('modalFoto')).show();
 }
 
+// Cambio de precio de venta al editar: se pregunta si aplica solo en esta veterinaria, en todas, o se cancela
+const HAY_VARIAS_VET = <?= count($veterinarias) > 1 ? 'true' : 'false' ?>;
+let precioVentaOriginal = null, alcancePrecioElegido = false;
+const fmtPrecio = n => '$' + Number(n).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+document.getElementById('formProducto').addEventListener('submit', e => {
+    const editando = document.getElementById('formProducto').action.includes('id=');
+    const nuevo = parseFloat(document.getElementById('inp-precio_venta').value) || 0;
+    if (!alcancePrecioElegido) document.getElementById('alcancePrecio').value = 'todas';
+    if (HAY_VARIAS_VET && editando && precioVentaOriginal !== null && Math.abs(nuevo - precioVentaOriginal) > 0.001 && !alcancePrecioElegido) {
+        e.preventDefault();
+        document.getElementById('alc-antes').textContent = fmtPrecio(precioVentaOriginal);
+        document.getElementById('alc-ahora').textContent = fmtPrecio(nuevo);
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('modalAlcancePrecio')).show();
+    }
+});
+function elegirAlcancePrecio(a) {
+    document.getElementById('alcancePrecio').value = a;
+    alcancePrecioElegido = true;
+    document.getElementById('formProducto').requestSubmit();
+}
+
 // Editar producto: rellena el modal con los datos existentes
 function editarProducto(p) {
+    precioVentaOriginal = parseFloat(p.precio_venta) || 0; alcancePrecioElegido = false;
     document.getElementById('modalTitulo').textContent = 'Editar producto';
     document.getElementById('formProducto').action = '<?= BASE_URL ?>/almacen/agregar?id=' + p.id;
     ['nombre','codigo','descripcion','categoria','unidad','precio_compra','precio_venta','stock_minimo','stock'].forEach(campo => {
@@ -500,6 +544,7 @@ function editarProducto(p) {
 
 // "Agregar producto" abre el formulario limpio (antes conservaba los datos del último producto editado)
 document.querySelector('[data-bs-target="#modalAgregarProducto"]')?.addEventListener('click', () => {
+    precioVentaOriginal = null; alcancePrecioElegido = false;
     document.getElementById('formProducto').reset();
     document.getElementById('formProducto').action = '<?= BASE_URL ?>/almacen/agregar';
     document.getElementById('modalTitulo').textContent = 'Agregar producto';

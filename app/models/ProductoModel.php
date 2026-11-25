@@ -9,6 +9,14 @@ class ProductoModel {
     public function __construct() {
         $this->db = Database::getInstance()->getConnection();
         $this->asegurarTablaRelacionados();
+        $this->asegurarPrecioSucursal();
+    }
+
+    /** Precio de venta propio de una sucursal (NULL = usa el precio general del producto) */
+    private function asegurarPrecioSucursal(): void {
+        if ($this->db->query("SHOW COLUMNS FROM inventario LIKE 'precio_venta'")->num_rows === 0) {
+            $this->db->query('ALTER TABLE inventario ADD COLUMN precio_venta decimal(10,2) DEFAULT NULL');
+        }
     }
 
     // ── PRODUCTOS RELACIONADOS (hacen lo mismo que otro: se ofrecen como alternativa al vender) ──
@@ -71,7 +79,7 @@ class ProductoModel {
     public function getAll(int $veterinaria_id = 0): array {
         if ($veterinaria_id > 0) {
             $stmt = $this->db->prepare(
-                'SELECT p.*, COALESCE(inv.stock, 0) AS stock
+                'SELECT p.*, COALESCE(inv.stock, 0) AS stock, COALESCE(inv.precio_venta, p.precio_venta) AS precio_venta
                  FROM productos p
                  LEFT JOIN inventario inv ON inv.producto_id = p.id AND inv.veterinaria_id = ?
                  ORDER BY p.activo DESC, p.nombre ASC'
@@ -96,7 +104,7 @@ class ProductoModel {
                 COUNT(p.id)                                                                AS total_productos,
                 COALESCE(SUM(COALESCE(inv.stock, 0)), 0)                                   AS total_stock,
                 COUNT(DISTINCT p.categoria)                                                AS total_categorias,
-                COALESCE(SUM(COALESCE(inv.stock, 0) * p.precio_venta), 0)                 AS valor_inventario,   -- unidades en stock × precio de venta
+                COALESCE(SUM(COALESCE(inv.stock, 0) * COALESCE(inv.precio_venta, p.precio_venta)), 0)                 AS valor_inventario,   -- unidades en stock × precio de venta
                 SUM(CASE WHEN COALESCE(inv.stock, 0) <= p.stock_minimo THEN 1 ELSE 0 END) AS stock_bajo
              FROM productos p
              LEFT JOIN inventario inv ON inv.producto_id = p.id $joinVet
@@ -137,6 +145,53 @@ class ProductoModel {
         $row = $stmt->get_result()->fetch_assoc();
         $stmt->close();
         return $row ?: null;
+    }
+
+    /** Precio de venta que ve una sucursal: el suyo propio si lo tiene y, si no, el general del producto */
+    public function precioVigente(int $id, int $veterinaria_id): float {
+        $stmt = $this->db->prepare(
+            'SELECT COALESCE(inv.precio_venta, p.precio_venta) FROM productos p
+          LEFT JOIN inventario inv ON inv.producto_id = p.id AND inv.veterinaria_id = ? WHERE p.id = ?'
+        );
+        $stmt->bind_param('ii', $veterinaria_id, $id);
+        $stmt->execute();
+        $v = (float)($stmt->get_result()->fetch_row()[0] ?? 0);
+        $stmt->close();
+        return $v;
+    }
+
+    /**
+     * Guarda el producto. El precio de venta se aplica según $alcance:
+     *  'todas'    → precio general (todas las sucursales); se borran los precios propios de cada sucursal
+     *  'sucursal' → solo $veterinaria_id: el precio general no cambia y la sucursal queda con su precio propio
+     */
+    public function actualizarConAlcance(int $id, array $datos, string $alcance, int $veterinaria_id): bool {
+        $this->db->begin_transaction();
+        try {
+            $nuevo = (float)$datos['precio_venta'];
+            if ($alcance === 'sucursal' && $veterinaria_id > 0) {
+                $r = $this->db->query('SELECT precio_venta FROM productos WHERE id = ' . (int)$id);
+                $datos['precio_venta'] = (float)($r->fetch_row()[0] ?? $nuevo);   // el general se queda como estaba
+            }
+            if (!$this->actualizar($id, $datos)) { $this->db->rollback(); return false; }
+
+            if ($alcance === 'sucursal' && $veterinaria_id > 0) {
+                $stmt = $this->db->prepare(
+                    'INSERT INTO inventario (veterinaria_id, producto_id, stock, precio_venta) VALUES (?, ?, 0, ?)
+                     ON DUPLICATE KEY UPDATE precio_venta = VALUES(precio_venta)'
+                );
+                $stmt->bind_param('iid', $veterinaria_id, $id, $nuevo);
+                $stmt->execute();
+                $stmt->close();
+            } elseif ($alcance === 'todas') {
+                $this->db->query('UPDATE inventario SET precio_venta = NULL WHERE producto_id = ' . (int)$id);
+            }
+            $this->db->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->db->rollback();
+            return false;
+        }
     }
 
     public function actualizar(int $id, array $datos): bool {

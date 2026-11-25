@@ -33,6 +33,9 @@ class VentaModel {
     public function __construct() {
         $this->db = Database::getInstance()->getConnection();
         $this->asegurarColumnaMetodoPago();
+        if ($this->db->query("SHOW COLUMNS FROM inventario LIKE 'precio_venta'")->num_rows === 0) {
+            $this->db->query('ALTER TABLE inventario ADD COLUMN precio_venta decimal(10,2) DEFAULT NULL');   // precio propio de una sucursal
+        }
     }
 
     // Las ventas anteriores a este cambio quedan sin método (NULL)
@@ -400,12 +403,15 @@ class VentaModel {
     }
 
     /** Nombre, código, unidad y precio de venta de los productos indicados (para la cotización) */
-    public function getProductosPorId(array $ids): array {
+    public function getProductosPorId(array $ids, int $veterinaria_id = 0): array {
         $ids = array_values(array_unique(array_filter(array_map('intval', $ids))));
         if (!$ids) return [];
         $marcas = implode(',', array_fill(0, count($ids), '?'));
-        $stmt = $this->db->prepare("SELECT id, nombre, codigo, unidad, precio_venta FROM productos WHERE activo = 1 AND id IN ($marcas)");
-        $stmt->bind_param(str_repeat('i', count($ids)), ...$ids);
+        $stmt = $this->db->prepare(
+            "SELECT p.id, p.nombre, p.codigo, p.unidad, COALESCE(inv.precio_venta, p.precio_venta) AS precio_venta
+               FROM productos p LEFT JOIN inventario inv ON inv.producto_id = p.id AND inv.veterinaria_id = ?
+              WHERE p.activo = 1 AND p.id IN ($marcas)");
+        $stmt->bind_param('i' . str_repeat('i', count($ids)), $veterinaria_id, ...$ids);
         $stmt->execute();
         $res = [];
         foreach ($stmt->get_result()->fetch_all(MYSQLI_ASSOC) as $p) $res[(int)$p['id']] = $p;
@@ -416,7 +422,7 @@ class VentaModel {
     public function getProductos(int $veterinaria_id = 0): array {
         if ($veterinaria_id > 0) {
             $stmt = $this->db->prepare(
-                'SELECT p.id, p.nombre, p.codigo, p.unidad, p.precio_venta, p.foto,
+                'SELECT p.id, p.nombre, p.codigo, p.unidad, COALESCE(inv.precio_venta, p.precio_venta) AS precio_venta, p.foto,
                         COALESCE(inv.stock, 0) AS stock
                  FROM productos p
                  LEFT JOIN inventario inv ON inv.producto_id = p.id

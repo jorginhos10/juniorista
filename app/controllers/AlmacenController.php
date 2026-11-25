@@ -196,9 +196,15 @@ class AlmacenController {
 
         $id = (int)($_GET['id'] ?? 0);
         if ($id > 0) {
-            $ok = $this->model->actualizar($id, $datos);
+            // Cambio de precio de venta: solo en la veterinaria actual o en todas (se elige en la ventana de confirmación)
+            $vet     = (int)($_SESSION['veterinaria_id'] ?? 0);
+            $alcance = ($_POST['alcance_precio'] ?? 'todas') === 'sucursal' ? 'sucursal' : 'todas';
+            $cambioPrecio = abs($this->model->precioVigente($id, $vet) - (float)$datos['precio_venta']) > 0.001;
+            $ok = $cambioPrecio
+                ? $this->model->actualizarConAlcance($id, $datos, $alcance, $vet)
+                : $this->model->actualizar($id, $datos);
             $_SESSION[$ok ? 'flash_success' : 'flash_error'] = $ok
-                ? 'Producto actualizado correctamente.'
+                ? 'Producto actualizado correctamente.' . ($cambioPrecio ? ($alcance === 'sucursal' ? ' El nuevo precio aplica solo en esta veterinaria.' : ' El nuevo precio aplica en todas las veterinarias.') : '')
                 : 'Error al actualizar el producto.';
         } else {
             $ok = $this->model->crear($datos);

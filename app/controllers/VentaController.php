@@ -602,7 +602,7 @@ class VentaController {
         $cantidades = (array)($_POST['cantidad'] ?? []);
         $precios    = (array)($_POST['precio'] ?? []);
         $descLinea  = (array)($_POST['desc_linea'] ?? []);   // descuento de cada producto (mismo orden que las líneas)
-        $productos  = $this->model->getProductosPorId($ids);
+        $productos  = $this->model->getProductosPorId($ids, (int)($_SESSION['veterinaria_id'] ?? 0));
 
         $lineas = [];
         foreach ($tipos as $i => $tipo) {
